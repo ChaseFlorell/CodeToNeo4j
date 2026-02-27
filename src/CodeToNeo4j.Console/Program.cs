@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Security.Cryptography;
-using System.Reflection;
+using CodeToNeo4j.Console.Cypher;
 
 namespace CodeToNeo4j.Console;
 
@@ -40,20 +40,13 @@ public static class Program
         return await root.InvokeAsync(args);
     }
 
-    private static string GetCypher(string name)
-    {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"CodeToNeo4j.Console.Cypher.{name}.cypher");
-        if (stream == null) throw new FileNotFoundException($"Cypher resource {name} not found.");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
 
     private static async Task VerifyNeo4JVersionAsync(IDriver driver)
     {
         await using var session = driver.AsyncSession();
         var result = await session.ExecuteReadAsync(async tx =>
         {
-            var cursor = await tx.RunAsync(GetCypher("GetNeo4jVersion"));
+            var cursor = await tx.RunAsync(_cypherService.GetCypher(Queries.GetNeo4jVersion));
             return await cursor.SingleAsync();
         });
 
@@ -86,7 +79,7 @@ public static class Program
         // and are safe to run every time at startup.
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 
-        var schema = GetCypher("Schema");
+        var schema = _cypherService.GetCypher(Queries.Schema);
         var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         foreach (var cypher in statements)
@@ -110,7 +103,7 @@ public static class Program
 
         await using var session = driver.AsyncSession();
         // Create or update Project
-        await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("UpsertProject"), new { key = repoKey, name = repoKey }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(_cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }); });
 
         using var workspace = MSBuildWorkspace.Create();
         workspace.RegisterWorkspaceFailedHandler(e => { System.Console.Error.WriteLine($"Workspace warning: {e.Diagnostic.Message}"); });
@@ -142,10 +135,10 @@ public static class Program
                 var fileHash = ComputeSha256(await File.ReadAllBytesAsync(filePath));
 
                 // Upsert file node and link to project
-                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("UpsertFile"), new { fileKey, path = filePath, hash = fileHash, repoKey }); });
+                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(_cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey }); });
 
                 // Delete prior symbols declared in this file (safe incremental)
-                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("DeletePriorSymbols"), new { fileKey }); });
+                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(_cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey }); });
 
                 // Extract types and members
                 foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
@@ -192,7 +185,10 @@ public static class Program
         }
 
         // Flush remainder
-        if (symbolBuffer.Count > 0) await FlushAsync(session, repoKey, fileKey: null, symbolBuffer, relBuffer);
+        if (symbolBuffer.Count > 0)
+        {
+            await FlushAsync(session, repoKey, fileKey: null, symbolBuffer, relBuffer);
+        }
 
         System.Console.WriteLine("Done.");
     }
@@ -206,9 +202,9 @@ public static class Program
 
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(GetCypher("UpsertSymbols"), new { symbols = symbolBatch });
+            await tx.RunAsync(_cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
 
-            await tx.RunAsync(GetCypher("MergeRelationships"), new { rels = relBatch });
+            await tx.RunAsync(_cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
         });
     }
 
@@ -299,4 +295,6 @@ public static class Program
 
         return set;
     }
+
+    private static CypherService _cypherService = new();
 }
