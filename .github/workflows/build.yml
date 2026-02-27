@@ -7,7 +7,6 @@ on:
     branches: [ main ]
 
 permissions:
-  packages: write
   contents: read
   
 jobs:
@@ -34,14 +33,14 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal
 
     - name: Pack
-      run: dotnet pack src/CodeToNeo4j.Console/CodeToNeo4j.Console.csproj --no-build -c Release -o out /p:Version=1.0.${{ github.run_number }}
+      run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-build -c Release -o out /p:Version=1.0.${{ github.run_number }}
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: CodeToNeo4j.Console.nupkg
+        name: CodeToNeo4j.nupkg
         path: out/*.nupkg
 
-    - name: Push to GitHub Packages
+    - name: Push to NuGet.org
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: dotnet nuget push out/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }}
+      run: dotnet nuget push out/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_KEY }}

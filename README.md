@@ -15,22 +15,18 @@ CodeToNeo4j is a .NET 10 console application designed to analyze C# solutions an
 
 The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you to run the `codetoneo4j` command from any directory.
 
-1. **Add the GitHub NuGet source** (if not already added):
+1. **Install the tool**:
    ```bash
-   dotnet nuget add source --username YOUR_GITHUB_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/chaseflorell/index.json"
+   dotnet tool install --global CodeToNeo4j
    ```
-2. **Install the tool**:
-   ```bash
-   dotnet tool install --global CodeToNeo4j.Console
-   ```
-3. **Run the tool**:
+2. **Run the tool**:
    ```bash
    codetoneo4j --sln ./MySolution.sln --pass your-pass --repoKey my-repo --database my-db --uri bolt://localhost:7687
    ```
 
 To update the tool to the latest version:
 ```bash
-dotnet tool update --global CodeToNeo4j.Console
+dotnet tool update --global CodeToNeo4j
 ```
 
 ### Versioning
@@ -48,7 +44,7 @@ The tool follows a `1.0.[GITHUB_RUN_NUMBER]` versioning scheme for automated bui
    ```bash
    dotnet build -c Release
    ```
-3. The executable will be located at `src/CodeToNeo4j.Console/bin/Release/net10.0/CodeToNeo4j.Console`.
+3. The executable will be located at `src/CodeToNeo4j/bin/Release/net10.0/CodeToNeo4j`.
 
 ## Usage
 
@@ -61,7 +57,7 @@ codetoneo4j --sln /path/to/YourSolution.sln --pass your-neo4j-password --repoKey
 
 If running from the build output:
 ```bash
-./CodeToNeo4j.Console --sln /path/to/YourSolution.sln --pass your-neo4j-password --repoKey my-project-name
+./CodeToNeo4j --sln /path/to/YourSolution.sln --pass your-neo4j-password --repoKey my-project-name
 ```
 
 ### Options
@@ -81,7 +77,7 @@ If running from the build output:
 
 ## GitHub Actions Integration
 
-To use CodeToNeo4j as part of your CI/CD pipeline, you can install it as a .NET Global Tool from GitHub Packages.
+To use CodeToNeo4j as part of your CI/CD pipeline, you can install it as a .NET Global Tool.
 
 ```yaml
 jobs:
@@ -89,7 +85,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,11 +95,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Add GitHub NuGet Source
-        run: dotnet nuget add source --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-
       - name: Install CodeToNeo4j
-        run: dotnet tool install --global CodeToNeo4j.Console
+        run: dotnet tool install --global CodeToNeo4j
 
       - name: Run CodeToNeo4j
         run: |
