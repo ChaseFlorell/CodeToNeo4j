@@ -48,6 +48,38 @@ public static class Program
         return reader.ReadToEnd();
     }
 
+    private static async Task VerifyNeo4JVersionAsync(IDriver driver)
+    {
+        await using var session = driver.AsyncSession();
+        var result = await session.ExecuteReadAsync(async tx =>
+        {
+            var cursor = await tx.RunAsync(GetCypher("GetNeo4jVersion"));
+            return await cursor.SingleAsync();
+        });
+
+        var versionString = result["version"].As<string>();
+        if (string.IsNullOrWhiteSpace(versionString))
+        {
+            throw new NotSupportedException("Could not determine Neo4j version.");
+        }
+
+        if (Version.TryParse(versionString.Split('-')[0], out var version))
+        {
+            if (version.Major < 5)
+            {
+                throw new NotSupportedException($"Neo4j version {versionString} is not supported. Minimum required version is 5.0.");
+            }
+        }
+        else
+        {
+            // Fallback for cases where version string might be unusual, but starts with a number
+            if (char.IsDigit(versionString[0]) && int.TryParse(versionString[0].ToString(), out var major) && major < 5)
+            {
+                throw new NotSupportedException($"Neo4j version {versionString} is not supported. Minimum required version is 5.0.");
+            }
+        }
+    }
+
     private static async Task EnsureNeo4JSchemaAsync(IDriver driver, string databaseName)
     {
         // Neo4j schema operations are idempotent with IF NOT EXISTS
@@ -73,6 +105,7 @@ public static class Program
             : await GetChangedCsFilesAsync(diffBase, Directory.GetCurrentDirectory());
 
         await using var driver = GraphDatabase.Driver(new Uri(neo4J), AuthTokens.Basic(user, pass));
+        await VerifyNeo4JVersionAsync(driver);
         await EnsureNeo4JSchemaAsync(driver, databaseName);
 
         await using var session = driver.AsyncSession();
