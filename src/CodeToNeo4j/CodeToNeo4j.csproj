@@ -15,7 +15,12 @@
     <PackageProjectUrl>https://github.com/chaseflorell/CodeToNeo4j</PackageProjectUrl>
     <RepositoryUrl>https://github.com/chaseflorell/CodeToNeo4j</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\PACKAGE_README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="Cypher\*.cypher" />
