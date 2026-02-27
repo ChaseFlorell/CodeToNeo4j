@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/.src/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="src/CodeToNeo4j.Console/CodeToNeo4j.Console.csproj" />
+</Solution>
