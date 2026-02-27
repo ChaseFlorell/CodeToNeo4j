@@ -72,15 +72,15 @@ If running from the build output:
 
 ## GitHub Actions Integration
 
-To use CodeToNeo4j as part of your CI/CD pipeline to update your knowledge base on every push:
-
-1. **Build and Upload CodeToNeo4j as an Artifact** (or use a pre-built release).
-2. **Download and Run** in your target project's workflow:
+To use CodeToNeo4j as part of your CI/CD pipeline, you can install it as a .NET Global Tool from GitHub Packages.
 
 ```yaml
 jobs:
   index-code:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,7 +91,12 @@ jobs:
         with:
           global-json-file: global.json
 
-      # Assuming you have the tool as an artifact or global tool
+      - name: Add GitHub NuGet Source
+        run: dotnet nuget add source --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+      - name: Install CodeToNeo4j
+        run: dotnet tool install --global CodeToNeo4j.Console
+
       - name: Run CodeToNeo4j
         run: |
           codetoneo4j \

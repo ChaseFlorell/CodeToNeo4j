@@ -9,15 +9,15 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var slnOption = new Option<FileInfo>("--sln") { IsRequired = true };
-        var passOption = new Option<string>("--pass") { IsRequired = true };
-        var repoKeyOption = new Option<string>("--repoKey") { IsRequired = true };
-        var neo4JOption = new Option<string>("--neo4j", () => "bolt://localhost:7687");
-        var userOption = new Option<string>("--user", () => "neo4j");
-        var databaseOption = new Option<string>("--database", () => "neo4j");
-        var diffBaseOption = new Option<string?>("--diffBase", description: "Optional git base ref for incremental indexing, e.g. origin/main");
-        var batchSizeOption = new Option<int>("--batchSize", () => 500);
-        var logLevelOption = new Option<LogLevel>("--logLevel", () => LogLevel.Information, "The minimum log level to display.");
+        var slnOption = new Option<FileInfo>("--sln", "Path to the .sln file to index. Example: ./MySolution.sln") { IsRequired = true };
+        var passOption = new Option<string>("--pass", "Password for the Neo4j database. Example: your-pass") { IsRequired = true };
+        var repoKeyOption = new Option<string>("--repoKey", "A unique identifier for the repository in Neo4j. Example: my-repo") { IsRequired = true };
+        var neo4JOption = new Option<string>("--neo4j", () => "bolt://localhost:7687", "The Neo4j connection string. Example: bolt://localhost:7687");
+        var userOption = new Option<string>("--user", () => "neo4j", "Neo4j username. Example: neo4j");
+        var databaseOption = new Option<string>("--database", () => "neo4j", "Neo4j database name. Example: my-db");
+        var diffBaseOption = new Option<string?>("--diffBase", "Optional git base ref for incremental indexing. Example: origin/main");
+        var batchSizeOption = new Option<int>("--batchSize", () => 500, "Number of symbols to batch before flushing to Neo4j. Example: 500");
+        var logLevelOption = new Option<LogLevel>("--logLevel", () => LogLevel.Information, "The minimum log level to display. Example: Information");
 
         var root = new RootCommand("Index C# solution into Neo4j via Roslyn")
         {

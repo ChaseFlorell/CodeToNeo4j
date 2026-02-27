@@ -37,3 +37,7 @@ jobs:
       with:
         name: CodeToNeo4j.Console.nupkg
         path: out/*.nupkg
+
+    - name: Push to GitHub Packages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet nuget push out/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }}
