@@ -43,3 +43,52 @@ codetoneo4j \
 - **Git** (if using `--diffBase`).
 
 For more detailed documentation, visit the [GitHub Repository](https://github.com/chaseflorell/CodeToNeo4j).
+
+## CI/CD Integration
+
+### GitHub Actions
+
+You can install and run `CodeToNeo4j` directly in your GitHub workflows:
+
+```yaml
+- name: Setup .NET
+  uses: actions/setup-dotnet@v4
+  with:
+    global-json-file: global.json
+
+- name: Install CodeToNeo4j
+  run: dotnet tool install --global CodeToNeo4j
+
+- name: Run CodeToNeo4j
+  run: |
+    codetoneo4j \
+      --sln ./MySolution.sln \
+      --repoKey my-repo \
+      --uri ${{ secrets.NEO4J_URL }} \
+      --pass ${{ secrets.NEO4J_PASS }} \
+      --diffBase ${{ github.event.before }}
+```
+
+### Azure DevOps
+
+Use the `.NET Core` task to install and run the tool:
+
+```yaml
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    useGlobalJson: true
+
+- script: dotnet tool install --global CodeToNeo4j
+  displayName: 'Install CodeToNeo4j'
+
+- script: |
+    codetoneo4j \
+      --sln ./MySolution.sln \
+      --repoKey my-repo \
+      --uri $(NEO4J_URL) \
+      --pass $(NEO4J_PASS) \
+      --diffBase $(System.PullRequest.SourceCommitId)
+  displayName: 'Run CodeToNeo4j'
+```
