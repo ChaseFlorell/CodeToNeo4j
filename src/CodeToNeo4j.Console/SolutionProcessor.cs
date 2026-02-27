@@ -5,6 +5,7 @@ using System.IO.Abstractions;
 using Microsoft.Extensions.Logging;
 using CodeToNeo4j.Console.FileSystem;
 using CodeToNeo4j.Console.Git;
+using CodeToNeo4j.Console.Progress;
 using CodeToNeo4j.Console.Neo4j;
 
 namespace CodeToNeo4j.Console;
@@ -20,6 +21,7 @@ public class SolutionProcessor(
     IFileService fileService,
     ISymbolMapper symbolMapper,
     IFileSystem fileSystem,
+    IProgressService progressService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
     public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force)
@@ -55,6 +57,21 @@ public class SolutionProcessor(
         var solution = await workspace.OpenSolutionAsync(sln.FullName);
         logger.LogInformation("Solution opened successfully.");
 
+        var allDocuments = solution.Projects
+            .SelectMany(p => p.Documents)
+            .Where(d => d.FilePath?.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ?? false)
+            .ToList();
+
+        if (changedFiles is not null)
+        {
+            allDocuments = allDocuments
+                .Where(d => changedFiles.Contains(fileService.NormalizePath(d.FilePath!)))
+                .ToList();
+        }
+
+        var totalFiles = allDocuments.Count;
+        var currentFileIndex = 0;
+
         var symbolBuffer = new List<SymbolRecord>(batchSize);
         var relBuffer = new List<RelRecord>(batchSize);
 
@@ -68,13 +85,14 @@ public class SolutionProcessor(
                 continue;
             }
 
-            foreach (var document in project.Documents)
+            var projectDocuments = allDocuments.Where(d => d.Project.Id == project.Id).ToList();
+
+            foreach (var document in projectDocuments)
             {
-                if (!document.FilePath?.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ?? true) continue;
-
+                currentFileIndex++;
                 var filePath = fileService.NormalizePath(document.FilePath!);
-                if (changedFiles is not null && !changedFiles.Contains(filePath)) continue;
 
+                progressService.ReportProgress(currentFileIndex, totalFiles, filePath);
                 logger.LogDebug("Processing file: {FilePath}", filePath);
 
                 var syntaxTree = await document.GetSyntaxTreeAsync();

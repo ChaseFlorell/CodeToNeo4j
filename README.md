@@ -152,3 +152,6 @@ CodeToNeo4j resolves file paths relative to the git repository root. The tool au
 **Gap**: Batching is implemented, but the entire solution is loaded into memory via Roslyn.
 **Gotcha**: Very large solutions (thousands of projects) might exceed memory limits in standard CI runners (e.g., 7GB on GitHub hosted runners).
 **Recommendation**: Consider processing projects one-by-one or in smaller groups if memory becomes an issue.
+
+### 6. Progress Reporting
+**Status: Implemented**. The tool now automatically detects if it's running in GitHub Actions or Azure DevOps and uses platform-specific progress reporting (e.g., `##vso[task.setprogress]` for Azure DevOps). For local execution, it falls back to standard console-based progress logging.

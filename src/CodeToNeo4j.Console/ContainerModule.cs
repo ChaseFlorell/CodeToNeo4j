@@ -5,6 +5,7 @@ using CodeToNeo4j.Console.Cypher;
 using CodeToNeo4j.Console.FileSystem;
 using CodeToNeo4j.Console.Git;
 using CodeToNeo4j.Console.Neo4j;
+using CodeToNeo4j.Console.Progress;
 using Neo4j.Driver;
 
 namespace CodeToNeo4j.Console;
@@ -38,6 +39,20 @@ public static class ContainerModule
         services.AddSingleton<IGitService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
         services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
+
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+        {
+            services.AddSingleton<IProgressService, GitHubActionsProgressService>();
+        }
+        else if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TF_BUILD")))
+        {
+            services.AddSingleton<IProgressService, AzureDevOpsProgressService>();
+        }
+        else
+        {
+            services.AddSingleton<IProgressService, ConsoleProgressService>();
+        }
+
         services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
         services.AddSingleton<INeo4jService, Neo4jService>();
 
