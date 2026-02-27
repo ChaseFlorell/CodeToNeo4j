@@ -29,7 +29,11 @@ public static class ContainerModule
     {
         services.AddLogging(builder =>
         {
-            builder.AddConsole();
+            builder.AddSimpleConsole(options =>
+            {
+                options.SingleLine = true;
+                options.TimestampFormat = "HH:mm:ss ";
+            });
             builder.SetMinimumLevel(minLogLevel);
         });
 
