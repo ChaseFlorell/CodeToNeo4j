@@ -13,17 +13,25 @@ CodeToNeo4j is a .NET 10 console application designed to analyze C# solutions an
 
 #### As a .NET Global Tool
 
-You can install CodeToNeo4j as a .NET Global Tool. This is the recommended way to use the tool across multiple projects.
+The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you to run the `codetoneo4j` command from any directory.
 
-1. Download the NuGet package (`.nupkg`) from the GitHub Actions artifacts.
-2. Install the tool locally (or from a private NuGet feed):
+1. **Add the GitHub NuGet source** (if not already added):
    ```bash
-   dotnet tool install --global --add-source ./path-to-nupkg CodeToNeo4j.Console
+   dotnet nuget add source --username YOUR_GITHUB_USERNAME --password YOUR_GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/chaseflorell/index.json"
    ```
-3. Run the tool using the `codetoneo4j` command:
+2. **Install the tool**:
+   ```bash
+   dotnet tool install --global CodeToNeo4j.Console
+   ```
+3. **Run the tool**:
    ```bash
    codetoneo4j --sln ./MySolution.sln --pass your-pass --repoKey my-repo --database my-db
    ```
+
+To update the tool to the latest version:
+```bash
+dotnet tool update --global CodeToNeo4j.Console
+```
 
 ### Versioning
 

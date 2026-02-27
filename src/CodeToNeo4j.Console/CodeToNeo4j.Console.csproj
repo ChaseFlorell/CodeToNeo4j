@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageType>DotnetTool</PackageType>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>codetoneo4j</ToolCommandName>
     <PackageId>CodeToNeo4j.Console</PackageId>
