@@ -25,7 +25,7 @@ public class SolutionProcessor(
 
         await neo4jService.VerifyNeo4JVersionAsync();
         await neo4jService.EnsureSchemaAsync(databaseName);
-        await neo4jService.UpsertProjectAsync(repoKey);
+        await neo4jService.UpsertProjectAsync(repoKey, databaseName);
 
         using var workspace = MSBuildWorkspace.Create();
         workspace.RegisterWorkspaceFailedHandler(e => { System.Console.Error.WriteLine($"Workspace warning: {e.Diagnostic.Message}"); });
@@ -56,8 +56,8 @@ public class SolutionProcessor(
                 var fileKey = $"{repoKey}:{filePath}";
                 var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath));
 
-                await neo4jService.UpsertFileAsync(fileKey, filePath, fileHash, repoKey);
-                await neo4jService.DeletePriorSymbolsAsync(fileKey);
+                await neo4jService.UpsertFileAsync(fileKey, filePath, fileHash, repoKey, databaseName);
+                await neo4jService.DeletePriorSymbolsAsync(fileKey, databaseName);
 
                 foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
                 {
@@ -97,7 +97,7 @@ public class SolutionProcessor(
 
                 if (symbolBuffer.Count >= batchSize)
                 {
-                    await neo4jService.FlushAsync(repoKey, fileKey, symbolBuffer, relBuffer);
+                    await neo4jService.FlushAsync(repoKey, fileKey, symbolBuffer, relBuffer, databaseName);
                 }
 
                 System.Console.WriteLine($"Indexed {filePath}");
@@ -106,7 +106,7 @@ public class SolutionProcessor(
 
         if (symbolBuffer.Count > 0)
         {
-            await neo4jService.FlushAsync(repoKey, null, symbolBuffer, relBuffer);
+            await neo4jService.FlushAsync(repoKey, null, symbolBuffer, relBuffer, databaseName);
         }
 
         System.Console.WriteLine("Done.");

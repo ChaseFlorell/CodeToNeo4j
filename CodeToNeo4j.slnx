@@ -3,6 +3,12 @@
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/.src/.github/" />
+  <Folder Name="/.src/.github/workflows/">
+    <File Path=".github\workflows\build.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j.Console/CodeToNeo4j.Console.csproj" />
 </Solution>

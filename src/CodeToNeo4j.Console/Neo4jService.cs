@@ -7,10 +7,10 @@ public interface INeo4jService : IAsyncDisposable
 {
     Task VerifyNeo4JVersionAsync();
     Task EnsureSchemaAsync(string databaseName);
-    Task UpsertProjectAsync(string repoKey);
-    Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey);
-    Task DeletePriorSymbolsAsync(string fileKey);
-    Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels);
+    Task UpsertProjectAsync(string repoKey, string databaseName);
+    Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey, string databaseName);
+    Task DeletePriorSymbolsAsync(string fileKey, string databaseName);
+    Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName);
 }
 
 public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jService
@@ -58,34 +58,34 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         }
     }
 
-    public async Task UpsertProjectAsync(string repoKey)
+    public async Task UpsertProjectAsync(string repoKey, string databaseName)
     {
-        await using var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
             await tx.RunAsync(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
         });
     }
 
-    public async Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey)
+    public async Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey, string databaseName)
     {
-        await using var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
             await tx.RunAsync(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
         });
     }
 
-    public async Task DeletePriorSymbolsAsync(string fileKey)
+    public async Task DeletePriorSymbolsAsync(string fileKey, string databaseName)
     {
-        await using var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
             await tx.RunAsync(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey });
         });
     }
 
-    public async Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels)
+    public async Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName)
     {
         if (symbols.Count == 0 && rels.Count == 0) return;
 
@@ -94,7 +94,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         symbols.Clear();
         rels.Clear();
 
-        await using var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
             await tx.RunAsync(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });

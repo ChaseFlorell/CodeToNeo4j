@@ -26,17 +26,17 @@ public static class Program
 
         root.SetHandler(async (sln, neo4J, user, pass, repoKey, diffBase, batchSize, databaseName) =>
         {
-            if (!MSBuildLocator.IsRegistered) MSBuildLocator.RegisterDefaults();
+            if (!MSBuildLocator.IsRegistered)
+            {
+                var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
+                if (instances.Any())
+                {
+                    MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
+                }
+            }
 
             var services = new ServiceCollection();
-            services.AddSingleton<IFileSystem, FileSystem>();
-            services.AddSingleton<CypherService>();
-            services.AddSingleton<IFileService, FileService>();
-            services.AddSingleton<IGitService, GitService>();
-            services.AddSingleton<ISymbolMapper, SymbolMapper>();
-            services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
-            services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4J), AuthTokens.Basic(user, pass)));
-            services.AddSingleton<INeo4jService, Neo4jService>();
+            services.AddApplicationServices(neo4J, user, pass);
 
             await using var serviceProvider = services.BuildServiceProvider();
             var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
