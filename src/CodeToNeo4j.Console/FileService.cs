@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.IO.Abstractions;
 
 namespace CodeToNeo4j.Console;
 
@@ -8,11 +9,11 @@ public interface IFileService
     string ComputeSha256(byte[] bytes);
 }
 
-public class FileService : IFileService
+public class FileService(IFileSystem fileSystem) : IFileService
 {
     public string NormalizePath(string path)
     {
-        var full = Path.GetFullPath(path);
+        var full = fileSystem.Path.GetFullPath(path);
         return full.Replace('\\', '/');
     }
 

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
+using System.IO.Abstractions;
 
 namespace CodeToNeo4j.Console;
 
@@ -13,7 +14,8 @@ public class SolutionProcessor(
     IGitService gitService,
     INeo4jService neo4jService,
     IFileService fileService,
-    ISymbolMapper symbolMapper) : ISolutionProcessor
+    ISymbolMapper symbolMapper,
+    IFileSystem fileSystem) : ISolutionProcessor
 {
     public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize)
     {
@@ -52,7 +54,7 @@ public class SolutionProcessor(
                 var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
 
                 var fileKey = $"{repoKey}:{filePath}";
-                var fileHash = fileService.ComputeSha256(await File.ReadAllBytesAsync(filePath));
+                var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath));
 
                 await neo4jService.UpsertFileAsync(fileKey, filePath, fileHash, repoKey);
                 await neo4jService.DeletePriorSymbolsAsync(fileKey);

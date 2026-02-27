@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.IO.Abstractions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Neo4j.Driver;
@@ -28,6 +29,7 @@ public static class Program
             if (!MSBuildLocator.IsRegistered) MSBuildLocator.RegisterDefaults();
 
             var services = new ServiceCollection();
+            services.AddSingleton<IFileSystem, FileSystem>();
             services.AddSingleton<CypherService>();
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IGitService, GitService>();
