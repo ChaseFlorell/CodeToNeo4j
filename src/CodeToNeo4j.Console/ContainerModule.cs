@@ -11,7 +11,20 @@ namespace CodeToNeo4j.Console;
 
 public static class ContainerModule
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services, string neo4jUri, string user, string pass, LogLevel minLogLevel)
+    /// <summary>
+    /// Configures and registers application services into the provided <see cref="IServiceCollection"/>.
+    /// </summary>
+    /// <param name="services">The service collection to which the application services will be added.</param>
+    /// <param name="neo4jUri">The URI of the Neo4j database to connect to.</param>
+    /// <param name="user">The username for authenticating with the Neo4j database.</param>
+    /// <param name="pass">The password for authenticating with the Neo4j database.</param>
+    /// <param name="minLogLevel">The minimum log level for the application's logging configuration.</param>
+    /// <returns>The updated <see cref="IServiceCollection"/> containing the registered application services.</returns>
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services,
+        string neo4jUri,
+        string user,
+        string pass,
+        LogLevel minLogLevel)
     {
         services.AddLogging(builder =>
         {
@@ -20,7 +33,7 @@ public static class ContainerModule
         });
 
         services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
-        services.AddSingleton<CypherService>();
+        services.AddSingleton<ICypherService, CypherService>();
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IGitService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();

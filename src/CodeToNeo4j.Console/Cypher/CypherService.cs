@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace CodeToNeo4j.Console.Cypher;
 
-public class CypherService
+public class CypherService : ICypherService
 {
     public string GetCypher(string name)
     {

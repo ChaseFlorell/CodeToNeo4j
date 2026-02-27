@@ -11,7 +11,7 @@ namespace CodeToNeo4j.Console;
 
 public interface ISolutionProcessor
 {
-    Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize);
+    Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force);
 }
 
 public class SolutionProcessor(
@@ -22,17 +22,21 @@ public class SolutionProcessor(
     IFileSystem fileSystem,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize)
+    public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force)
     {
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
 
-        var changedFiles = diffBase is null
+        var changedFiles = diffBase is null || force
             ? null
-            : await gitService.GetChangedCsFilesAsync(diffBase, fileSystem.Directory.GetCurrentDirectory());
+            : await gitService.GetChangedCsFilesAsync(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
 
         if (changedFiles is not null)
         {
             logger.LogInformation("Incremental indexing enabled. Found {Count} changed .cs files since {DiffBase}", changedFiles.Count, diffBase);
+        }
+        else if (diffBase is not null && force)
+        {
+            logger.LogInformation("Incremental indexing bypassed due to --force flag.");
         }
 
         await neo4jService.VerifyNeo4JVersionAsync();

@@ -4,17 +4,18 @@ namespace CodeToNeo4j.Console;
 
 public class Options(
     FileInfo sln,
-    string neo4j,
+    string uri,
     string user,
     string pass,
     string repoKey,
     string? diffBase,
     int batchSize,
     string databaseName,
-    LogLevel logLevel)
+    LogLevel logLevel,
+    bool force)
 {
     public FileInfo Sln { get; } = sln;
-    public string Neo4j { get; } = neo4j;
+    public string Uri { get; } = uri;
     public string User { get; } = user;
     public string Pass { get; } = pass;
     public string RepoKey { get; } = repoKey;
@@ -22,4 +23,5 @@ public class Options(
     public int BatchSize { get; } = batchSize;
     public string DatabaseName { get; } = databaseName;
     public LogLevel LogLevel { get; } = logLevel;
+    public bool Force { get; } = force;
 }

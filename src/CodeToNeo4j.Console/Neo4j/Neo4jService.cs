@@ -4,17 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Console.Neo4j;
 
-public interface INeo4jService : IAsyncDisposable
-{
-    Task VerifyNeo4JVersionAsync();
-    Task EnsureSchemaAsync(string databaseName);
-    Task UpsertProjectAsync(string repoKey, string databaseName);
-    Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey, string databaseName);
-    Task DeletePriorSymbolsAsync(string fileKey, string databaseName);
-    Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName);
-}
-
-public class Neo4jService(IDriver driver, CypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
+public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
 {
     public async Task VerifyNeo4JVersionAsync()
     {

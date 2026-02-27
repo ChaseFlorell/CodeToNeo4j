@@ -3,12 +3,6 @@ using System.Security.Cryptography;
 
 namespace CodeToNeo4j.Console.FileSystem;
 
-public interface IFileService
-{
-    string NormalizePath(string path);
-    string ComputeSha256(byte[] bytes);
-}
-
 public class FileService(IFileSystem fileSystem) : IFileService
 {
     public string NormalizePath(string path)

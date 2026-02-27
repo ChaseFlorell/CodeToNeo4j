@@ -25,7 +25,7 @@ The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you
    ```
 3. **Run the tool**:
    ```bash
-   codetoneo4j --sln ./MySolution.sln --pass your-pass --repoKey my-repo --database my-db
+   codetoneo4j --sln ./MySolution.sln --pass your-pass --repoKey my-repo --database my-db --uri bolt://localhost:7687
    ```
 
 To update the tool to the latest version:
@@ -71,10 +71,11 @@ If running from the build output:
 | `--sln` | **Required**. Path to the `.sln` file to index. | |
 | `--repoKey` | **Required**. A unique identifier for the repository in Neo4j. | |
 | `--pass` | **Required**. Password for the Neo4j database. | |
-| `--neo4j` | The Neo4j connection string. | `bolt://localhost:7687` |
+| `--uri` | The Neo4j connection string. | `bolt://localhost:7687` |
 | `--user` | Neo4j username. | `neo4j` |
 | `--database` | Neo4j database name. | `neo4j` |
 | `--logLevel` | The minimum log level to display. | `Information` |
+| `--force` | Force reprocessing of the entire solution, even if incremental indexing is enabled. | `false` |
 | `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 
@@ -110,7 +111,7 @@ jobs:
           codetoneo4j \
             --sln ./MySolution.sln \
             --repoKey my-repo \
-            --neo4j ${{ secrets.NEO4J_URL }} \
+            --uri ${{ secrets.NEO4J_URL }} \
             --pass ${{ secrets.NEO4J_PASS }} \
             --database my-database \
             --logLevel Information \
@@ -135,9 +136,7 @@ This analysis identifies potential "gotchas" and missing features for the enterp
 CodeToNeo4j explicitly discovers and registers the highest versioned MSBuild instance found on the machine. This ensures compatibility with multi-SDK environments. Ensure the workflow environment has the correct .NET SDK installed that matches the solution being indexed.
 
 ### 2. Path Resolution
-**Gap**: While the tool supports absolute paths, relative paths are resolved against the *current working directory* of the executable.
-**Gotcha**: When running from a different directory than the solution, `git diff` and file path normalization must be carefully handled. The current implementation uses `Directory.GetCurrentDirectory()` for Git operations, which assumes you are at the repo root.
-**Recommendation**: Use the solution file's directory as the base for relative path resolution and Git operations.
+CodeToNeo4j resolves file paths relative to the git repository root. The tool automatically detects the git root based on the solution file's location. This ensures that incremental indexing works correctly even when the tool is run from a different directory.
 
 ### 3. Authentication & Security
 **Gap**: Only Basic Authentication is currently supported.
