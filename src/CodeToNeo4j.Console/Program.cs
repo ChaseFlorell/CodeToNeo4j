@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Security.Cryptography;
+using System.Reflection;
 
 namespace CodeToNeo4j.Console;
 
@@ -39,50 +40,22 @@ public static class Program
         return await root.InvokeAsync(args);
     }
 
+    private static string GetCypher(string name)
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"CodeToNeo4j.Console.Cypher.{name}.cypher");
+        if (stream == null) throw new FileNotFoundException($"Cypher resource {name} not found.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
     private static async Task EnsureNeo4JSchemaAsync(IDriver driver, string databaseName)
     {
         // Neo4j schema operations are idempotent with IF NOT EXISTS
         // and are safe to run every time at startup.
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 
-        var statements = new[]
-        {
-            // Constraints
-            """
-            CREATE CONSTRAINT project_key IF NOT EXISTS
-            FOR (p:Project) REQUIRE p.key IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT file_key IF NOT EXISTS
-            FOR (f:File) REQUIRE f.key IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT symbol_key IF NOT EXISTS
-            FOR (s:Symbol) REQUIRE s.key IS UNIQUE
-            """,
-
-            // Indexes
-            """
-            CREATE INDEX symbol_name IF NOT EXISTS
-            FOR (s:Symbol) ON (s.name)
-            """,
-            """
-            CREATE INDEX symbol_kind IF NOT EXISTS
-            FOR (s:Symbol) ON (s.kind)
-            """,
-            """
-            CREATE INDEX file_path IF NOT EXISTS
-            FOR (f:File) ON (f.path)
-            """,
-            """
-            CREATE INDEX symbol_fqn IF NOT EXISTS
-            FOR (s:Symbol) ON (s.fqn)
-            """,
-            """
-            CREATE INDEX symbol_fileKey IF NOT EXISTS
-            FOR (s:Symbol) ON (s.fileKey)
-            """
-        };
+        var schema = GetCypher("Schema");
+        var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         foreach (var cypher in statements)
         {
@@ -101,10 +74,10 @@ public static class Program
 
         await using var driver = GraphDatabase.Driver(new Uri(neo4J), AuthTokens.Basic(user, pass));
         await EnsureNeo4JSchemaAsync(driver, databaseName);
-        
+
         await using var session = driver.AsyncSession();
         // Create or update Project
-        await session.ExecuteWriteAsync(async tx => { await tx.RunAsync("MERGE (p:Project {key:$key}) SET p.name=$name, p.updatedAt=datetime()", new { key = repoKey, name = repoKey }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("UpsertProject"), new { key = repoKey, name = repoKey }); });
 
         using var workspace = MSBuildWorkspace.Create();
         workspace.RegisterWorkspaceFailedHandler(e => { System.Console.Error.WriteLine($"Workspace warning: {e.Diagnostic.Message}"); });
@@ -136,25 +109,10 @@ public static class Program
                 var fileHash = ComputeSha256(await File.ReadAllBytesAsync(filePath));
 
                 // Upsert file node and link to project
-                await session.ExecuteWriteAsync(async tx =>
-                {
-                    await tx.RunAsync(@"
-MERGE (f:File {key:$fileKey})
-SET f.path=$path, f.hash=$hash, f.updatedAt=datetime()
-WITH f
-MATCH (p:Project {key:$repoKey})
-MERGE (p)-[:HAS_FILE]->(f)
-", new { fileKey, path = filePath, hash = fileHash, repoKey });
-                });
+                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("UpsertFile"), new { fileKey, path = filePath, hash = fileHash, repoKey }); });
 
                 // Delete prior symbols declared in this file (safe incremental)
-                await session.ExecuteWriteAsync(async tx =>
-                {
-                    await tx.RunAsync(@"
-MATCH (f:File {key:$fileKey})-[:DECLARES]->(s:Symbol)
-DETACH DELETE s
-", new { fileKey });
-                });
+                await session.ExecuteWriteAsync(async tx => { await tx.RunAsync(GetCypher("DeletePriorSymbols"), new { fileKey }); });
 
                 // Extract types and members
                 foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
@@ -215,34 +173,9 @@ DETACH DELETE s
 
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(@"
-UNWIND $symbols AS s
-MERGE (n:Symbol {key:s.key})
-SET n.name = s.name,
-    n.kind = s.kind,
-    n.fqn = s.fqn,
-    n.accessibility = s.accessibility,
-    n.fileKey = s.fileKey,
-    n.filePath = s.filePath,
-    n.startLine = s.startLine,
-    n.endLine = s.endLine,
-    n.updatedAt = datetime()
-WITH n, s
-MATCH (f:File {key:s.fileKey})
-MERGE (f)-[:DECLARES]->(n)
-", new { symbols = symbolBatch });
+            await tx.RunAsync(GetCypher("UpsertSymbols"), new { symbols = symbolBatch });
 
-            await tx.RunAsync(@"
-UNWIND $rels AS r
-MATCH (a:Symbol {key:r.fromKey})
-MATCH (b:Symbol {key:r.toKey})
-CALL {
-  WITH a, b, r
-  // Relationship type is fixed in v1, safe to switch later
-  MERGE (a)-[:CONTAINS]->(b)
-}
-RETURN count(*) AS created
-", new { rels = relBatch });
+            await tx.RunAsync(GetCypher("MergeRelationships"), new { rels = relBatch });
         });
     }
 
@@ -333,18 +266,4 @@ RETURN count(*) AS created
 
         return set;
     }
-
-    private record SymbolRecord(
-        string Key,
-        string Name,
-        string Kind,
-        string Fqn,
-        string Accessibility,
-        string FileKey,
-        string FilePath,
-        int StartLine,
-        int EndLine
-    );
-
-    private record RelRecord(string FromKey, string ToKey, string RelType);
 }
