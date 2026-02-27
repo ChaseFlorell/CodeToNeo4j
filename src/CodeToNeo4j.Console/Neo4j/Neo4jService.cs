@@ -1,7 +1,7 @@
-using Neo4j.Driver;
 using CodeToNeo4j.Console.Cypher;
+using Neo4j.Driver;
 
-namespace CodeToNeo4j.Console;
+namespace CodeToNeo4j.Console.Neo4j;
 
 public interface INeo4jService : IAsyncDisposable
 {
@@ -20,7 +20,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         await using var session = driver.AsyncSession();
         var result = await session.ExecuteReadAsync(async tx =>
         {
-            var cursor = await tx.RunAsync(cypherService.GetCypher(Queries.GetNeo4jVersion));
+            var cursor = await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.GetNeo4jVersion));
             return await cursor.SingleAsync();
         });
 
@@ -54,7 +54,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
         foreach (var cypher in statements)
         {
-            await session.RunAsync(cypher);
+            await session.RunAsyncWithRetry(cypher);
         }
     }
 
@@ -63,7 +63,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
         });
     }
 
@@ -72,7 +72,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
         });
     }
 
@@ -81,7 +81,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey });
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey });
         });
     }
 
@@ -97,8 +97,8 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsync(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
-            await tx.RunAsync(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
         });
     }
 

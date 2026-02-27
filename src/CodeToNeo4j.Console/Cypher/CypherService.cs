@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace CodeToNeo4j.Console;
+namespace CodeToNeo4j.Console.Cypher;
 
 public class CypherService
 {

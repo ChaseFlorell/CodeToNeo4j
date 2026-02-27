@@ -117,9 +117,7 @@ jobs:
 This analysis identifies potential "gotchas" and missing features for the enterprise-ready "run from anywhere" and "CI integration" goal.
 
 ### 1. MSBuild Discovery in CI Environments
-**Gap**: CodeToNeo4j explicitly discovers and registers the highest versioned MSBuild instance found on the machine.
-**Gotcha**: In GitHub Actions or minimal Docker containers, if the required .NET SDK is not installed, the tool will fail to find an MSBuild instance.
-**Recommendation**: Ensure the workflow environment has the correct .NET SDK installed that matches the solution being indexed. The tool now handles multiple SDKs gracefully by selecting the latest version.
+CodeToNeo4j explicitly discovers and registers the highest versioned MSBuild instance found on the machine. This ensures compatibility with multi-SDK environments. Ensure the workflow environment has the correct .NET SDK installed that matches the solution being indexed.
 
 ### 2. Path Resolution
 **Gap**: While the tool supports absolute paths, relative paths are resolved against the *current working directory* of the executable.
@@ -136,12 +134,7 @@ This analysis identifies potential "gotchas" and missing features for the enterp
 **Gotcha**: While it uses `IF NOT EXISTS`, any *changes* to the schema (e.g., adding a new index) require manual update of `Schema.cypher`. It doesn't handle destructive migrations or schema versioning.
 **Recommendation**: Implement a simple schema versioning mechanism if the graph model evolves.
 
-### 5. Error Handling & Resilience
-**Gap**: Network flakiness during Neo4j ingestion can cause the tool to crash.
-**Gotcha**: Large solutions might fail halfway through.
-**Recommendation**: Implement retry logic for Neo4j operations and better logging for failed symbol extractions.
-
-### 6. Performance with Large Repos
+### 5. Performance with Large Repos
 **Gap**: Batching is implemented, but the entire solution is loaded into memory via Roslyn.
 **Gotcha**: Very large solutions (thousands of projects) might exceed memory limits in standard CI runners (e.g., 7GB on GitHub hosted runners).
 **Recommendation**: Consider processing projects one-by-one or in smaller groups if memory becomes an issue.

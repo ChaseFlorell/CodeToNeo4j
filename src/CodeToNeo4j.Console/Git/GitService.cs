@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
+using CodeToNeo4j.Console.FileSystem;
 
-namespace CodeToNeo4j.Console;
+namespace CodeToNeo4j.Console.Git;
 
 public interface IGitService
 {

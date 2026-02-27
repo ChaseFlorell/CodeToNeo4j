@@ -1,8 +1,6 @@
 ﻿using System.CommandLine;
-using System.IO.Abstractions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
-using Neo4j.Driver;
 
 namespace CodeToNeo4j.Console;
 
@@ -25,24 +23,24 @@ public static class Program
         };
 
         root.SetHandler(async (sln, neo4J, user, pass, repoKey, diffBase, batchSize, databaseName) =>
-        {
-            if (!MSBuildLocator.IsRegistered)
             {
-                var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
-                if (instances.Any())
+                if (!MSBuildLocator.IsRegistered)
                 {
-                    MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
+                    var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
+                    if (instances.Any())
+                    {
+                        MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
+                    }
                 }
-            }
 
-            var services = new ServiceCollection();
-            services.AddApplicationServices(neo4J, user, pass);
+                var services = new ServiceCollection()
+                    .AddApplicationServices(neo4J, user, pass);
 
-            await using var serviceProvider = services.BuildServiceProvider();
-            var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
+                await using var serviceProvider = services.BuildServiceProvider();
+                var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
 
-            await processor.ProcessSolutionAsync(sln, repoKey, diffBase, databaseName, batchSize);
-        },
+                await processor.ProcessSolutionAsync(sln, repoKey, diffBase, databaseName, batchSize);
+            },
             slnOption,
             neo4JOption,
             userOption,

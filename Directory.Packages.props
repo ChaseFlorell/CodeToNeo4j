@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
     <PackageVersion Include="Neo4j.Driver" Version="6.0.0" />
+    <PackageVersion Include="Polly" Version="8.5.2" />
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.0.10" />
   </ItemGroup>

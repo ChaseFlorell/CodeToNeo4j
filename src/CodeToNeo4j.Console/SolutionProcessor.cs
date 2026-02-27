@@ -2,6 +2,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using System.IO.Abstractions;
+using CodeToNeo4j.Console.FileSystem;
+using CodeToNeo4j.Console.Git;
+using CodeToNeo4j.Console.Neo4j;
 
 namespace CodeToNeo4j.Console;
 

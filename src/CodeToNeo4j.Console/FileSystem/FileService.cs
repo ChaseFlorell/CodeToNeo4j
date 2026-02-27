@@ -1,7 +1,7 @@
-using System.Security.Cryptography;
 using System.IO.Abstractions;
+using System.Security.Cryptography;
 
-namespace CodeToNeo4j.Console;
+namespace CodeToNeo4j.Console.FileSystem;
 
 public interface IFileService
 {
