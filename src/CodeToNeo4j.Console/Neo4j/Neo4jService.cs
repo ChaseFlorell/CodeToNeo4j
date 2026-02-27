@@ -1,5 +1,6 @@
 using CodeToNeo4j.Console.Cypher;
 using Neo4j.Driver;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Console.Neo4j;
 
@@ -13,10 +14,11 @@ public interface INeo4jService : IAsyncDisposable
     Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName);
 }
 
-public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jService
+public class Neo4jService(IDriver driver, CypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
 {
     public async Task VerifyNeo4JVersionAsync()
     {
+        logger.LogDebug("Verifying Neo4j version...");
         await using var session = driver.AsyncSession();
         var result = await session.ExecuteReadAsync(async tx =>
         {
@@ -29,6 +31,8 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
         {
             throw new NotSupportedException("Could not determine Neo4j version.");
         }
+
+        logger.LogDebug("Detected Neo4j version: {VersionString}", versionString);
 
         if (Version.TryParse(versionString.Split('-')[0], out var version))
         {
@@ -48,6 +52,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
     public async Task EnsureSchemaAsync(string databaseName)
     {
+        logger.LogDebug("Ensuring schema for database: {DatabaseName}", databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         var schema = cypherService.GetCypher(Queries.Schema);
         var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -60,6 +65,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
     public async Task UpsertProjectAsync(string repoKey, string databaseName)
     {
+        logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
@@ -69,6 +75,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
     public async Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey, string databaseName)
     {
+        logger.LogDebug("Upserting file: {FilePath} in database: {DatabaseName}", filePath, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
@@ -78,6 +85,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
     public async Task DeletePriorSymbolsAsync(string fileKey, string databaseName)
     {
+        logger.LogDebug("Deleting prior symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
@@ -88,6 +96,8 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
     public async Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName)
     {
         if (symbols.Count == 0 && rels.Count == 0) return;
+
+        logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbols.Count, rels.Count, databaseName);
 
         var symbolBatch = symbols.ToArray();
         var relBatch = rels.ToArray();
@@ -104,6 +114,7 @@ public class Neo4jService(IDriver driver, CypherService cypherService) : INeo4jS
 
     public async ValueTask DisposeAsync()
     {
+        logger.LogDebug("Disposing Neo4j driver...");
         await driver.DisposeAsync();
     }
 }

@@ -66,6 +66,7 @@ If running from the build output:
 | `--neo4j` | The Neo4j connection string. | `bolt://localhost:7687` |
 | `--user` | Neo4j username. | `neo4j` |
 | `--database` | Neo4j database name. | `neo4j` |
+| `--logLevel` | The minimum log level to display. | `Information` |
 | `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 
@@ -99,6 +100,7 @@ jobs:
             --neo4j ${{ secrets.NEO4J_URL }} \
             --pass ${{ secrets.NEO4J_PASS }} \
             --database my-database \
+            --logLevel Information \
             --diffBase ${{ github.event.before }}
 ```
 

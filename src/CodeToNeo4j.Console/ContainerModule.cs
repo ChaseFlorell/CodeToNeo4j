@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using CodeToNeo4j.Console.Cypher;
 using CodeToNeo4j.Console.FileSystem;
@@ -10,8 +11,14 @@ namespace CodeToNeo4j.Console;
 
 public static class ContainerModule
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services, string neo4jUri, string user, string pass)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, string neo4jUri, string user, string pass, LogLevel minLogLevel)
     {
+        services.AddLogging(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(minLogLevel);
+        });
+
         services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
         services.AddSingleton<CypherService>();
         services.AddSingleton<IFileService, FileService>();

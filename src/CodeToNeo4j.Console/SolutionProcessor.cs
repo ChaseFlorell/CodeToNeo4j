@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using System.IO.Abstractions;
+using Microsoft.Extensions.Logging;
 using CodeToNeo4j.Console.FileSystem;
 using CodeToNeo4j.Console.Git;
 using CodeToNeo4j.Console.Neo4j;
@@ -18,30 +19,50 @@ public class SolutionProcessor(
     INeo4jService neo4jService,
     IFileService fileService,
     ISymbolMapper symbolMapper,
-    IFileSystem fileSystem) : ISolutionProcessor
+    IFileSystem fileSystem,
+    ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
     public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize)
     {
+        logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
+
         var changedFiles = diffBase is null
             ? null
             : await gitService.GetChangedCsFilesAsync(diffBase, fileSystem.Directory.GetCurrentDirectory());
 
+        if (changedFiles is not null)
+        {
+            logger.LogInformation("Incremental indexing enabled. Found {Count} changed .cs files since {DiffBase}", changedFiles.Count, diffBase);
+        }
+
         await neo4jService.VerifyNeo4JVersionAsync();
+        logger.LogInformation("Neo4j version verified.");
+
         await neo4jService.EnsureSchemaAsync(databaseName);
+        logger.LogInformation("Neo4j schema ensured for database: {DatabaseName}", databaseName);
+
         await neo4jService.UpsertProjectAsync(repoKey, databaseName);
+        logger.LogInformation("Project upserted: {RepoKey}", repoKey);
 
         using var workspace = MSBuildWorkspace.Create();
-        workspace.RegisterWorkspaceFailedHandler(e => { System.Console.Error.WriteLine($"Workspace warning: {e.Diagnostic.Message}"); });
+        workspace.RegisterWorkspaceFailedHandler(e => { logger.LogWarning("Workspace warning: {Message}", e.Diagnostic.Message); });
 
+        logger.LogInformation("Opening solution...");
         var solution = await workspace.OpenSolutionAsync(sln.FullName);
+        logger.LogInformation("Solution opened successfully.");
 
         var symbolBuffer = new List<SymbolRecord>(batchSize);
         var relBuffer = new List<RelRecord>(batchSize);
 
         foreach (var project in solution.Projects)
         {
+            logger.LogInformation("Processing project: {ProjectName}", project.Name);
             var compilation = await project.GetCompilationAsync();
-            if (compilation is null) continue;
+            if (compilation is null)
+            {
+                logger.LogWarning("Could not get compilation for project: {ProjectName}", project.Name);
+                continue;
+            }
 
             foreach (var document in project.Documents)
             {
@@ -49,6 +70,8 @@ public class SolutionProcessor(
 
                 var filePath = fileService.NormalizePath(document.FilePath!);
                 if (changedFiles is not null && !changedFiles.Contains(filePath)) continue;
+
+                logger.LogDebug("Processing file: {FilePath}", filePath);
 
                 var syntaxTree = await document.GetSyntaxTreeAsync();
                 if (syntaxTree is null) continue;
@@ -100,18 +123,20 @@ public class SolutionProcessor(
 
                 if (symbolBuffer.Count >= batchSize)
                 {
+                    logger.LogInformation("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
                     await neo4jService.FlushAsync(repoKey, fileKey, symbolBuffer, relBuffer, databaseName);
                 }
 
-                System.Console.WriteLine($"Indexed {filePath}");
+                logger.LogInformation("Indexed {FilePath}", filePath);
             }
         }
 
         if (symbolBuffer.Count > 0)
         {
+            logger.LogInformation("Flushing final {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
             await neo4jService.FlushAsync(repoKey, null, symbolBuffer, relBuffer, databaseName);
         }
 
-        System.Console.WriteLine("Done.");
+        logger.LogInformation("Done.");
     }
 }
