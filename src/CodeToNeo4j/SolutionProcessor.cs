@@ -149,7 +149,7 @@ public class SolutionProcessor(
                     await neo4jService.FlushAsync(repoKey, fileKey, symbolBuffer, relBuffer, databaseName);
                 }
 
-                logger.LogInformation("Indexed {FilePath}", filePath);
+                logger.LogDebug("Indexed {FilePath}", filePath);
             }
         }
 
