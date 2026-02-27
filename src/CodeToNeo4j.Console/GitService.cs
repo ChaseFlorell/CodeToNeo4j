@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Abstractions;
 
 namespace CodeToNeo4j.Console;
 
@@ -7,7 +8,7 @@ public interface IGitService
     Task<HashSet<string>> GetChangedCsFilesAsync(string diffBase, string repoRoot);
 }
 
-public class GitService(IFileService fileService) : IGitService
+public class GitService(IFileService fileService, IFileSystem fileSystem) : IGitService
 {
     public async Task<HashSet<string>> GetChangedCsFilesAsync(string diffBase, string repoRoot)
     {
@@ -37,7 +38,7 @@ public class GitService(IFileService fileService) : IGitService
             if (!rel.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var fullPath = fileService.NormalizePath(Path.Combine(repoRoot, rel));
+            var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, rel));
             set.Add(fullPath);
         }
 

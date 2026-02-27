@@ -21,7 +21,7 @@ public class SolutionProcessor(
     {
         var changedFiles = diffBase is null
             ? null
-            : await gitService.GetChangedCsFilesAsync(diffBase, Directory.GetCurrentDirectory());
+            : await gitService.GetChangedCsFilesAsync(diffBase, fileSystem.Directory.GetCurrentDirectory());
 
         await neo4jService.VerifyNeo4JVersionAsync();
         await neo4jService.EnsureSchemaAsync(databaseName);
