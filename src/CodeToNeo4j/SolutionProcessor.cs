@@ -112,7 +112,7 @@ public class SolutionProcessor(
                     var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
                     if (typeSymbol is null) continue;
 
-                    var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl.GetLocation());
+                    var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl);
                     symbolBuffer.Add(typeRec);
 
                     if (typeDecl is TypeDeclarationSyntax tds)
@@ -122,7 +122,7 @@ public class SolutionProcessor(
                             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
                             if (memberSymbol is null) continue;
 
-                            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member.GetLocation());
+                            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
                             symbolBuffer.Add(memberRec);
 
                             relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
@@ -135,7 +135,7 @@ public class SolutionProcessor(
                             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
                             if (memberSymbol is null) continue;
 
-                            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member.GetLocation());
+                            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
                             symbolBuffer.Add(memberRec);
 
                             relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));

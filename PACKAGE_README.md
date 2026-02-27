@@ -1,6 +1,13 @@
 # CodeToNeo4j
 
-CodeToNeo4j is a .NET tool that analyzes C# solutions and indexes their structure (projects, files, and symbols) into a Neo4j graph database.
+CodeToNeo4j is a .NET tool that analyzes C# solutions and indexes their structure (projects, files, symbols, and documentation) into a Neo4j graph database.
+
+## Features
+
+- **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, etc.).
+- **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
+- **Incremental Indexing**: Only process changed files using `--diffBase`.
+- **Platform Native Progress**: Special progress reporting for GitHub Actions and Azure DevOps.
 
 ## Installation
 

@@ -115,7 +115,8 @@ jobs:
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
 - **C# Only**: Currently only analyzes `.cs` files.
-- **Symbol Depth**: Currently indexes Types (Classes, Enums, etc.) and their immediate members. Deep semantic analysis of method bodies (e.g., call graphs) is not yet fully implemented.
+- **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
+- **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
 - **Git Context**: Incremental indexing requires a valid Git repository and the `git` executable in the PATH.
 
 ---

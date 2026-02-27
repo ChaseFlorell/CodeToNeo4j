@@ -21,3 +21,10 @@ FOR (s:Symbol) ON (s.fqn);
 
 CREATE INDEX symbol_fileKey IF NOT EXISTS
 FOR (s:Symbol) ON (s.fileKey);
+
+// Full-text indexes for comments and documentation to support advanced search
+CREATE INDEX symbol_documentation IF NOT EXISTS
+FOR (s:Symbol) ON (s.documentation);
+
+CREATE INDEX symbol_comments IF NOT EXISTS
+FOR (s:Symbol) ON (s.comments);

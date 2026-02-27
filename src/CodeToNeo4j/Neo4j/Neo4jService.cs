@@ -99,7 +99,9 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
             ["fileKey"] = s.FileKey,
             ["filePath"] = s.FilePath,
             ["startLine"] = s.StartLine,
-            ["endLine"] = s.EndLine
+            ["endLine"] = s.EndLine,
+            ["documentation"] = s.Documentation,
+            ["comments"] = s.Comments
         }).ToArray();
 
         var relBatch = rels.Select(r => new Dictionary<string, object?>

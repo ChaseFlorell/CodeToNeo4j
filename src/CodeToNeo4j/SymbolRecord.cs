@@ -9,5 +9,7 @@ public record SymbolRecord(
     string FileKey,
     string FilePath,
     int StartLine,
-    int EndLine
+    int EndLine,
+    string? Documentation,
+    string? Comments
 );

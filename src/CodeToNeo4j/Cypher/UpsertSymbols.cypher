@@ -8,6 +8,8 @@ SET n.name = s.name,
     n.filePath = s.filePath,
     n.startLine = s.startLine,
     n.endLine = s.endLine,
+    n.documentation = s.documentation,
+    n.comments = s.comments,
     n.updatedAt = datetime()
 WITH n, s
 MATCH (f:File {key:s.fileKey})
