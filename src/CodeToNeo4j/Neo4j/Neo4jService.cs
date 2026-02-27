@@ -89,8 +89,25 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
 
         logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbols.Count, rels.Count, databaseName);
 
-        var symbolBatch = symbols.ToArray();
-        var relBatch = rels.ToArray();
+        var symbolBatch = symbols.Select(s => new Dictionary<string, object?>
+        {
+            ["key"] = s.Key,
+            ["name"] = s.Name,
+            ["kind"] = s.Kind,
+            ["fqn"] = s.Fqn,
+            ["accessibility"] = s.Accessibility,
+            ["fileKey"] = s.FileKey,
+            ["filePath"] = s.FilePath,
+            ["startLine"] = s.StartLine,
+            ["endLine"] = s.EndLine
+        }).ToArray();
+
+        var relBatch = rels.Select(r => new Dictionary<string, object?>
+        {
+            ["fromKey"] = r.FromKey,
+            ["toKey"] = r.ToKey,
+            ["relType"] = r.RelType
+        }).ToArray();
         symbols.Clear();
         rels.Clear();
 
