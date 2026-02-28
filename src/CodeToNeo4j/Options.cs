@@ -12,7 +12,8 @@ public class Options(
     int batchSize,
     string databaseName,
     LogLevel logLevel,
-    bool force)
+    bool force,
+    bool skipDependencies)
 {
     public FileInfo Sln { get; } = sln;
     public string Uri { get; } = uri;
@@ -24,4 +25,5 @@ public class Options(
     public string DatabaseName { get; } = databaseName;
     public LogLevel LogLevel { get; } = logLevel;
     public bool Force { get; } = force;
+    public bool SkipDependencies { get; } = skipDependencies;
 }

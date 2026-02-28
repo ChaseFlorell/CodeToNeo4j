@@ -10,11 +10,6 @@ using CodeToNeo4j.Neo4j;
 
 namespace CodeToNeo4j;
 
-public interface ISolutionProcessor
-{
-    Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force);
-}
-
 public class SolutionProcessor(
     IGitService gitService,
     INeo4jService neo4jService,
@@ -24,7 +19,7 @@ public class SolutionProcessor(
     IProgressService progressService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force)
+    public async Task ProcessSolutionAsync(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies)
     {
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
 
@@ -56,6 +51,30 @@ public class SolutionProcessor(
         logger.LogInformation("Opening solution...");
         var solution = await workspace.OpenSolutionAsync(sln.FullName);
         logger.LogInformation("Solution opened successfully.");
+
+        if (!skipDependencies)
+        {
+            logger.LogInformation("Ingesting NuGet dependencies...");
+            var dependencies = new List<DependencyRecord>();
+            foreach (var project in solution.Projects)
+            {
+                // We'll also try to get explicit package references if we can.
+                // However, compilation.ReferencedAssemblyNames is a good source for all libraries.
+                var compilation = await project.GetCompilationAsync();
+                if (compilation is null) continue;
+
+                foreach (var reference in compilation.ReferencedAssemblyNames)
+                {
+                    var key = $"pkg:{reference.Name}:{reference.Version}";
+                    dependencies.Add(new DependencyRecord(key, reference.Name, reference.Version?.ToString() ?? "0.0.0.0"));
+                }
+            }
+
+            // Deduplicate across projects
+            var uniqueDeps = dependencies.DistinctBy(d => d.Key).ToList();
+            await neo4jService.UpsertDependenciesAsync(repoKey, uniqueDeps, databaseName);
+            logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Count);
+        }
 
         var allDocuments = solution.Projects
             .SelectMany(p => p.Documents)

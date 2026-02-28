@@ -83,6 +83,26 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         });
     }
 
+    public async Task UpsertDependenciesAsync(string repoKey, List<DependencyRecord> dependencies, string databaseName)
+    {
+        if (dependencies.Count == 0) return;
+
+        logger.LogDebug("Upserting {Count} dependencies for {RepoKey} in database: {DatabaseName}", dependencies.Count, repoKey, databaseName);
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+        {
+            var depBatch = dependencies.Select(d => new
+            {
+                key = d.Key,
+                name = d.Name,
+                version = d.Version,
+                repoKey
+            }).ToArray();
+
+            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch });
+        });
+    }
+
     public async Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName)
     {
         if (symbols.Count == 0 && rels.Count == 0) return;

@@ -22,6 +22,12 @@ FOR (s:Symbol) ON (s.fqn);
 CREATE INDEX symbol_fileKey IF NOT EXISTS
 FOR (s:Symbol) ON (s.fileKey);
 
+CREATE CONSTRAINT dependency_key IF NOT EXISTS
+FOR (d:Dependency) REQUIRE d.key IS UNIQUE;
+
+CREATE INDEX dependency_name IF NOT EXISTS
+FOR (d:Dependency) ON (d.name);
+
 // Full-text indexes for comments and documentation to support advanced search
 CREATE INDEX symbol_documentation IF NOT EXISTS
 FOR (s:Symbol) ON (s.documentation);

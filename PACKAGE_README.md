@@ -42,6 +42,7 @@ codetoneo4j \
 | `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. |
 | `--force` | Force reprocessing of the entire solution. |
 | `--logLevel` | Logging verbosity (`Information`, `Debug`, etc.). |
+| `--skip-dependencies` | Skip NuGet dependency ingestion. |
 
 ## Prerequisites
 

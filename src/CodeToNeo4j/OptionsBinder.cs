@@ -14,7 +14,8 @@ public class OptionsBinder(
     Option<int> batchSizeOption,
     Option<string> databaseOption,
     Option<LogLevel> logLevelOption,
-    Option<bool> forceOption) : BinderBase<Options>
+    Option<bool> forceOption,
+    Option<bool> skipDependenciesOption) : BinderBase<Options>
 {
     protected override Options GetBoundValue(BindingContext bindingContext) =>
         new(
@@ -27,6 +28,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(batchSizeOption),
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
             bindingContext.ParseResult.GetValueForOption(logLevelOption),
-            bindingContext.ParseResult.GetValueForOption(forceOption)
+            bindingContext.ParseResult.GetValueForOption(forceOption),
+            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption)
         );
 }
