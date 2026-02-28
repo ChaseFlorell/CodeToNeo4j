@@ -21,7 +21,7 @@ public static class Program
         var forceOption = new Option<bool>("--force", () => false, "Force reprocessing of the entire solution, even if incremental indexing is enabled. Example: --force");
         var skipDependenciesOption = new Option<bool>("--skip-dependencies", () => false, "Skip NuGet dependency ingestion. Example: --skip-dependencies");
 
-        var root = new RootCommand("Index C# solution into Neo4j via Roslyn")
+        var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
             slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, forceOption, skipDependenciesOption
         };

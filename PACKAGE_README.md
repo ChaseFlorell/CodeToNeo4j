@@ -74,7 +74,7 @@ You can install and run `CodeToNeo4j` directly in your GitHub workflows:
       --repoKey my-repo \
       --uri ${{ secrets.NEO4J_URL }} \
       --pass ${{ secrets.NEO4J_PASS }} \
-      --diffBase ${{ github.event.before }}
+      --diffBase HEAD~1
 ```
 
 ### Azure DevOps
@@ -97,6 +97,6 @@ steps:
       --repoKey my-repo \
       --uri $(NEO4J_URL) \
       --pass $(NEO4J_PASS) \
-      --diffBase $(System.PullRequest.SourceCommitId)
+      --diffBase HEAD~1
   displayName: 'Run CodeToNeo4j'
 ```

@@ -4,6 +4,7 @@ using System.IO.Abstractions;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Git;
+using CodeToNeo4j.Handlers;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.Progress;
 using Neo4j.Driver;
@@ -42,6 +43,11 @@ public static class ContainerModule
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IGitService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
+
+        services.AddSingleton<IDocumentHandler, CSharpHandler>();
+        services.AddSingleton<IDocumentHandler, RazorHandler>();
+        services.AddSingleton<IDocumentHandler, XamlHandler>();
+
         services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
 
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))

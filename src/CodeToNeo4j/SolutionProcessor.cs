@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Git;
 using CodeToNeo4j.Progress;
+using CodeToNeo4j.Handlers;
 using CodeToNeo4j.Neo4j;
 
 namespace CodeToNeo4j;
@@ -14,9 +15,9 @@ public class SolutionProcessor(
     IGitService gitService,
     INeo4jService neo4jService,
     IFileService fileService,
-    ISymbolMapper symbolMapper,
     IFileSystem fileSystem,
     IProgressService progressService,
+    IEnumerable<IDocumentHandler> handlers,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
     public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies)
@@ -77,11 +78,11 @@ public class SolutionProcessor(
     {
         var changedFiles = diffBase is null || force
             ? null
-            : await gitService.GetChangedCsFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
+            : await gitService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
 
         if (changedFiles is not null)
         {
-            logger.LogInformation("Incremental indexing enabled. Found {Count} changed .cs files since {DiffBase}", changedFiles.Count, diffBase);
+            logger.LogInformation("Incremental indexing enabled. Found {Count} changed files since {DiffBase}", changedFiles.Count, diffBase);
         }
         else if (diffBase is not null && force)
         {
@@ -128,7 +129,10 @@ public class SolutionProcessor(
     {
         var allDocuments = solution.Projects
             .SelectMany(p => p.Documents)
-            .Where(d => d.FilePath?.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ?? false)
+            .Where(d =>
+                d.FilePath?.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) == true ||
+                d.FilePath?.EndsWith(".razor", StringComparison.OrdinalIgnoreCase) == true ||
+                d.FilePath?.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) == true)
             .ToArray();
 
         if (changedFiles is not null)
@@ -157,21 +161,20 @@ public class SolutionProcessor(
         progressService.ReportProgress(currentFileIndex, totalFiles, filePath);
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
-        var syntaxTree = await document.GetSyntaxTreeAsync();
-        if (syntaxTree is null) return;
-
-        var rootNode = await syntaxTree.GetRootAsync();
-        var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
-
         var fileKey = $"{repoKey}:{filePath}";
         var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath));
 
         await neo4jService.UpsertFile(fileKey, filePath, fileHash, repoKey, databaseName);
         await neo4jService.DeletePriorSymbols(fileKey, databaseName);
 
-        foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+        var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
+        if (handler != null)
         {
-            ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+            await handler.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName);
+        }
+        else
+        {
+            logger.LogDebug("No handler found for file: {FilePath}", filePath);
         }
 
         if (symbolBuffer.Count >= batchSize)
@@ -183,66 +186,5 @@ public class SolutionProcessor(
         }
 
         logger.LogDebug("Indexed {FilePath}", filePath);
-    }
-
-    private void ProcessTypeDeclaration(
-        BaseTypeDeclarationSyntax typeDecl,
-        SemanticModel semanticModel,
-        string repoKey,
-        string fileKey,
-        string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer)
-    {
-        var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
-        if (typeSymbol is null) return;
-
-        var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl);
-        symbolBuffer.Add(typeRec);
-
-        switch (typeDecl)
-        {
-            case TypeDeclarationSyntax tds:
-            {
-                ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, tds, typeRec);
-                break;
-            }
-            case EnumDeclarationSyntax eds:
-            {
-                ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, eds, typeRec);
-                break;
-            }
-        }
-    }
-
-    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, EnumDeclarationSyntax eds, SymbolRecord typeRec)
-    {
-        foreach (var member in eds.Members)
-        {
-            var memberSymbol = semanticModel.GetDeclaredSymbol(member);
-            if (memberSymbol is null)
-            {
-                continue;
-            }
-
-            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
-            symbolBuffer.Add(memberRec);
-
-            relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
-        }
-    }
-
-    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, TypeDeclarationSyntax tds, SymbolRecord typeRec)
-    {
-        foreach (var member in tds.Members)
-        {
-            var memberSymbol = semanticModel.GetDeclaredSymbol(member);
-            if (memberSymbol is null) continue;
-
-            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
-            symbolBuffer.Add(memberRec);
-
-            relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
-        }
     }
 }

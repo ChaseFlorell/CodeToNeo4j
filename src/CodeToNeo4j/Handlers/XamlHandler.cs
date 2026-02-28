@@ -1,0 +1,111 @@
+using System.Xml.Linq;
+using Microsoft.CodeAnalysis;
+using CodeToNeo4j.Neo4j;
+
+namespace CodeToNeo4j.Handlers;
+
+public class XamlHandler : IDocumentHandler
+{
+    public bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
+
+    public async ValueTask HandleAsync(
+        Document document,
+        Compilation compilation,
+        string repoKey,
+        string fileKey,
+        string filePath,
+        ICollection<SymbolRecord> symbolBuffer,
+        ICollection<RelRecord> relBuffer,
+        string databaseName)
+    {
+        var sourceText = await document.GetTextAsync();
+        var content = sourceText.ToString();
+
+        try
+        {
+            var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
+            if (xdoc.Root == null) return;
+
+            ProcessElement(xdoc.Root, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+        }
+        catch (Exception)
+        {
+            // Logging would be good here, but for now we'll just fail gracefully
+        }
+    }
+
+    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer)
+    {
+        var name = element.Name.LocalName;
+        var keySuffix = "";
+
+        // Look for x:Key or x:Name
+        var xNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var xNameAttr = element.Attribute(XName.Get("Name", xNamespace)) ?? element.Attribute("Name");
+        var xKeyAttr = element.Attribute(XName.Get("Key", xNamespace));
+
+        if (xNameAttr != null) keySuffix = $":{xNameAttr.Value}";
+        else if (xKeyAttr != null) keySuffix = $":{xKeyAttr.Value}";
+
+        var lineInfo = (System.Xml.IXmlLineInfo)element;
+        var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
+
+        var symbolKey = $"{fileKey}:{name}{keySuffix}:{startLine}";
+        var record = new SymbolRecord(
+            Key: symbolKey,
+            Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
+            Kind: "XamlElement",
+            Fqn: $"{name}{keySuffix}",
+            Accessibility: "Public",
+            FileKey: fileKey,
+            FilePath: filePath,
+            StartLine: startLine,
+            EndLine: startLine,
+            Documentation: null,
+            Comments: null
+        );
+
+        symbolBuffer.Add(record);
+        relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
+
+        // Extract potential event handlers
+        foreach (var attr in element.Attributes())
+        {
+            if (IsEventHandler(attr.Name.LocalName))
+            {
+                var handlerKey = $"{fileKey}:EventHandler:{attr.Value}";
+                var handlerRecord = new SymbolRecord(
+                    Key: handlerKey,
+                    Name: attr.Value,
+                    Kind: "XamlEventHandler",
+                    Fqn: attr.Value,
+                    Accessibility: "Private",
+                    FileKey: fileKey,
+                    FilePath: filePath,
+                    StartLine: startLine,
+                    EndLine: startLine,
+                    Documentation: null,
+                    Comments: null
+                );
+                symbolBuffer.Add(handlerRecord);
+                relBuffer.Add(new RelRecord(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
+            }
+        }
+
+        foreach (var child in element.Elements())
+        {
+            ProcessElement(child, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+        }
+    }
+
+    private bool IsEventHandler(string attrName)
+    {
+        // Common event naming patterns in XAML
+        return attrName.EndsWith("Click") || 
+               attrName.EndsWith("Changed") || 
+               attrName.EndsWith("Loaded") || 
+               attrName.EndsWith("Pressed") || 
+               attrName.EndsWith("Released") ||
+               attrName == "Command";
+    }
+}
