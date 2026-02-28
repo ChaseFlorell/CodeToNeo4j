@@ -15,7 +15,8 @@ public class Options(
     LogLevel logLevel,
     bool force,
     bool skipDependencies,
-    Accessibility minAccessibility)
+    Accessibility minAccessibility,
+    IEnumerable<string> includeExtensions)
 {
     public FileInfo Sln { get; } = sln;
     public string Uri { get; } = uri;
@@ -29,4 +30,5 @@ public class Options(
     public bool Force { get; } = force;
     public bool SkipDependencies { get; } = skipDependencies;
     public Accessibility MinAccessibility { get; } = minAccessibility;
+    public IEnumerable<string> IncludeExtensions { get; } = includeExtensions;
 }

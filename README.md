@@ -76,6 +76,7 @@ If running from the build output:
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. | `false` |
 | `--min-accessibility` | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`). | `Private` |
+| `--include` | File extensions to include. Can be specified multiple times. | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml` |
 
 ## GitHub Actions Integration
 
@@ -116,10 +117,13 @@ jobs:
 
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
-- **Supported File Types**: Analyzes `.cs`, `.razor`, and `.xaml` files.
+- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, and `.xml` files (configurable via `--include`).
     - **C#**: Full symbol extraction (Classes, Methods, etc.) and semantic mapping.
     - **Razor**: Extracts directives such as `@using`, `@inject`, `@model`, and `@inherits`.
     - **XAML**: Extracts UI elements and event handler bindings (e.g., `Click`, `Command`).
+    - **JavaScript**: Extracts function definitions and import statements.
+    - **HTML**: Extracts script references and element IDs.
+    - **XML**: Extracts hierarchical element structure.
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
 - **Git Context**: Incremental indexing requires a valid Git repository and the `git` executable in the PATH.

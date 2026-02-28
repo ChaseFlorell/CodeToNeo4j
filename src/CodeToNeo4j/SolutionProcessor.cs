@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using System.IO.Abstractions;
 using CodeToNeo4j.FileHandlers;
@@ -20,7 +19,7 @@ public class SolutionProcessor(
     IEnumerable<IDocumentHandler> handlers,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility)
+    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
         await InitializeNeo4j(repoKey, databaseName);
@@ -37,8 +36,8 @@ public class SolutionProcessor(
             await IngestDependencies(solution, repoKey, databaseName);
         }
 
-        var changedFiles = await GetChangedFiles(sln, diffBase, force);
-        var allDocuments = GetDocumentsToProcess(solution, changedFiles);
+        var changedFiles = await GetChangedFiles(sln, diffBase, force, includeExtensions);
+        var allDocuments = GetDocumentsToProcess(solution, changedFiles, includeExtensions);
 
         var totalFiles = allDocuments.Length;
         var currentFileIndex = 0;
@@ -74,11 +73,11 @@ public class SolutionProcessor(
         logger.LogInformation("Done.");
     }
 
-    private async ValueTask<IEnumerable<string>?> GetChangedFiles(FileInfo sln, string? diffBase, bool force)
+    private async ValueTask<IEnumerable<string>?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
     {
         var changedFiles = diffBase is null || force
             ? null
-            : await gitService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
+            : await gitService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
 
         if (changedFiles is not null)
         {
@@ -125,14 +124,16 @@ public class SolutionProcessor(
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 
-    private Document[] GetDocumentsToProcess(Solution solution, IEnumerable<string>? changedFiles)
+    private Document[] GetDocumentsToProcess(Solution solution, IEnumerable<string>? changedFiles, IEnumerable<string> includeExtensions)
     {
         var allDocuments = solution.Projects
             .SelectMany(p => p.Documents)
             .Where(d =>
-                d.FilePath?.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) == true ||
-                d.FilePath?.EndsWith(".razor", StringComparison.OrdinalIgnoreCase) == true ||
-                d.FilePath?.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                var filePath = d.FilePath;
+                if (string.IsNullOrEmpty(filePath)) return false;
+                return includeExtensions.Any(ext => filePath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+            })
             .ToArray();
 
         if (changedFiles is not null)

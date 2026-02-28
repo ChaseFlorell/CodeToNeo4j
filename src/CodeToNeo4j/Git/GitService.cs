@@ -7,7 +7,7 @@ namespace CodeToNeo4j.Git;
 
 public class GitService(IFileService fileService, IFileSystem fileSystem, ILogger<GitService> logger) : IGitService
 {
-    public async ValueTask<HashSet<string>> GetChangedFiles(string diffBase, string workingDirectory)
+    public async ValueTask<HashSet<string>> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
     {
         var repoRoot = await GetGitRoot(workingDirectory);
         logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
@@ -37,9 +37,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var rel = line.Trim();
-            if (!rel.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) &&
-                !rel.EndsWith(".razor", StringComparison.OrdinalIgnoreCase) &&
-                !rel.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+            if (!includeExtensions.Any(ext => rel.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, rel));
