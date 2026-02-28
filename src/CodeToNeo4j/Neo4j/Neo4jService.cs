@@ -1,4 +1,5 @@
 using CodeToNeo4j.Cypher;
+using CodeToNeo4j.VersionControl;
 using Neo4j.Driver;
 using Microsoft.Extensions.Logging;
 
@@ -67,13 +68,32 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         });
     }
 
-    public async ValueTask UpsertFile(string fileKey, string filePath, string fileHash, string repoKey, string databaseName)
+    public async ValueTask UpsertFile(string fileKey, string filePath, string fileHash, FileMetadata metadata, string repoKey, string databaseName)
     {
         logger.LogDebug("Upserting file: {FilePath} in database: {DatabaseName}", filePath, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
+            var authors = metadata.Authors.Select(a => new
+            {
+                name = a.Name,
+                firstCommit = a.FirstCommit.ToString("O"),
+                lastCommit = a.LastCommit.ToString("O"),
+                commitCount = a.CommitCount
+            }).ToArray();
+
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new
+            {
+                fileKey,
+                path = filePath,
+                hash = fileHash,
+                created = metadata.Created.ToString("O"),
+                lastModified = metadata.LastModified.ToString("O"),
+                authors,
+                commits = metadata.Commits.ToArray(),
+                tags = metadata.Tags.ToArray(),
+                repoKey
+            });
         });
     }
 
@@ -87,13 +107,13 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         });
     }
 
-    public async ValueTask DeleteFile(string fileKey, string databaseName)
+    public async ValueTask MarkFileAsDeleted(string fileKey, string databaseName)
     {
-        logger.LogDebug("Deleting file and its symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
+        logger.LogDebug("Marking file and its symbols as deleted for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeleteFile), new { fileKey });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey });
         });
     }
 

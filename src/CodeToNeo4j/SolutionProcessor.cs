@@ -4,14 +4,14 @@ using System.IO.Abstractions;
 using CodeToNeo4j.FileHandlers;
 using Microsoft.Extensions.Logging;
 using CodeToNeo4j.FileSystem;
-using CodeToNeo4j.Git;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Neo4j;
+using CodeToNeo4j.VersionControl;
 
 namespace CodeToNeo4j;
 
 public class SolutionProcessor(
-    IGitService gitService,
+    IVersionControlService versionControlService,
     INeo4jService neo4jService,
     IFileService fileService,
     IFileSystem fileSystem,
@@ -41,11 +41,11 @@ public class SolutionProcessor(
         
         if (diffResult?.DeletedFiles.Count > 0)
         {
-            logger.LogInformation("Deleting {Count} files that were removed in git...", diffResult.DeletedFiles.Count);
+            logger.LogInformation("Marking {Count} files as deleted that were removed in git...", diffResult.DeletedFiles.Count);
             foreach (var deletedFile in diffResult.DeletedFiles)
             {
                 var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}";
-                await neo4jService.DeleteFile(fileKey, databaseName);
+                await neo4jService.MarkFileAsDeleted(fileKey, databaseName);
             }
         }
 
@@ -78,7 +78,7 @@ public class SolutionProcessor(
     {
         var result = diffBase is null || force
             ? null
-            : await gitService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
+            : await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
 
         if (result is not null)
         {
@@ -225,8 +225,9 @@ public class SolutionProcessor(
 
         var fileKey = $"{repoKey}:{filePath}";
         var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath));
+        var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot);
 
-        await neo4jService.UpsertFile(fileKey, filePath, fileHash, repoKey, databaseName);
+        await neo4jService.UpsertFile(fileKey, filePath, fileHash, metadata, repoKey, databaseName);
         await neo4jService.DeletePriorSymbols(fileKey, databaseName);
 
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));

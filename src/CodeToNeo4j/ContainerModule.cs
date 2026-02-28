@@ -4,9 +4,9 @@ using System.IO.Abstractions;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
-using CodeToNeo4j.Git;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.Progress;
+using CodeToNeo4j.VersionControl;
 using Neo4j.Driver;
 
 namespace CodeToNeo4j;
@@ -41,7 +41,7 @@ public static class ContainerModule
         services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
         services.AddSingleton<ICypherService, CypherService>();
         services.AddSingleton<IFileService, FileService>();
-        services.AddSingleton<IGitService, GitService>();
+        services.AddSingleton<IVersionControlService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
 
         services.AddSingleton<IDocumentHandler, CSharpHandler>();

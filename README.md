@@ -7,7 +7,7 @@ CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions 
 ### Prerequisites
 - **.NET 10 SDK**: Specifically version `10.0.103` (defined in `global.json`).
 - **Neo4j Database**: Version 5.0 or higher.
-- **Git**: Required if using incremental indexing (`--diffBase`).
+- **Git**: Required if using incremental indexing (`--diffBase`) or tracking file authors.
 
 ### Installation
 
@@ -72,7 +72,7 @@ If running from the build output:
 | `--database` | Neo4j database name. | `neo4j` |
 | `--logLevel` | The minimum log level to display. | `Information` |
 | `--force` | Force reprocessing of the entire solution, even if incremental indexing is enabled. | `false` |
-| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. Deleted files are removed from Neo4j. | |
+| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. Deleted files are marked as `deleted` in Neo4j. | |
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. | `false` |
 | `--min-accessibility` | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`). | `Private` |
@@ -126,7 +126,7 @@ jobs:
     - **XML**: Extracts hierarchical element structure.
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
-- **Git Context**: Incremental indexing requires a valid Git repository and the `git` executable in the PATH.
+- **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
 
 ---
 

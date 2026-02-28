@@ -34,3 +34,6 @@ FOR (s:Symbol) ON (s.documentation);
 
 CREATE INDEX symbol_comments IF NOT EXISTS
 FOR (s:Symbol) ON (s.comments);
+  
+CREATE CONSTRAINT author_name IF NOT EXISTS
+FOR (a:Author) REQUIRE a.name IS UNIQUE;
