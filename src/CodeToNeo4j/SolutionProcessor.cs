@@ -37,8 +37,19 @@ public class SolutionProcessor(
             await IngestDependencies(solution, repoKey, databaseName);
         }
 
-        var changedFiles = await GetChangedFiles(sln, diffBase, force, includeExtensions);
-        var filesToProcess = GetFilesToProcess(sln, solution, changedFiles, includeExtensions);
+        var diffResult = await GetChangedFiles(sln, diffBase, force, includeExtensions);
+        
+        if (diffResult?.DeletedFiles.Count > 0)
+        {
+            logger.LogInformation("Deleting {Count} files that were removed in git...", diffResult.DeletedFiles.Count);
+            foreach (var deletedFile in diffResult.DeletedFiles)
+            {
+                var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}";
+                await neo4jService.DeleteFile(fileKey, databaseName);
+            }
+        }
+
+        var filesToProcess = GetFilesToProcess(sln, solution, diffResult?.ModifiedFiles, includeExtensions);
 
         var totalFiles = filesToProcess.Length;
         var currentFileIndex = 0;
@@ -63,22 +74,22 @@ public class SolutionProcessor(
 
     private record ProcessedFile(string FilePath, Document? Document, Compilation? Compilation);
 
-    private async ValueTask<IEnumerable<string>?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
+    private async ValueTask<GitDiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
     {
-        var changedFiles = diffBase is null || force
+        var result = diffBase is null || force
             ? null
             : await gitService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
 
-        if (changedFiles is not null)
+        if (result is not null)
         {
-            logger.LogInformation("Incremental indexing enabled. Found {Count} changed files since {DiffBase}", changedFiles.Count, diffBase);
+            logger.LogInformation("Incremental indexing enabled. Found {ModifiedCount} modified and {DeletedCount} deleted files since {DiffBase}", result.ModifiedFiles.Count, result.DeletedFiles.Count, diffBase);
         }
         else if (diffBase is not null && force)
         {
             logger.LogInformation("Incremental indexing bypassed due to --force flag.");
         }
 
-        return changedFiles;
+        return result;
     }
 
     private async ValueTask InitializeNeo4j(string repoKey, string databaseName)

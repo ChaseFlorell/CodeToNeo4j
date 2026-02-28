@@ -87,6 +87,16 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         });
     }
 
+    public async ValueTask DeleteFile(string fileKey, string databaseName)
+    {
+        logger.LogDebug("Deleting file and its symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+        {
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeleteFile), new { fileKey });
+        });
+    }
+
     public async ValueTask UpsertDependencies(string repoKey, IEnumerable<DependencyRecord> dependencies, string databaseName)
     {
         var depBatch = dependencies.Select(d => new

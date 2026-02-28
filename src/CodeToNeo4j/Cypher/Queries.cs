@@ -2,6 +2,7 @@ namespace CodeToNeo4j.Cypher;
 
 public static class Queries
 {
+    public const string DeleteFile = "DeleteFile";
     public const string DeletePriorSymbols = "DeletePriorSymbols";
     public const string GetNeo4jVersion = "GetNeo4jVersion";
     public const string MergeRelationships = "MergeRelationships";

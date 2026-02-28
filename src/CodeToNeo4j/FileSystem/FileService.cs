@@ -11,6 +11,11 @@ public class FileService(IFileSystem fileSystem) : IFileService
         return full.Replace('\\', '/');
     }
 
+    public string GetRelativePath(string relativeTo, string path)
+    {
+        return fileSystem.Path.GetRelativePath(relativeTo, path).Replace('\\', '/');
+    }
+
     public string ComputeSha256(byte[] bytes)
     {
         using var sha = SHA256.Create();

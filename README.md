@@ -72,7 +72,7 @@ If running from the build output:
 | `--database` | Neo4j database name. | `neo4j` |
 | `--logLevel` | The minimum log level to display. | `Information` |
 | `--force` | Force reprocessing of the entire solution, even if incremental indexing is enabled. | `false` |
-| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
+| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. Deleted files are removed from Neo4j. | |
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. | `false` |
 | `--min-accessibility` | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`). | `Private` |
