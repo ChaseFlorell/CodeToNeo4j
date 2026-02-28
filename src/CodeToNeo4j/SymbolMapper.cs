@@ -56,8 +56,8 @@ public class SymbolMapper : ISymbolMapper
             .Where(t => t.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
                         t.IsKind(SyntaxKind.MultiLineCommentTrivia))
             .Select(t => t.ToString().Trim())
-            .ToList();
+            .ToArray();
 
-        return comments.Count > 0 ? string.Join(Environment.NewLine, comments) : null;
+        return comments.Length > 0 ? string.Join(Environment.NewLine, comments) : null;
     }
 }

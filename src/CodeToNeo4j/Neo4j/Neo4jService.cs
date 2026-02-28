@@ -24,7 +24,11 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
 
         logger.LogDebug("Detected Neo4j version: {VersionString}", versionString);
 
-        if (Version.TryParse(versionString.Split('-')[0], out var version))
+        var versionSpan = versionString.AsSpan();
+        var hyphenIndex = versionSpan.IndexOf('-');
+        var versionPart = hyphenIndex == -1 ? versionSpan : versionSpan[..hyphenIndex];
+
+        if (Version.TryParse(versionPart, out var version))
         {
             if (version.Major < 5)
             {
@@ -33,7 +37,7 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         }
         else
         {
-            if (char.IsDigit(versionString[0]) && int.TryParse(versionString[0].ToString(), out var major) && major < 5)
+            if (versionSpan.Length > 0 && char.IsDigit(versionSpan[0]) && int.TryParse(versionSpan[..1], out var major) && major < 5)
             {
                 throw new NotSupportedException($"Neo4j version {versionString} is not supported. Minimum required version is 5.0.");
             }
