@@ -6,7 +6,7 @@ namespace CodeToNeo4j.Neo4j;
 
 public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
 {
-    public async ValueTask VerifyNeo4JVersion()
+    public async ValueTask VerifyNeo4jVersion()
     {
         logger.LogDebug("Verifying Neo4j version...");
         await using var session = driver.AsyncSession();

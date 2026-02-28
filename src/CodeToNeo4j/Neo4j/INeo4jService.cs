@@ -2,7 +2,7 @@ namespace CodeToNeo4j.Neo4j;
 
 public interface INeo4jService : IAsyncDisposable
 {
-    ValueTask VerifyNeo4JVersion();
+    ValueTask VerifyNeo4jVersion();
     ValueTask EnsureSchema(string databaseName);
     ValueTask UpsertProject(string repoKey, string databaseName);
     ValueTask UpsertFile(string fileKey, string filePath, string fileHash, string repoKey, string databaseName);

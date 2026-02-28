@@ -93,7 +93,7 @@ public class SolutionProcessor(
 
     private async ValueTask InitializeNeo4j(string repoKey, string databaseName)
     {
-        await neo4jService.VerifyNeo4JVersion();
+        await neo4jService.VerifyNeo4jVersion();
         logger.LogInformation("Neo4j version verified.");
 
         await neo4jService.EnsureSchema(databaseName);
