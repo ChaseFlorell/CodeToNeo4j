@@ -10,5 +10,6 @@ public static class Queries
     public const string UpsertFile = "UpsertFile";
     public const string UpsertProject = "UpsertProject";
     public const string UpsertSymbols = "UpsertSymbols";
+    public const string UpsertCommit = "UpsertCommit";
     public const string UpsertDependencies = "UpsertDependencies";
 }

@@ -7,7 +7,7 @@ CodeToNeo4j is a .NET tool that analyzes .NET solutions and indexes their struct
 - **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, and `.xml` files (configurable via `--include`).
 - **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, Directives, UI Elements).
 - **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
-- **Incremental Indexing**: Only process changed files using `--diffBase`.
+- **Incremental Indexing**: Only process changed files using `--diffBase`. When enabled, also ingests detailed commit history (hashes, authors, messages) and links them to the modified files.
 - **Accessibility Filtering**: Control which members are indexed using `--min-accessibility`.
 - **Platform Native Progress**: Special progress reporting for GitHub Actions and Azure DevOps.
 

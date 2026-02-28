@@ -1,11 +1,12 @@
 using CodeToNeo4j.Cypher;
+using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.VersionControl;
 using Neo4j.Driver;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Neo4j;
 
-public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
+public class Neo4jService(IDriver driver, ICypherService cypherService, IFileService fileService, ILogger<Neo4jService> logger) : INeo4jService
 {
     public async ValueTask VerifyNeo4jVersion()
     {
@@ -114,6 +115,29 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         await session.ExecuteWriteAsync(async tx =>
         {
             await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey });
+        });
+    }
+
+    public async ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
+    {
+        var commitBatch = commits.Select(c => new
+        {
+            hash = c.Hash,
+            authorName = c.AuthorName,
+            authorEmail = c.AuthorEmail,
+            date = c.Date.ToString("O"),
+            message = c.Message,
+            repoKey,
+            changedFiles = c.ChangedFiles.Select(f => $"{repoKey}:{fileService.GetRelativePath(solutionRoot, f)}").ToArray()
+        }).ToArray();
+
+        if (commitBatch.Length == 0) return;
+
+        logger.LogDebug("Upserting {Count} commits for {RepoKey} in database: {DatabaseName}", commitBatch.Length, repoKey, databaseName);
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+        {
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch });
         });
     }
 

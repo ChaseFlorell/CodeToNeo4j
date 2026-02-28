@@ -7,7 +7,7 @@ namespace CodeToNeo4j.VersionControl;
 
 public class GitService(IFileService fileService, IFileSystem fileSystem, ILogger<GitService> logger) : IVersionControlService
 {
-    public async ValueTask<GitDiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
+    public async ValueTask<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
     {
         var repoRoot = await GetGitRoot(workingDirectory);
         logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
@@ -59,7 +59,78 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         }
 
         logger.LogDebug("Found {ModifiedCount} modified and {DeletedCount} deleted files.", modifiedSet.Count, deletedSet.Count);
-        return new GitDiffResult(modifiedSet, deletedSet);
+
+        var commits = new List<CommitMetadata>();
+        if (!string.IsNullOrWhiteSpace(diffBase))
+        {
+            logger.LogDebug("Fetching commit details between {DiffBase} and HEAD...", diffBase);
+            var commitPsi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"log {diffBase}...HEAD --format=\"%H|%an|%ae|%aI|%s\" --name-only",
+                WorkingDirectory = repoRoot,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var cp = Process.Start(commitPsi) ?? throw new Exception("Failed to start git log process.");
+            var commitOutput = await cp.StandardOutput.ReadToEndAsync();
+            await cp.WaitForExitAsync();
+
+            if (cp.ExitCode == 0)
+            {
+                var commitLines = commitOutput.Split('\n', StringSplitOptions.TrimEntries);
+                CommitMetadata? currentCommit = null;
+                var changedFiles = new List<string>();
+
+                foreach (var line in commitLines)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        if (currentCommit != null)
+                        {
+                            commits.Add(currentCommit with { ChangedFiles = changedFiles.ToArray() });
+                            currentCommit = null;
+                            changedFiles = new List<string>();
+                        }
+                        continue;
+                    }
+
+                    if (line.Contains('|'))
+                    {
+                        var parts = line.Split('|');
+                        if (parts.Length >= 5)
+                        {
+                            if (currentCommit != null)
+                            {
+                                commits.Add(currentCommit with { ChangedFiles = changedFiles.ToArray() });
+                                changedFiles = new List<string>();
+                            }
+
+                            if (DateTimeOffset.TryParse(parts[3], out var date))
+                            {
+                                currentCommit = new CommitMetadata(parts[0], parts[1], parts[2], date, parts[4], Array.Empty<string>());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (includeExtensions.Any(ext => line.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            changedFiles.Add(fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, line)));
+                        }
+                    }
+                }
+
+                if (currentCommit != null)
+                {
+                    commits.Add(currentCommit with { ChangedFiles = changedFiles.ToArray() });
+                }
+            }
+        }
+
+        return new DiffResult(modifiedSet, deletedSet, commits);
     }
 
     public async ValueTask<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)

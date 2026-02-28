@@ -49,6 +49,12 @@ public class SolutionProcessor(
             }
         }
 
+        if (diffResult is not null && diffResult.Commits.Any())
+        {
+            logger.LogInformation("Ingesting {Count} commits since {DiffBase}...", diffResult.Commits.Count(), diffBase);
+            await neo4jService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName);
+        }
+
         var filesToProcess = GetFilesToProcess(sln, solution, diffResult?.ModifiedFiles, includeExtensions);
 
         var totalFiles = filesToProcess.Length;
@@ -74,19 +80,21 @@ public class SolutionProcessor(
 
     private record ProcessedFile(string FilePath, Document? Document, Compilation? Compilation);
 
-    private async ValueTask<GitDiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
+    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
     {
-        var result = diffBase is null || force
-            ? null
-            : await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
+        if (diffBase is null) return null;
+
+        var result = await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
+
+        if (force)
+        {
+            logger.LogInformation("Incremental indexing bypassed due to --force flag, but commits will still be ingested.");
+            return result with { ModifiedFiles = new HashSet<string>(), DeletedFiles = new HashSet<string>() };
+        }
 
         if (result is not null)
         {
             logger.LogInformation("Incremental indexing enabled. Found {ModifiedCount} modified and {DeletedCount} deleted files since {DiffBase}", result.ModifiedFiles.Count, result.DeletedFiles.Count, diffBase);
-        }
-        else if (diffBase is not null && force)
-        {
-            logger.LogInformation("Incremental indexing bypassed due to --force flag.");
         }
 
         return result;
@@ -185,11 +193,17 @@ public class SolutionProcessor(
 
         var result = solutionFiles.Values.ToArray();
 
-        if (changedFiles is not null)
+        if (changedFiles is not null && changedFiles.Any())
         {
             result = result
                 .Where(f => changedFiles.Contains(f.FilePath))
                 .ToArray();
+        }
+        else if (changedFiles is not null)
+        {
+            // If changedFiles is an empty collection (not null), it means we ARE in incremental mode
+            // but no files matched. So we return empty.
+            result = Array.Empty<ProcessedFile>();
         }
 
         return result;

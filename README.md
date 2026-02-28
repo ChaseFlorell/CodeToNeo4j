@@ -126,7 +126,7 @@ jobs:
     - **XML**: Extracts hierarchical element structure.
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
-- **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
+- **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. When using incremental indexing (`--diffBase`), it also ingests detailed information for all commits between the base and HEAD, including hashes, authors, dates, and commit messages, linking them to the modified files. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
 
 ---
 

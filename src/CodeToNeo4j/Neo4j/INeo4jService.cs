@@ -10,6 +10,7 @@ public interface INeo4jService : IAsyncDisposable
     ValueTask UpsertFile(string fileKey, string filePath, string fileHash, FileMetadata metadata, string repoKey, string databaseName);
     ValueTask DeletePriorSymbols(string fileKey, string databaseName);
     ValueTask MarkFileAsDeleted(string fileKey, string databaseName);
+    ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName);
     ValueTask UpsertDependencies(string repoKey, IEnumerable<DependencyRecord> dependencies, string databaseName);
     ValueTask Flush(string repoKey, string? fileKey, IEnumerable<SymbolRecord> symbols, IEnumerable<RelRecord> rels, string databaseName);
 }
