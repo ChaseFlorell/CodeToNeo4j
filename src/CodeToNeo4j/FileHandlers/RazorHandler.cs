@@ -1,8 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
-using CodeToNeo4j.Neo4j;
 
-namespace CodeToNeo4j.Handlers;
+namespace CodeToNeo4j.FileHandlers;
 
 public class RazorHandler : IDocumentHandler
 {
@@ -16,13 +15,14 @@ public class RazorHandler : IDocumentHandler
         string filePath,
         ICollection<SymbolRecord> symbolBuffer,
         ICollection<RelRecord> relBuffer,
-        string databaseName)
+        string databaseName,
+        Accessibility minAccessibility)
     {
         var sourceText = await document.GetTextAsync();
         var content = sourceText.ToString();
 
         // Extract directives
-        ExtractDirectives(content, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+        ExtractDirectives(content, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
 
         // Try to get Roslyn symbols if available (generated code-behind)
         var syntaxTree = await document.GetSyntaxTreeAsync();
@@ -34,8 +34,10 @@ public class RazorHandler : IDocumentHandler
         }
     }
 
-    private void ExtractDirectives(string content, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer)
+    private void ExtractDirectives(string content, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
     {
+        if (Accessibility.Public < minAccessibility) return;
+
         // Simple regex-based extraction for common Razor directives
         var matches = Regex.Matches(content, @"^@(?:using|inject|model|inherits)\s+(.+)$", RegexOptions.Multiline);
 

@@ -1,6 +1,6 @@
 # CodeToNeo4j
 
-CodeToNeo4j is a .NET 10 console application designed to analyze C# solutions and index their codebase structure (projects, files, symbols, and relationships) into a Neo4j knowledge base. It leverages Roslyn for semantic code analysis and Neo4j for powerful graph-based querying of your architecture.
+CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions and index their codebase structure (projects, files, symbols, and relationships) into a Neo4j knowledge base. It leverages Roslyn for semantic code analysis and Neo4j for powerful graph-based querying of your architecture.
 
 ## Setup
 
@@ -48,7 +48,7 @@ The tool follows a `1.0.[GITHUB_RUN_NUMBER]` versioning scheme for automated bui
 
 ## Usage
 
-You can run the tool by pointing it to a C# solution file (`.sln`).
+You can run the tool by pointing it to a .NET solution file (`.sln`).
 
 If installed as a global tool:
 ```bash
@@ -75,6 +75,7 @@ If running from the build output:
 | `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
 | `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. | `false` |
+| `--min-accessibility` | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`). | `Private` |
 
 ## GitHub Actions Integration
 
@@ -115,7 +116,10 @@ jobs:
 
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
-- **C# Only**: Currently only analyzes `.cs` files.
+- **Supported File Types**: Analyzes `.cs`, `.razor`, and `.xaml` files.
+    - **C#**: Full symbol extraction (Classes, Methods, etc.) and semantic mapping.
+    - **Razor**: Extracts directives such as `@using`, `@inject`, `@model`, and `@inherits`.
+    - **XAML**: Extracts UI elements and event handler bindings (e.g., `Click`, `Command`).
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
 - **Git Context**: Incremental indexing requires a valid Git repository and the `git` executable in the PATH.

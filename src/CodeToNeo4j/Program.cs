@@ -2,6 +2,7 @@
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j;
 
@@ -20,10 +21,11 @@ public static class Program
         var logLevelOption = new Option<LogLevel>("--logLevel", () => LogLevel.Information, "The minimum log level to display. Example: Information");
         var forceOption = new Option<bool>("--force", () => false, "Force reprocessing of the entire solution, even if incremental indexing is enabled. Example: --force");
         var skipDependenciesOption = new Option<bool>("--skip-dependencies", () => false, "Skip NuGet dependency ingestion. Example: --skip-dependencies");
+        var minAccessibilityOption = new Option<Accessibility>("--min-accessibility", () => Accessibility.Private, "The minimum accessibility level to index. Default: Private (indices all)");
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
-            slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, forceOption, skipDependenciesOption
+            slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, forceOption, skipDependenciesOption, minAccessibilityOption
         };
 
         var binder = new OptionsBinder(
@@ -37,7 +39,8 @@ public static class Program
             databaseOption,
             logLevelOption,
             forceOption,
-            skipDependenciesOption
+            skipDependenciesOption,
+            minAccessibilityOption
         );
 
         root.SetHandler(async options =>
@@ -57,7 +60,7 @@ public static class Program
                 await using var serviceProvider = services.BuildServiceProvider();
                 var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
 
-                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies);
+                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies, options.MinAccessibility);
             },
             binder);
 

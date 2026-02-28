@@ -1,8 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using CodeToNeo4j.Neo4j;
 
-namespace CodeToNeo4j.Handlers;
+namespace CodeToNeo4j.FileHandlers;
 
 public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
 {
@@ -16,7 +15,8 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         string filePath,
         ICollection<SymbolRecord> symbolBuffer,
         ICollection<RelRecord> relBuffer,
-        string databaseName)
+        string databaseName,
+        Accessibility minAccessibility)
     {
         var syntaxTree = await document.GetSyntaxTreeAsync();
         if (syntaxTree is null) return;
@@ -26,7 +26,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
 
         foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
         {
-            ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+            ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 
@@ -37,10 +37,16 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         string fileKey,
         string filePath,
         ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer)
+        ICollection<RelRecord> relBuffer,
+        Accessibility minAccessibility)
     {
         var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
         if (typeSymbol is null) return;
+
+        if (typeSymbol.DeclaredAccessibility < minAccessibility && typeSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
+        {
+            return;
+        }
 
         var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl);
         symbolBuffer.Add(typeRec);
@@ -49,23 +55,28 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         {
             case TypeDeclarationSyntax tds:
             {
-                ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, tds, typeRec);
+                ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, tds, typeRec, minAccessibility);
                 break;
             }
             case EnumDeclarationSyntax eds:
             {
-                ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, eds, typeRec);
+                ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, eds, typeRec, minAccessibility);
                 break;
             }
         }
     }
 
-    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, EnumDeclarationSyntax eds, SymbolRecord typeRec)
+    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, EnumDeclarationSyntax eds, SymbolRecord typeRec, Accessibility minAccessibility)
     {
         foreach (var member in eds.Members)
         {
             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
             if (memberSymbol is null) continue;
+
+            if (memberSymbol.DeclaredAccessibility < minAccessibility && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
+            {
+                continue;
+            }
 
             var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
             symbolBuffer.Add(memberRec);
@@ -74,12 +85,17 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         }
     }
 
-    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, TypeDeclarationSyntax tds, SymbolRecord typeRec)
+    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, TypeDeclarationSyntax tds, SymbolRecord typeRec, Accessibility minAccessibility)
     {
         foreach (var member in tds.Members)
         {
             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
             if (memberSymbol is null) continue;
+
+            if (memberSymbol.DeclaredAccessibility < minAccessibility && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
+            {
+                continue;
+            }
 
             var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
             symbolBuffer.Add(memberRec);

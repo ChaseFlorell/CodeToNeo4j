@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Binding;
 using Microsoft.Extensions.Logging;
+using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j;
 
@@ -15,7 +16,8 @@ public class OptionsBinder(
     Option<string> databaseOption,
     Option<LogLevel> logLevelOption,
     Option<bool> forceOption,
-    Option<bool> skipDependenciesOption) : BinderBase<Options>
+    Option<bool> skipDependenciesOption,
+    Option<Accessibility> minAccessibilityOption) : BinderBase<Options>
 {
     protected override Options GetBoundValue(BindingContext bindingContext) =>
         new(
@@ -29,6 +31,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
             bindingContext.ParseResult.GetValueForOption(logLevelOption),
             bindingContext.ParseResult.GetValueForOption(forceOption),
-            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption)
+            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
+            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption)
         );
 }

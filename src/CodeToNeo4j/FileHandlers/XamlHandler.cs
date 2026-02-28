@@ -1,8 +1,7 @@
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
-using CodeToNeo4j.Neo4j;
 
-namespace CodeToNeo4j.Handlers;
+namespace CodeToNeo4j.FileHandlers;
 
 public class XamlHandler : IDocumentHandler
 {
@@ -16,7 +15,8 @@ public class XamlHandler : IDocumentHandler
         string filePath,
         ICollection<SymbolRecord> symbolBuffer,
         ICollection<RelRecord> relBuffer,
-        string databaseName)
+        string databaseName,
+        Accessibility minAccessibility)
     {
         var sourceText = await document.GetTextAsync();
         var content = sourceText.ToString();
@@ -26,7 +26,7 @@ public class XamlHandler : IDocumentHandler
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root == null) return;
 
-            ProcessElement(xdoc.Root, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+            ProcessElement(xdoc.Root, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
         catch (Exception)
         {
@@ -34,7 +34,7 @@ public class XamlHandler : IDocumentHandler
         }
     }
 
-    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer)
+    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
     {
         var name = element.Name.LocalName;
         var keySuffix = "";
@@ -51,50 +51,56 @@ public class XamlHandler : IDocumentHandler
         var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
 
         var symbolKey = $"{fileKey}:{name}{keySuffix}:{startLine}";
-        var record = new SymbolRecord(
-            Key: symbolKey,
-            Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
-            Kind: "XamlElement",
-            Fqn: $"{name}{keySuffix}",
-            Accessibility: "Public",
-            FileKey: fileKey,
-            FilePath: filePath,
-            StartLine: startLine,
-            EndLine: startLine,
-            Documentation: null,
-            Comments: null
-        );
+        if (Accessibility.Public >= minAccessibility)
+        {
+            var record = new SymbolRecord(
+                Key: symbolKey,
+                Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
+                Kind: "XamlElement",
+                Fqn: $"{name}{keySuffix}",
+                Accessibility: "Public",
+                FileKey: fileKey,
+                FilePath: filePath,
+                StartLine: startLine,
+                EndLine: startLine,
+                Documentation: null,
+                Comments: null
+            );
 
-        symbolBuffer.Add(record);
-        relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
+            symbolBuffer.Add(record);
+            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
+        }
 
         // Extract potential event handlers
         foreach (var attr in element.Attributes())
         {
             if (IsEventHandler(attr.Name.LocalName))
             {
-                var handlerKey = $"{fileKey}:EventHandler:{attr.Value}";
-                var handlerRecord = new SymbolRecord(
-                    Key: handlerKey,
-                    Name: attr.Value,
-                    Kind: "XamlEventHandler",
-                    Fqn: attr.Value,
-                    Accessibility: "Private",
-                    FileKey: fileKey,
-                    FilePath: filePath,
-                    StartLine: startLine,
-                    EndLine: startLine,
-                    Documentation: null,
-                    Comments: null
-                );
-                symbolBuffer.Add(handlerRecord);
-                relBuffer.Add(new RelRecord(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
+                if (Accessibility.Private >= minAccessibility)
+                {
+                    var handlerKey = $"{fileKey}:EventHandler:{attr.Value}";
+                    var handlerRecord = new SymbolRecord(
+                        Key: handlerKey,
+                        Name: attr.Value,
+                        Kind: "XamlEventHandler",
+                        Fqn: attr.Value,
+                        Accessibility: "Private",
+                        FileKey: fileKey,
+                        FilePath: filePath,
+                        StartLine: startLine,
+                        EndLine: startLine,
+                        Documentation: null,
+                        Comments: null
+                    );
+                    symbolBuffer.Add(handlerRecord);
+                    relBuffer.Add(new RelRecord(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
+                }
             }
         }
 
         foreach (var child in element.Elements())
         {
-            ProcessElement(child, repoKey, fileKey, filePath, symbolBuffer, relBuffer);
+            ProcessElement(child, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 

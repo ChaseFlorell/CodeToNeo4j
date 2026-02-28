@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
-using CodeToNeo4j.Neo4j;
 
-namespace CodeToNeo4j.Handlers;
+namespace CodeToNeo4j.FileHandlers;
 
 public interface IDocumentHandler
 {
@@ -14,5 +13,6 @@ public interface IDocumentHandler
         string filePath,
         ICollection<SymbolRecord> symbolBuffer,
         ICollection<RelRecord> relBuffer,
-        string databaseName);
+        string databaseName,
+        Accessibility minAccessibility);
 }
