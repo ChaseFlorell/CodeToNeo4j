@@ -6,8 +6,8 @@ public interface IDocumentHandler
 {
     bool CanHandle(string filePath);
     ValueTask HandleAsync(
-        Document document,
-        Compilation compilation,
+        Document? document,
+        Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,

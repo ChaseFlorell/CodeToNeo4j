@@ -8,8 +8,8 @@ public class RazorHandler : IDocumentHandler
     public bool CanHandle(string filePath) => filePath.EndsWith(".razor", StringComparison.OrdinalIgnoreCase);
 
     public async ValueTask HandleAsync(
-        Document document,
-        Compilation compilation,
+        Document? document,
+        Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
@@ -18,19 +18,30 @@ public class RazorHandler : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
-        var sourceText = await document.GetTextAsync();
-        var content = sourceText.ToString();
+        string content;
+        if (document is not null)
+        {
+            var sourceText = await document.GetTextAsync();
+            content = sourceText.ToString();
+        }
+        else
+        {
+            content = await File.ReadAllTextAsync(filePath);
+        }
 
         // Extract directives
         ExtractDirectives(content, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
 
         // Try to get Roslyn symbols if available (generated code-behind)
-        var syntaxTree = await document.GetSyntaxTreeAsync();
-        if (syntaxTree != null)
+        if (document is not null && compilation is not null)
         {
-            var semanticModel = compilation.GetSemanticModel(syntaxTree);
-            // In many cases, the generated C# for Razor can be explored here.
-            // For now, we'll focus on the explicit directives as a starting point.
+            var syntaxTree = await document.GetSyntaxTreeAsync();
+            if (syntaxTree != null)
+            {
+                var semanticModel = compilation.GetSemanticModel(syntaxTree);
+                // In many cases, the generated C# for Razor can be explored here.
+                // For now, we'll focus on the explicit directives as a starting point.
+            }
         }
     }
 

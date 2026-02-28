@@ -8,8 +8,8 @@ public class HtmlHandler : IDocumentHandler
     public bool CanHandle(string filePath) => filePath.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
 
     public async ValueTask HandleAsync(
-        Document document,
-        Compilation compilation,
+        Document? document,
+        Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
@@ -18,8 +18,16 @@ public class HtmlHandler : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
-        var sourceText = await document.GetTextAsync();
-        var content = sourceText.ToString();
+        string content;
+        if (document is not null)
+        {
+            var sourceText = await document.GetTextAsync();
+            content = sourceText.ToString();
+        }
+        else
+        {
+            content = await File.ReadAllTextAsync(filePath);
+        }
 
         // Extract script references
         ExtractScriptReferences(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);

@@ -21,6 +21,7 @@ public class SolutionProcessor(
 {
     public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
+        var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
         await InitializeNeo4j(repoKey, databaseName);
 
@@ -37,31 +38,18 @@ public class SolutionProcessor(
         }
 
         var changedFiles = await GetChangedFiles(sln, diffBase, force, includeExtensions);
-        var allDocuments = GetDocumentsToProcess(solution, changedFiles, includeExtensions);
+        var filesToProcess = GetFilesToProcess(sln, solution, changedFiles, includeExtensions);
 
-        var totalFiles = allDocuments.Length;
+        var totalFiles = filesToProcess.Length;
         var currentFileIndex = 0;
 
         var symbolBuffer = new List<SymbolRecord>(batchSize);
         var relBuffer = new List<RelRecord>(batchSize);
 
-        foreach (var project in solution.Projects)
+        foreach (var file in filesToProcess)
         {
-            logger.LogInformation("Processing project: {ProjectName}", project.Name);
-            var compilation = await project.GetCompilationAsync();
-            if (compilation is null)
-            {
-                logger.LogWarning("Could not get compilation for project: {ProjectName}", project.Name);
-                continue;
-            }
-
-            var projectDocuments = allDocuments.Where(d => d.Project.Id == project.Id).ToArray();
-
-            foreach (var document in projectDocuments)
-            {
-                currentFileIndex++;
-                await ProcessDocument(document, compilation, repoKey, databaseName, batchSize, symbolBuffer, relBuffer, currentFileIndex, totalFiles, minAccessibility);
-            }
+            currentFileIndex++;
+            await ProcessFile(file, solutionRoot, repoKey, databaseName, batchSize, symbolBuffer, relBuffer, currentFileIndex, totalFiles, minAccessibility);
         }
 
         if (symbolBuffer.Count > 0)
@@ -72,6 +60,8 @@ public class SolutionProcessor(
 
         logger.LogInformation("Done.");
     }
+
+    private record ProcessedFile(string FilePath, Document? Document, Compilation? Compilation);
 
     private async ValueTask<IEnumerable<string>?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
     {
@@ -124,31 +114,89 @@ public class SolutionProcessor(
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 
-    private Document[] GetDocumentsToProcess(Solution solution, IEnumerable<string>? changedFiles, IEnumerable<string> includeExtensions)
+    private ProcessedFile[] GetFilesToProcess(FileInfo sln, Solution solution, IEnumerable<string>? changedFiles, IEnumerable<string> includeExtensions)
     {
-        var allDocuments = solution.Projects
-            .SelectMany(p => p.Documents)
-            .Where(d =>
+        var solutionFiles = new Dictionary<string, ProcessedFile>(StringComparer.OrdinalIgnoreCase);
+        var extensionSet = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Get all documents from MSBuild
+        foreach (var project in solution.Projects)
+        {
+            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+            
+            // Regular Documents
+            foreach (var doc in project.Documents)
             {
-                var filePath = d.FilePath;
-                if (string.IsNullOrEmpty(filePath)) return false;
-                return includeExtensions.Any(ext => filePath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
-            })
-            .ToArray();
+                var path = fileService.NormalizePath(doc.FilePath!);
+                if (string.IsNullOrEmpty(path)) continue;
+                if (!extensionSet.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+
+                if (!solutionFiles.ContainsKey(path))
+                {
+                    solutionFiles[path] = new ProcessedFile(path, doc, compilation);
+                }
+            }
+
+            // Additional Documents
+            foreach (var doc in project.AdditionalDocuments)
+            {
+                var path = fileService.NormalizePath(doc.FilePath!);
+                if (string.IsNullOrEmpty(path)) continue;
+                if (!extensionSet.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+
+                if (!solutionFiles.ContainsKey(path))
+                {
+                    // Since AdditionalDocuments are TextDocuments, and Documents are also TextDocuments,
+                    // we can't easily cast without checking. But Document? in ProcessedFile currently 
+                    // only accepts Document. We should change it to TextDocument.
+                    // However, CSharpHandler specifically wants Document.
+                    // Let's try to keep it as Document for C# and TextDocument for others?
+                    // Or just use Document and only populate it if it's a real Document.
+                    solutionFiles[path] = new ProcessedFile(path, doc as Document, null);
+                }
+            }
+        }
+
+        // 2. File system fallback for other files in the solution directory
+        var solutionDir = sln.DirectoryName!;
+        var allFilesOnDisk = fileSystem.Directory.EnumerateFiles(solutionDir, "*.*", SearchOption.AllDirectories);
+        foreach (var fileOnDisk in allFilesOnDisk)
+        {
+            var normalizedPath = fileService.NormalizePath(fileOnDisk);
+            if (IsExcluded(normalizedPath)) continue;
+            if (!extensionSet.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+
+            if (!solutionFiles.ContainsKey(normalizedPath))
+            {
+                solutionFiles[normalizedPath] = new ProcessedFile(normalizedPath, null, null);
+            }
+        }
+
+        var result = solutionFiles.Values.ToArray();
 
         if (changedFiles is not null)
         {
-            allDocuments = allDocuments
-                .Where(d => changedFiles.Contains(fileService.NormalizePath(d.FilePath!)))
+            result = result
+                .Where(f => changedFiles.Contains(f.FilePath))
                 .ToArray();
         }
 
-        return allDocuments;
+        return result;
     }
 
-    private async ValueTask ProcessDocument(
-        Document document,
-        Compilation compilation,
+    private bool IsExcluded(string path)
+    {
+        var parts = path.Split('/');
+        return parts.Any(p => p.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
+                             p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
+                             p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
+                             p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
+                             p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async ValueTask ProcessFile(
+        ProcessedFile file,
+        string solutionRoot,
         string repoKey,
         string databaseName,
         int batchSize,
@@ -158,9 +206,10 @@ public class SolutionProcessor(
         int totalFiles,
         Accessibility minAccessibility)
     {
-        var filePath = fileService.NormalizePath(document.FilePath!);
+        var filePath = file.FilePath;
+        var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, filePath).Replace('\\', '/');
 
-        progressService.ReportProgress(currentFileIndex, totalFiles, filePath);
+        progressService.ReportProgress(currentFileIndex, totalFiles, relativePath);
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var fileKey = $"{repoKey}:{filePath}";
@@ -172,7 +221,7 @@ public class SolutionProcessor(
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
+            await handler.HandleAsync(file.Document, file.Compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
         }
         else
         {

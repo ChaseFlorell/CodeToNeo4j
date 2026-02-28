@@ -8,8 +8,8 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
     public bool CanHandle(string filePath) => filePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
 
     public async ValueTask HandleAsync(
-        Document document,
-        Compilation compilation,
+        Document? document,
+        Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
@@ -18,6 +18,8 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
+        if (document is null || compilation is null) return;
+        
         var syntaxTree = await document.GetSyntaxTreeAsync();
         if (syntaxTree is null) return;
 

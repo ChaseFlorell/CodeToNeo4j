@@ -8,8 +8,8 @@ public class XamlHandler : IDocumentHandler
     public bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
 
     public async ValueTask HandleAsync(
-        Document document,
-        Compilation compilation,
+        Document? document,
+        Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
@@ -18,8 +18,16 @@ public class XamlHandler : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
-        var sourceText = await document.GetTextAsync();
-        var content = sourceText.ToString();
+        string content;
+        if (document is not null)
+        {
+            var sourceText = await document.GetTextAsync();
+            content = sourceText.ToString();
+        }
+        else
+        {
+            content = await File.ReadAllTextAsync(filePath);
+        }
 
         try
         {
