@@ -3,8 +3,6 @@ name: Build and Package
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
