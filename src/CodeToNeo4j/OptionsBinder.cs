@@ -17,7 +17,8 @@ public class OptionsBinder(
     Option<LogLevel> logLevelOption,
     Option<bool> forceOption,
     Option<bool> skipDependenciesOption,
-    Option<Accessibility> minAccessibilityOption) : BinderBase<Options>
+    Option<Accessibility> minAccessibilityOption,
+    Option<string[]> includeExtensionsOption) : BinderBase<Options>
 {
     protected override Options GetBoundValue(BindingContext bindingContext) =>
         new(
@@ -32,6 +33,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(logLevelOption),
             bindingContext.ParseResult.GetValueForOption(forceOption),
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
-            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption)
+            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
+            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!
         );
 }
