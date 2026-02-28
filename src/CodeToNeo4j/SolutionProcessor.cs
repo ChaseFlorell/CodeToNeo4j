@@ -2,11 +2,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using System.IO.Abstractions;
+using CodeToNeo4j.FileHandlers;
 using Microsoft.Extensions.Logging;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Git;
 using CodeToNeo4j.Progress;
-using CodeToNeo4j.Handlers;
 using CodeToNeo4j.Neo4j;
 
 namespace CodeToNeo4j;
@@ -20,7 +20,7 @@ public class SolutionProcessor(
     IEnumerable<IDocumentHandler> handlers,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies)
+    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility)
     {
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
         await InitializeNeo4j(repoKey, databaseName);
@@ -61,7 +61,7 @@ public class SolutionProcessor(
             foreach (var document in projectDocuments)
             {
                 currentFileIndex++;
-                await ProcessDocument(document, compilation, repoKey, databaseName, batchSize, symbolBuffer, relBuffer, currentFileIndex, totalFiles);
+                await ProcessDocument(document, compilation, repoKey, databaseName, batchSize, symbolBuffer, relBuffer, currentFileIndex, totalFiles, minAccessibility);
             }
         }
 
@@ -154,7 +154,8 @@ public class SolutionProcessor(
         ICollection<SymbolRecord> symbolBuffer,
         ICollection<RelRecord> relBuffer,
         int currentFileIndex,
-        int totalFiles)
+        int totalFiles,
+        Accessibility minAccessibility)
     {
         var filePath = fileService.NormalizePath(document.FilePath!);
 
@@ -170,7 +171,7 @@ public class SolutionProcessor(
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName);
+            await handler.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
         }
         else
         {

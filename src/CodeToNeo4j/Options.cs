@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j;
 
@@ -13,7 +14,8 @@ public class Options(
     string databaseName,
     LogLevel logLevel,
     bool force,
-    bool skipDependencies)
+    bool skipDependencies,
+    Accessibility minAccessibility)
 {
     public FileInfo Sln { get; } = sln;
     public string Uri { get; } = uri;
@@ -26,4 +28,5 @@ public class Options(
     public LogLevel LogLevel { get; } = logLevel;
     public bool Force { get; } = force;
     public bool SkipDependencies { get; } = skipDependencies;
+    public Accessibility MinAccessibility { get; } = minAccessibility;
 }
