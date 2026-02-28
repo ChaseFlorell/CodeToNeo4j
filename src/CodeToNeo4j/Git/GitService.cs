@@ -7,9 +7,9 @@ namespace CodeToNeo4j.Git;
 
 public class GitService(IFileService fileService, IFileSystem fileSystem, ILogger<GitService> logger) : IGitService
 {
-    public async Task<HashSet<string>> GetChangedCsFilesAsync(string diffBase, string workingDirectory)
+    public async ValueTask<HashSet<string>> GetChangedCsFiles(string diffBase, string workingDirectory)
     {
-        var repoRoot = await GetGitRootAsync(workingDirectory);
+        var repoRoot = await GetGitRoot(workingDirectory);
         logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
         var psi = new ProcessStartInfo
         {
@@ -48,7 +48,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         return set;
     }
 
-    private async Task<string> GetGitRootAsync(string workingDirectory)
+    private async ValueTask<string> GetGitRoot(string workingDirectory)
     {
         var psi = new ProcessStartInfo
         {

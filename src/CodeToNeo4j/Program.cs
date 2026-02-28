@@ -57,7 +57,7 @@ public static class Program
                 await using var serviceProvider = services.BuildServiceProvider();
                 var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
 
-                await processor.ProcessSolutionAsync(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies);
+                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies);
             },
             binder);
 

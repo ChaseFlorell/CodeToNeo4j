@@ -6,13 +6,13 @@ namespace CodeToNeo4j.Neo4j;
 
 public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<Neo4jService> logger) : INeo4jService
 {
-    public async Task VerifyNeo4JVersionAsync()
+    public async ValueTask VerifyNeo4JVersion()
     {
         logger.LogDebug("Verifying Neo4j version...");
         await using var session = driver.AsyncSession();
         var result = await session.ExecuteReadAsync(async tx =>
         {
-            var cursor = await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.GetNeo4jVersion));
+            var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.GetNeo4jVersion));
             return await cursor.SingleAsync();
         });
 
@@ -40,7 +40,7 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
         }
     }
 
-    public async Task EnsureSchemaAsync(string databaseName)
+    public async ValueTask EnsureSchema(string databaseName)
     {
         logger.LogDebug("Ensuring schema for database: {DatabaseName}", databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -49,66 +49,62 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
 
         foreach (var cypher in statements)
         {
-            await session.RunAsyncWithRetry(cypher);
+            await session.RunWithRetry(cypher);
         }
     }
 
-    public async Task UpsertProjectAsync(string repoKey, string databaseName)
+    public async ValueTask UpsertProject(string repoKey, string databaseName)
     {
         logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
         });
     }
 
-    public async Task UpsertFileAsync(string fileKey, string filePath, string fileHash, string repoKey, string databaseName)
+    public async ValueTask UpsertFile(string fileKey, string filePath, string fileHash, string repoKey, string databaseName)
     {
         logger.LogDebug("Upserting file: {FilePath} in database: {DatabaseName}", filePath, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { fileKey, path = filePath, hash = fileHash, repoKey });
         });
     }
 
-    public async Task DeletePriorSymbolsAsync(string fileKey, string databaseName)
+    public async ValueTask DeletePriorSymbols(string fileKey, string databaseName)
     {
         logger.LogDebug("Deleting prior symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey });
         });
     }
 
-    public async Task UpsertDependenciesAsync(string repoKey, List<DependencyRecord> dependencies, string databaseName)
+    public async ValueTask UpsertDependencies(string repoKey, IEnumerable<DependencyRecord> dependencies, string databaseName)
     {
-        if (dependencies.Count == 0) return;
+        var depBatch = dependencies.Select(d => new
+        {
+            key = d.Key,
+            name = d.Name,
+            version = d.Version,
+            repoKey
+        }).ToArray();
 
-        logger.LogDebug("Upserting {Count} dependencies for {RepoKey} in database: {DatabaseName}", dependencies.Count, repoKey, databaseName);
+        if (depBatch.Length == 0) return;
+
+        logger.LogDebug("Upserting {Count} dependencies for {RepoKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            var depBatch = dependencies.Select(d => new
-            {
-                key = d.Key,
-                name = d.Name,
-                version = d.Version,
-                repoKey
-            }).ToArray();
-
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch });
         });
     }
 
-    public async Task FlushAsync(string repoKey, string? fileKey, List<SymbolRecord> symbols, List<RelRecord> rels, string databaseName)
+    public async ValueTask Flush(string repoKey, string? fileKey, IEnumerable<SymbolRecord> symbols, IEnumerable<RelRecord> rels, string databaseName)
     {
-        if (symbols.Count == 0 && rels.Count == 0) return;
-
-        logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbols.Count, rels.Count, databaseName);
-
         var symbolBatch = symbols.Select(s => new Dictionary<string, object?>
         {
             ["key"] = s.Key,
@@ -130,14 +126,19 @@ public class Neo4jService(IDriver driver, ICypherService cypherService, ILogger<
             ["toKey"] = r.ToKey,
             ["relType"] = r.RelType
         }).ToArray();
-        symbols.Clear();
-        rels.Clear();
+
+        if (symbolBatch.Length == 0 && relBatch.Length == 0)
+        {
+            return;
+        }
+
+        logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbolBatch.Length, relBatch.Length, databaseName);
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
-            await tx.RunAsyncWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
         });
     }
 
