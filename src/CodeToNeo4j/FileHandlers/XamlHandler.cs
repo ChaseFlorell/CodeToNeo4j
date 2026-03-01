@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class XamlHandler : DocumentHandlerBase
 {
-    public override string FileType => "XAML";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".xaml";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

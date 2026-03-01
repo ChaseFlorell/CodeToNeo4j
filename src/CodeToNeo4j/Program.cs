@@ -12,6 +12,8 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
+
         var slnOption = new Option<FileInfo>("--sln", "Path to the .sln file to index. Example: ./MySolution.sln") { IsRequired = true };
         var passOption = new Option<string>("--pass", "Password for the Neo4j database. Example: your-pass") { IsRequired = true };
         var repoKeyOption = new Option<string>("--repoKey", "A unique identifier for the repository in Neo4j. Example: my-repo") { IsRequired = true };
@@ -24,7 +26,8 @@ public static class Program
         var forceOption = new Option<bool>("--force", () => false, "Force reprocessing of the entire solution, even if incremental indexing is enabled. Example: --force");
         var skipDependenciesOption = new Option<bool>("--skip-dependencies", () => false, "Skip NuGet dependency ingestion. Example: --skip-dependencies");
         var minAccessibilityOption = new Option<Accessibility>("--min-accessibility", () => Accessibility.Private, "The minimum accessibility level to index. Default: Private (indices all)");
-        var includeExtensionsOption = new Option<string[]>("--include", () => [".cs", ".razor", ".xaml", ".js", ".html", ".xml"], "File extensions to include. Example: --include .cs --include .razor");
+        var includeExtensionsOption = new Option<string[]>("--include", () => allSupportedExtensions, $"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor");
+        includeExtensionsOption.ArgumentHelpName = string.Join('|', allSupportedExtensions);
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {

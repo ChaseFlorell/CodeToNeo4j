@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class XmlHandler : DocumentHandlerBase
 {
-    public override string FileType => "XML";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".xml";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

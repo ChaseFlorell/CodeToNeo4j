@@ -6,9 +6,9 @@ namespace CodeToNeo4j.FileHandlers;
 public abstract class DocumentHandlerBase : IDocumentHandler
 {
     public int NumberOfFilesHandled => _numberOfFilesHandled;
-    public abstract string FileType { get; }
+    public abstract string FileExtension { get; }
 
-    public abstract bool CanHandle(string filePath);
+    public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
     public virtual async ValueTask HandleAsync(
         TextDocument? document,

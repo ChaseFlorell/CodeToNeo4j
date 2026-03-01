@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
 {
-    public override string FileType => "C#";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".cs";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

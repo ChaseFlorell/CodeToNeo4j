@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class HtmlHandler : DocumentHandlerBase
 {
-    public override string FileType => "HTML";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".html";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

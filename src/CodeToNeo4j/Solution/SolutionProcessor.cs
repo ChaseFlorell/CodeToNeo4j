@@ -79,7 +79,7 @@ public class SolutionProcessor(
 
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
         {
-            logger.LogInformation("{FileType} files handled: {Count}", handler.FileType, handler.NumberOfFilesHandled);
+            logger.LogInformation("{FileExtension} files handled: {Count}", handler.FileExtension, handler.NumberOfFilesHandled);
         }
 
         logger.LogInformation("Done.");

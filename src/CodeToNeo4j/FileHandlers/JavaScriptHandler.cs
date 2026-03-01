@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class JavaScriptHandler : DocumentHandlerBase
 {
-    public override string FileType => "JavaScript";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".js";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

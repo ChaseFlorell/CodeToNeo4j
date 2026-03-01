@@ -6,8 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class RazorHandler : DocumentHandlerBase
 {
-    public override string FileType => "Razor";
-    public override bool CanHandle(string filePath) => filePath.EndsWith(".razor", StringComparison.OrdinalIgnoreCase);
+    public override string FileExtension => ".razor";
 
     public override async ValueTask HandleAsync(
         TextDocument? document,

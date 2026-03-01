@@ -18,5 +18,5 @@ public interface IDocumentHandler
         Accessibility minAccessibility);
 
     int NumberOfFilesHandled { get; }
-    string FileType { get; }
+    string FileExtension { get; }
 }
