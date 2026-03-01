@@ -4,7 +4,7 @@ CodeToNeo4j is a .NET tool that analyzes .NET solutions and indexes their struct
 
 ## Features
 
-- **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, and `.xml` files (configurable via `--include`).
+- **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
 - **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, Directives, UI Elements).
 - **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
 - **Incremental Indexing**: Only process changed files using `--diffBase`. When enabled, also ingests detailed commit history (hashes, authors, messages) and links them to the modified files.
@@ -42,11 +42,10 @@ codetoneo4j \
 | `--user` | Neo4j username (Default: `neo4j`). |
 | `--database` | Neo4j database name (Default: `neo4j`). |
 | `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. |
-| `--force` | Force reprocessing of the entire solution. |
 | `--logLevel` | Logging verbosity (`Information`, `Debug`, etc.). |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. |
 | `--min-accessibility` | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). |
-| `--include` | File extensions to include (Default: `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`). |
+| `--include` | File extensions to include (Default: all supported). |
 
 ## Prerequisites
 
@@ -78,7 +77,7 @@ You can install and run `CodeToNeo4j` directly in your GitHub workflows:
       --repoKey my-repo \
       --uri ${{ secrets.NEO4J_URL }} \
       --pass ${{ secrets.NEO4J_PASS }} \
-      --diffBase HEAD~1
+      --diffBase ${{ github.event.before }}
 ```
 
 ### Azure DevOps
@@ -101,6 +100,6 @@ steps:
       --repoKey my-repo \
       --uri $(NEO4J_URL) \
       --pass $(NEO4J_PASS) \
-      --diffBase HEAD~1
+      --diffBase $(System.PullRequest.SourceCommitId)
   displayName: 'Run CodeToNeo4j'
 ```

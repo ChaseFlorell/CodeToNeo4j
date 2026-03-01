@@ -71,12 +71,11 @@ If running from the build output:
 | `--user` | Neo4j username. | `neo4j` |
 | `--database` | Neo4j database name. | `neo4j` |
 | `--logLevel` | The minimum log level to display. | `Information` |
-| `--force` | Force reprocessing of the entire solution, even if incremental indexing is enabled. | `false` |
-| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. Deleted files are marked as `deleted` in Neo4j. | |
-| `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `500` |
+| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
+| `--batchSize` | Number of symbols to batch before flushing to Neo4j. | `1000` |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. | `false` |
 | `--min-accessibility` | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`). | `Private` |
-| `--include` | File extensions to include. Can be specified multiple times. | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml` |
+| `--include` | File extensions to include. Can be specified multiple times. | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 
 ## GitHub Actions Integration
 
@@ -117,13 +116,16 @@ jobs:
 
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
-- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, and `.xml` files (configurable via `--include`).
+- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
     - **C#**: Full symbol extraction (Classes, Methods, etc.) and semantic mapping.
     - **Razor**: Extracts directives such as `@using`, `@inject`, `@model`, and `@inherits`.
     - **XAML**: Extracts UI elements and event handler bindings (e.g., `Click`, `Command`).
     - **JavaScript**: Extracts function definitions and import statements.
     - **HTML**: Extracts script references and element IDs.
     - **XML**: Extracts hierarchical element structure.
+    - **JSON**: Extracts properties as symbols.
+    - **CSS**: Extracts CSS selectors.
+    - **Csproj**: Extracts `PackageReference`, `ProjectReference`, and project properties (e.g., `OutputType`, `TargetFramework`).
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
 - **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. When using incremental indexing (`--diffBase`), it also ingests detailed information for all commits between the base and HEAD, including hashes, authors, dates, and commit messages, linking them to the modified files. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
