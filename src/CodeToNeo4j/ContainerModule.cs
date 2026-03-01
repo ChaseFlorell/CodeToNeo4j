@@ -4,8 +4,10 @@ using System.IO.Abstractions;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.Progress;
+using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
 using Neo4j.Driver;
 
@@ -43,6 +45,8 @@ public static class ContainerModule
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IVersionControlService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
+        services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
+        services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
 
         services.AddSingleton<IDocumentHandler, CSharpHandler>();
         services.AddSingleton<IDocumentHandler, RazorHandler>();
@@ -67,7 +71,7 @@ public static class ContainerModule
         }
 
         services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
-        services.AddSingleton<INeo4jService, Neo4jService>();
+        services.AddSingleton<IGraphService, Neo4jService>();
 
         return services;
     }

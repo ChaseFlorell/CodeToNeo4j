@@ -13,9 +13,8 @@
     <File Path=".github\workflows\build.yml" />
   </Folder>
   <Folder Name="/.src/Agent/">
+    <File Path="Agent\INSTRUCTIONS.md" />
     <File Path="Agent\LESSONS.md" />
-    <File Path="Agent\PLAN.md" />
-    <File Path="Agent\SPEC.md" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
 </Solution>

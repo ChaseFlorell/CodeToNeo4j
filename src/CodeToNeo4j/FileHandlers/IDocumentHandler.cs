@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -6,13 +7,13 @@ public interface IDocumentHandler
 {
     bool CanHandle(string filePath);
     ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility);
 

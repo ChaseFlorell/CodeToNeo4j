@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -9,13 +10,13 @@ public class XamlHandler : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -35,7 +36,7 @@ public class XamlHandler : DocumentHandlerBase
         }
     }
 
-    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         var name = element.Name.LocalName;
         var keySuffix = "";
@@ -54,7 +55,7 @@ public class XamlHandler : DocumentHandlerBase
         var symbolKey = $"{fileKey}:{name}{keySuffix}:{startLine}";
         if (Accessibility.Public >= minAccessibility)
         {
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: symbolKey,
                 Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
                 Kind: "XamlElement",
@@ -69,7 +70,7 @@ public class XamlHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
         }
 
         // Extract potential event handlers
@@ -80,7 +81,7 @@ public class XamlHandler : DocumentHandlerBase
                 if (Accessibility.Private >= minAccessibility)
                 {
                     var handlerKey = $"{fileKey}:EventHandler:{attr.Value}";
-                    var handlerRecord = new SymbolRecord(
+                    var handlerRecord = new Symbol(
                         Key: handlerKey,
                         Name: attr.Value,
                         Kind: "XamlEventHandler",
@@ -94,7 +95,7 @@ public class XamlHandler : DocumentHandlerBase
                         Comments: null
                     );
                     symbolBuffer.Add(handlerRecord);
-                    relBuffer.Add(new RelRecord(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
+                    relBuffer.Add(new Relationship(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
                 }
             }
         }

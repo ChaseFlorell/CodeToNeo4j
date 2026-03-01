@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -9,20 +10,21 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
         await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
-        if (document is null || compilation is null) return;
+        var doc = document as Document;
+        if (doc is null || compilation is null) return;
         
-        var syntaxTree = await document.GetSyntaxTreeAsync();
+        var syntaxTree = await doc.GetSyntaxTreeAsync();
         if (syntaxTree is null) return;
 
         var rootNode = await syntaxTree.GetRootAsync();
@@ -40,8 +42,8 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
@@ -70,7 +72,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
         }
     }
 
-    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, EnumDeclarationSyntax eds, SymbolRecord typeRec, Accessibility minAccessibility)
+    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, EnumDeclarationSyntax eds, Symbol typeRec, Accessibility minAccessibility)
     {
         foreach (var member in eds.Members)
         {
@@ -85,11 +87,11 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
             var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
             symbolBuffer.Add(memberRec);
 
-            relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
         }
     }
 
-    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, TypeDeclarationSyntax tds, SymbolRecord typeRec, Accessibility minAccessibility)
+    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, TypeDeclarationSyntax tds, Symbol typeRec, Accessibility minAccessibility)
     {
         foreach (var member in tds.Members)
         {
@@ -104,7 +106,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
             var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
             symbolBuffer.Add(memberRec);
 
-            relBuffer.Add(new RelRecord(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
         }
     }
 }

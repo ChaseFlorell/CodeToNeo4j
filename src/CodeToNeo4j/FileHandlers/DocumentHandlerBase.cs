@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -10,13 +11,13 @@ public abstract class DocumentHandlerBase : IDocumentHandler
     public abstract bool CanHandle(string filePath);
 
     public virtual async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -24,7 +25,7 @@ public abstract class DocumentHandlerBase : IDocumentHandler
         await Task.CompletedTask;
     }
 
-    protected static async ValueTask<string> GetContent(Document? document, string filePath)
+    protected static async ValueTask<string> GetContent(TextDocument? document, string filePath)
     {
         if (document is not null)
         {

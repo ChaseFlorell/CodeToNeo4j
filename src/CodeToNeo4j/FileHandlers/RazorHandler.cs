@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -9,13 +10,13 @@ public class RazorHandler : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".razor", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -26,9 +27,10 @@ public class RazorHandler : DocumentHandlerBase
         ExtractDirectives(content, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
 
         // Try to get Roslyn symbols if available (generated code-behind)
-        if (document is not null && compilation is not null)
+        var doc = document as Document;
+        if (doc is not null && compilation is not null)
         {
-            var syntaxTree = await document.GetSyntaxTreeAsync();
+            var syntaxTree = await doc.GetSyntaxTreeAsync();
             if (syntaxTree != null)
             {
                 var semanticModel = compilation.GetSemanticModel(syntaxTree);
@@ -38,7 +40,7 @@ public class RazorHandler : DocumentHandlerBase
         }
     }
 
-    private void ExtractDirectives(string content, string repoKey, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ExtractDirectives(string content, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -56,7 +58,7 @@ public class RazorHandler : DocumentHandlerBase
             var key = $"{fileKey}:{kind}:{name}";
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
 
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: key,
                 Name: name,
                 Kind: kind,
@@ -71,7 +73,7 @@ public class RazorHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
         }
     }
 }

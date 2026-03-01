@@ -1,6 +1,6 @@
-namespace CodeToNeo4j;
+namespace CodeToNeo4j.Graph;
 
-public record DependencyRecord(
+public record Dependency(
     string Key,
     string Name,
     string Version

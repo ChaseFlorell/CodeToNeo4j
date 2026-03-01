@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -9,13 +10,13 @@ public class HtmlHandler : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -29,7 +30,7 @@ public class HtmlHandler : DocumentHandlerBase
         ExtractIdsAndClasses(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    private void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -40,7 +41,7 @@ public class HtmlHandler : DocumentHandlerBase
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
             var key = $"{fileKey}:ScriptRef:{src}:{startLine}";
 
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: key,
                 Name: src,
                 Kind: "HtmlScriptReference",
@@ -55,11 +56,11 @@ public class HtmlHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
         }
     }
 
-    private void ExtractIdsAndClasses(string content, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ExtractIdsAndClasses(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -71,7 +72,7 @@ public class HtmlHandler : DocumentHandlerBase
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
             var key = $"{fileKey}:ElementId:{id}:{startLine}";
 
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: key,
                 Name: id,
                 Kind: "HtmlElementId",
@@ -86,7 +87,7 @@ public class HtmlHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
         }
     }
 }

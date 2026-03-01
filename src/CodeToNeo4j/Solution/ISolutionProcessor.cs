@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace CodeToNeo4j;
+namespace CodeToNeo4j.Solution;
 
 public interface ISolutionProcessor
 {

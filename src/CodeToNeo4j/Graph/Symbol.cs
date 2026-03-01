@@ -1,6 +1,6 @@
-namespace CodeToNeo4j;
+namespace CodeToNeo4j.Graph;
 
-public record SymbolRecord(
+public record Symbol(
     string Key,
     string Name,
     string Kind,

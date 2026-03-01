@@ -1,17 +1,11 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace CodeToNeo4j;
-
-public interface ISymbolMapper
-{
-    SymbolRecord ToSymbolRecord(string repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node);
-    string BuildStableSymbolKey(string repoKey, ISymbol symbol);
-}
+namespace CodeToNeo4j.Graph;
 
 public class SymbolMapper : ISymbolMapper
 {
-    public SymbolRecord ToSymbolRecord(string repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node)
+    public Symbol ToSymbolRecord(string repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node)
     {
         var kind = symbol.Kind.ToString();
         var name = symbol.Name;
@@ -21,7 +15,7 @@ public class SymbolMapper : ISymbolMapper
         var documentation = symbol.GetDocumentationCommentXml();
         var comments = ExtractComments(node);
 
-        return new SymbolRecord(
+        return new Symbol(
             Key: key,
             Name: name,
             Kind: kind,

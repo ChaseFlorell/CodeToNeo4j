@@ -1,9 +1,8 @@
 ### 1. Plan
+- Load `Agent/INSTRUCTIONS.md` and `Agent/LESSONS.md` into your brain
 - If something goes sideways, STOP and re-plan immediately - don't keep pushing
 - Use plan mode for verification steps, not just building
-- Add the plan to `Agent/PLAN.md`
 - Write detailed specs upfront to reduce ambiguity
-- Put the spec in a `Agent/SPEC.md` file
 - Double check your work before executing any changes
 - Ask questions upfront before executing any changes
 - As best as you can, ask for execution permissions upfront before executing any changes
@@ -38,16 +37,16 @@
 
 ## Task Management
 
-1. **Plan First**: Write plan to `Agent/PLAN.md` with checkable items
+1. **Plan First**: Create a plan before starting
 2. **Verify Plan**: Check in before starting implementation
 3. **Track Progress**: Mark items complete as you go
 4. **Explain Changes**: High-level summary at each step
-5. **Document Results**: Add review section to `Agent/PLAN.md`
-6. **Capture Lessons**: Update `Agent/LESSONS.md` after corrections
-7. **Refine Instructions**: Update `Agent/SPEC.md` with any helpful information discovered during execution
+5. **Capture Lessons**: Update `Agent/LESSONS.md` after corrections
+6. **Refine Instructions**: Update `Agent/INSTRUCTIONS.md` with any helpful information discovered during execution
 
 ## Core Principles
 
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+- **S.O.L.I.D**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion

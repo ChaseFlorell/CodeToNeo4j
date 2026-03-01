@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -9,13 +10,13 @@ public class XmlHandler : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -35,7 +36,7 @@ public class XmlHandler : DocumentHandlerBase
         }
     }
 
-    private void ProcessElement(XElement element, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -46,7 +47,7 @@ public class XmlHandler : DocumentHandlerBase
         // Create a key that is somewhat unique
         var key = $"{fileKey}:XmlElement:{name}:{startLine}";
 
-        var record = new SymbolRecord(
+        var record = new Symbol(
             Key: key,
             Name: name,
             Kind: "XmlElement",
@@ -61,7 +62,7 @@ public class XmlHandler : DocumentHandlerBase
         );
 
         symbolBuffer.Add(record);
-        relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
+        relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
 
         // Only process direct children to avoid excessive depth if needed, 
         // but here we'll do full recursion like XamlHandler.

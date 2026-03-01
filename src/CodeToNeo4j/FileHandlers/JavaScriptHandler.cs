@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -9,13 +10,13 @@ public class JavaScriptHandler : DocumentHandlerBase
     public override bool CanHandle(string filePath) => filePath.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
 
     public override async ValueTask HandleAsync(
-        Document? document,
+        TextDocument? document,
         Compilation? compilation,
         string repoKey,
         string fileKey,
         string filePath,
-        ICollection<SymbolRecord> symbolBuffer,
-        ICollection<RelRecord> relBuffer,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
         string databaseName,
         Accessibility minAccessibility)
     {
@@ -29,7 +30,7 @@ public class JavaScriptHandler : DocumentHandlerBase
         ExtractImportsExports(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    private void ExtractFunctions(string content, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ExtractFunctions(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -48,7 +49,7 @@ public class JavaScriptHandler : DocumentHandlerBase
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
             var key = $"{fileKey}:Function:{name}:{startLine}";
 
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: key,
                 Name: name,
                 Kind: "JavaScriptFunction",
@@ -63,11 +64,11 @@ public class JavaScriptHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
         }
     }
 
-    private void ExtractImportsExports(string content, string fileKey, string filePath, ICollection<SymbolRecord> symbolBuffer, ICollection<RelRecord> relBuffer, Accessibility minAccessibility)
+    private void ExtractImportsExports(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -79,7 +80,7 @@ public class JavaScriptHandler : DocumentHandlerBase
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
             var key = $"{fileKey}:Import:{module}:{startLine}";
 
-            var record = new SymbolRecord(
+            var record = new Symbol(
                 Key: key,
                 Name: module,
                 Kind: "JavaScriptImport",
@@ -94,7 +95,7 @@ public class JavaScriptHandler : DocumentHandlerBase
             );
 
             symbolBuffer.Add(record);
-            relBuffer.Add(new RelRecord(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
         }
     }
 }

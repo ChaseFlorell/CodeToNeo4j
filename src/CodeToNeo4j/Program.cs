@@ -1,4 +1,6 @@
 ﻿using System.CommandLine;
+using CodeToNeo4j.Graph;
+using CodeToNeo4j.Solution;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -60,8 +62,10 @@ public static class Program
                     .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel);
 
                 await using var serviceProvider = services.BuildServiceProvider();
+                var graphService = serviceProvider.GetRequiredService<IGraphService>();
                 var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
 
+                await graphService.Initialize(options.RepoKey, options.DatabaseName);
                 await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
             },
             binder);
