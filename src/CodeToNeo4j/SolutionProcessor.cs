@@ -21,6 +21,7 @@ public class SolutionProcessor(
 {
     public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
+        var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
         await InitializeNeo4j(repoKey, databaseName);
@@ -37,8 +38,8 @@ public class SolutionProcessor(
             await IngestDependencies(solution, repoKey, databaseName);
         }
 
-        var diffResult = await GetChangedFiles(sln, diffBase, force, includeExtensions);
-        
+        var diffResult = await GetChangedFiles(sln, diffBase, force, extensionsToInclude);
+
         if (diffResult?.DeletedFiles.Count > 0)
         {
             logger.LogInformation("Marking {Count} files as deleted that were removed in git...", diffResult.DeletedFiles.Count);
@@ -55,7 +56,7 @@ public class SolutionProcessor(
             await neo4jService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName);
         }
 
-        var filesToProcess = GetFilesToProcess(sln, solution, diffResult?.ModifiedFiles, includeExtensions);
+        var filesToProcess = GetFilesToProcess(sln, solution, diffResult?.ModifiedFiles, extensionsToInclude);
 
         var totalFiles = filesToProcess.Length;
         var currentFileIndex = 0;
@@ -75,12 +76,17 @@ public class SolutionProcessor(
             await neo4jService.Flush(repoKey, null, symbolBuffer, relBuffer, databaseName);
         }
 
+        foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
+        {
+            logger.LogInformation("{FileType} files handled: {Count}", handler.FileType, handler.NumberOfFilesHandled);
+        }
+
         logger.LogInformation("Done.");
     }
 
     private record ProcessedFile(string FilePath, Document? Document, Compilation? Compilation);
 
-    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, IEnumerable<string> includeExtensions)
+    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, HashSet<string> includeExtensions)
     {
         if (diffBase is null) return null;
 
@@ -133,22 +139,21 @@ public class SolutionProcessor(
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 
-    private ProcessedFile[] GetFilesToProcess(FileInfo sln, Solution solution, IEnumerable<string>? changedFiles, IEnumerable<string> includeExtensions)
+    private ProcessedFile[] GetFilesToProcess(FileInfo sln, Solution solution, HashSet<string>? changedFiles, HashSet<string> includeExtensions)
     {
         var solutionFiles = new Dictionary<string, ProcessedFile>(StringComparer.OrdinalIgnoreCase);
-        var extensionSet = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
         {
             var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            
+
             // Regular Documents
             foreach (var doc in project.Documents)
             {
                 var path = fileService.NormalizePath(doc.FilePath!);
                 if (string.IsNullOrEmpty(path)) continue;
-                if (!extensionSet.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                if (!includeExtensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
                 if (!solutionFiles.ContainsKey(path))
                 {
@@ -161,7 +166,7 @@ public class SolutionProcessor(
             {
                 var path = fileService.NormalizePath(doc.FilePath!);
                 if (string.IsNullOrEmpty(path)) continue;
-                if (!extensionSet.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                if (!includeExtensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
                 if (!solutionFiles.ContainsKey(path))
                 {
@@ -183,7 +188,7 @@ public class SolutionProcessor(
         {
             var normalizedPath = fileService.NormalizePath(fileOnDisk);
             if (IsExcluded(normalizedPath)) continue;
-            if (!extensionSet.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+            if (!includeExtensions.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
             if (!solutionFiles.ContainsKey(normalizedPath))
             {
@@ -213,10 +218,10 @@ public class SolutionProcessor(
     {
         var parts = path.Split('/');
         return parts.Any(p => p.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
-                             p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
-                             p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
-                             p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
-                             p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
+                              p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
+                              p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
+                              p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
+                              p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
     }
 
     private async ValueTask ProcessFile(

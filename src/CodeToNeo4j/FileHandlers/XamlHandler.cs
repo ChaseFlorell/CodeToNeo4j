@@ -3,11 +3,12 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XamlHandler : IDocumentHandler
+public class XamlHandler : DocumentHandlerBase
 {
-    public bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
+    public override string FileType => "XAML";
+    public override bool CanHandle(string filePath) => filePath.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase);
 
-    public async ValueTask HandleAsync(
+    public override async ValueTask HandleAsync(
         Document? document,
         Compilation? compilation,
         string repoKey,
@@ -18,16 +19,8 @@ public class XamlHandler : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
-        string content;
-        if (document is not null)
-        {
-            var sourceText = await document.GetTextAsync();
-            content = sourceText.ToString();
-        }
-        else
-        {
-            content = await File.ReadAllTextAsync(filePath);
-        }
+        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
+        string content = await GetContent(document, filePath);
 
         try
         {

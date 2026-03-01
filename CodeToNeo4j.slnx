@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/.src/">
     <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="global.json" />
@@ -10,6 +11,11 @@
   <Folder Name="/.src/.github/" />
   <Folder Name="/.src/.github/workflows/">
     <File Path=".github\workflows\build.yml" />
+  </Folder>
+  <Folder Name="/.src/Agent/">
+    <File Path="Agent\LESSONS.md" />
+    <File Path="Agent\PLAN.md" />
+    <File Path="Agent\SPEC.md" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
 </Solution>

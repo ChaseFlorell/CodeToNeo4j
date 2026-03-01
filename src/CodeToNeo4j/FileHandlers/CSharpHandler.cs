@@ -3,11 +3,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
+public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
 {
-    public bool CanHandle(string filePath) => filePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+    public override string FileType => "C#";
+    public override bool CanHandle(string filePath) => filePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
 
-    public async ValueTask HandleAsync(
+    public override async ValueTask HandleAsync(
         Document? document,
         Compilation? compilation,
         string repoKey,
@@ -18,6 +19,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : IDocumentHandler
         string databaseName,
         Accessibility minAccessibility)
     {
+        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
         if (document is null || compilation is null) return;
         
         var syntaxTree = await document.GetSyntaxTreeAsync();

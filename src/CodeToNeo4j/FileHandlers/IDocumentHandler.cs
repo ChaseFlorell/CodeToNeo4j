@@ -15,4 +15,7 @@ public interface IDocumentHandler
         ICollection<RelRecord> relBuffer,
         string databaseName,
         Accessibility minAccessibility);
+
+    int NumberOfFilesHandled { get; }
+    string FileType { get; }
 }
