@@ -23,7 +23,6 @@ public static class Program
         var diffBaseOption = new Option<string?>("--diffBase", "Optional git base ref for incremental indexing. Example: origin/main");
         var batchSizeOption = new Option<int>("--batchSize", () => 500, "Number of symbols to batch before flushing to Neo4j. Example: 500");
         var logLevelOption = new Option<LogLevel>("--logLevel", () => LogLevel.Information, "The minimum log level to display. Example: Information");
-        var forceOption = new Option<bool>("--force", () => false, "Force reprocessing of the entire solution, even if incremental indexing is enabled. Example: --force");
         var skipDependenciesOption = new Option<bool>("--skip-dependencies", () => false, "Skip NuGet dependency ingestion. Example: --skip-dependencies");
         var minAccessibilityOption = new Option<Accessibility>("--min-accessibility", () => Accessibility.Private, "The minimum accessibility level to index. Default: Private (indices all)");
         var includeExtensionsOption = new Option<string[]>("--include", () => allSupportedExtensions, $"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor");
@@ -31,7 +30,7 @@ public static class Program
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
-            slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, forceOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption
+            slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption
         };
 
         var binder = new OptionsBinder(
@@ -44,7 +43,6 @@ public static class Program
             batchSizeOption,
             databaseOption,
             logLevelOption,
-            forceOption,
             skipDependenciesOption,
             minAccessibilityOption,
             includeExtensionsOption
@@ -69,7 +67,7 @@ public static class Program
                 var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
 
                 await graphService.Initialize(options.RepoKey, options.DatabaseName);
-                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.Force, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
+                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
             },
             binder);
 

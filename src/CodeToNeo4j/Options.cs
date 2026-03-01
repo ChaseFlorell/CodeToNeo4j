@@ -13,7 +13,6 @@ public class Options(
     int batchSize,
     string databaseName,
     LogLevel logLevel,
-    bool force,
     bool skipDependencies,
     Accessibility minAccessibility,
     IEnumerable<string> includeExtensions)
@@ -27,7 +26,6 @@ public class Options(
     public int BatchSize { get; } = batchSize;
     public string DatabaseName { get; } = databaseName;
     public LogLevel LogLevel { get; } = logLevel;
-    public bool Force { get; } = force;
     public bool SkipDependencies { get; } = skipDependencies;
     public Accessibility MinAccessibility { get; } = minAccessibility;
     public IEnumerable<string> IncludeExtensions { get; } = includeExtensions;

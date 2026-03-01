@@ -21,7 +21,7 @@ public class SolutionProcessor(
     ISolutionFileDiscoveryService discoveryService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool force, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
+    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
@@ -38,7 +38,7 @@ public class SolutionProcessor(
             await dependencyIngestor.IngestDependencies(solution, repoKey, databaseName);
         }
 
-        var diffResult = await GetChangedFiles(sln, diffBase, force, extensionsToInclude);
+        var diffResult = await GetChangedFiles(sln, diffBase, extensionsToInclude);
 
         if (diffResult?.DeletedFiles.Count > 0)
         {
@@ -105,17 +105,11 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, bool force, HashSet<string> includeExtensions)
+    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, HashSet<string> includeExtensions)
     {
         if (diffBase is null) return null;
 
         var result = await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
-
-        if (force)
-        {
-            logger.LogInformation("Incremental indexing bypassed due to --force flag, but commits will still be ingested.");
-            return result with { ModifiedFiles = new HashSet<string>(), DeletedFiles = new HashSet<string>() };
-        }
 
         logger.LogInformation("Incremental indexing enabled. Found {ModifiedCount} modified and {DeletedCount} deleted files since {DiffBase}", result.ModifiedFiles.Count, result.DeletedFiles.Count, diffBase);
 

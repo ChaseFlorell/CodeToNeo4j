@@ -15,7 +15,6 @@ public class OptionsBinder(
     Option<int> batchSizeOption,
     Option<string> databaseOption,
     Option<LogLevel> logLevelOption,
-    Option<bool> forceOption,
     Option<bool> skipDependenciesOption,
     Option<Accessibility> minAccessibilityOption,
     Option<string[]> includeExtensionsOption) : BinderBase<Options>
@@ -31,7 +30,6 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(batchSizeOption),
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
             bindingContext.ParseResult.GetValueForOption(logLevelOption),
-            bindingContext.ParseResult.GetValueForOption(forceOption),
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!
