@@ -39,6 +39,40 @@ public class CsprojHandler : DocumentHandlerBase
     {
         if (Accessibility.Public < minAccessibility) return;
 
+        // Extract PropertyGroups
+        var propertyGroups = project.Elements().Where(e => e.Name.LocalName == "PropertyGroup");
+        foreach (var group in propertyGroups)
+        {
+            var properties = group.Elements();
+            foreach (var property in properties)
+            {
+                var name = property.Name.LocalName;
+                var value = property.Value;
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(value)) continue;
+
+                var lineInfo = (System.Xml.IXmlLineInfo)property;
+                var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
+                var key = $"{fileKey}:Property:{name}:{startLine}";
+
+                var record = new Symbol(
+                    Key: key,
+                    Name: name,
+                    Kind: "ProjectProperty",
+                    Fqn: $"{name}: {value}",
+                    Accessibility: "Public",
+                    FileKey: fileKey,
+                    FilePath: filePath,
+                    StartLine: startLine,
+                    EndLine: startLine,
+                    Documentation: value,
+                    Comments: null
+                );
+
+                symbolBuffer.Add(record);
+                relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "HAS_PROPERTY"));
+            }
+        }
+
         // Extract PackageReferences
         var packageRefs = project.Descendants().Where(e => e.Name.LocalName == "PackageReference");
         foreach (var packageRef in packageRefs)
