@@ -18,13 +18,13 @@ public class Neo4jService(
     {
         logger.LogInformation("Initializing Neo4j driver...");
 
-        await VerifyNeo4jVersion();
+        await VerifyNeo4jVersion().ConfigureAwait(false);
         logger.LogInformation("Neo4j version verified.");
 
-        await EnsureSchema(databaseName);
+        await EnsureSchema(databaseName).ConfigureAwait(false);
         logger.LogInformation("Neo4j schema ensured for database: {DatabaseName}", databaseName);
 
-        await UpsertProject(repoKey, databaseName);
+        await UpsertProject(repoKey, databaseName).ConfigureAwait(false);
         logger.LogInformation("Project upserted: {RepoKey}", repoKey);
     }
 
@@ -53,22 +53,22 @@ public class Neo4jService(
                 commits = metadata.Commits.ToArray(),
                 tags = metadata.Tags.ToArray(),
                 repoKey
-            });
-        });
+            }).ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 
     public async ValueTask DeletePriorSymbols(string fileKey, string databaseName)
     {
         logger.LogDebug("Deleting prior symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
     public async ValueTask MarkFileAsDeleted(string fileKey, string databaseName)
     {
         logger.LogDebug("Marking file and its symbols as deleted for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
     public async ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
@@ -88,7 +88,7 @@ public class Neo4jService(
 
         logger.LogDebug("Upserting {Count} commits for {RepoKey} in database: {DatabaseName}", commitBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
     public async ValueTask UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName)
@@ -105,7 +105,7 @@ public class Neo4jService(
 
         logger.LogDebug("Upserting {Count} dependencies for {RepoKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
     public async ValueTask Flush(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
@@ -142,15 +142,15 @@ public class Neo4jService(
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch });
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch });
-        });
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch }).ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
     {
         logger.LogDebug("Disposing Neo4j driver...");
-        await driver.DisposeAsync();
+        await driver.DisposeAsync().ConfigureAwait(false);
     }
 
     private async ValueTask VerifyNeo4jVersion()
@@ -159,9 +159,9 @@ public class Neo4jService(
         await using var session = driver.AsyncSession();
         var result = await session.ExecuteReadAsync(async tx =>
         {
-            var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.GetNeo4jVersion));
-            return await cursor.SingleAsync();
-        });
+            var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.GetNeo4jVersion)).ConfigureAwait(false);
+            return await cursor.SingleAsync().ConfigureAwait(false);
+        }).ConfigureAwait(false);
 
         var versionString = result["version"].As<string>();
         if (string.IsNullOrWhiteSpace(versionString))
@@ -200,7 +200,7 @@ public class Neo4jService(
 
         foreach (var cypher in statements)
         {
-            await session.RunWithRetry(cypher);
+            await session.RunWithRetry(cypher).ConfigureAwait(false);
         }
     }
 
@@ -208,6 +208,6 @@ public class Neo4jService(
     {
         logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }); });
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 }

@@ -1,10 +1,11 @@
+using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class RazorHandler : DocumentHandlerBase
+public class RazorHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".razor";
 
@@ -19,8 +20,8 @@ public class RazorHandler : DocumentHandlerBase
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
-        string content = await GetContent(document, filePath);
+        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
+        string content = await GetContent(document, filePath).ConfigureAwait(false);
 
         // Extract directives
         ExtractDirectives(content, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
@@ -29,7 +30,7 @@ public class RazorHandler : DocumentHandlerBase
         var doc = document as Document;
         if (doc is not null && compilation is not null)
         {
-            var syntaxTree = await doc.GetSyntaxTreeAsync();
+            var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
             if (syntaxTree != null)
             {
                 var semanticModel = compilation.GetSemanticModel(syntaxTree);

@@ -18,7 +18,7 @@ public class SolutionFileDiscoveryService(
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
         {
-            var compilation = await project.GetCompilationAsync();
+            var compilation = await project.GetCompilationAsync().ConfigureAwait(false);
 
             // Regular Documents
             foreach (var doc in project.Documents)

@@ -18,8 +18,8 @@ public static class Neo4jExtensions
         .Build();
 
     public static async ValueTask<IResultCursor> RunWithRetry(this IAsyncSession session, string query, object? parameters = null) =>
-        await Pipeline.ExecuteAsync(async ct => await session.RunAsync(query, parameters));
+        await Pipeline.ExecuteAsync(async ct => await session.RunAsync(query, parameters).ConfigureAwait(false)).ConfigureAwait(false);
 
     public static async ValueTask<IResultCursor> RunWithRetry(this IAsyncQueryRunner runner, string query, object? parameters = null) =>
-        await Pipeline.ExecuteAsync(async ct => await runner.RunAsync(query, parameters));
+        await Pipeline.ExecuteAsync(async ct => await runner.RunAsync(query, parameters).ConfigureAwait(false)).ConfigureAwait(false);
 }

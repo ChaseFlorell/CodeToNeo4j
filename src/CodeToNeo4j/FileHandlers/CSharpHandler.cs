@@ -1,10 +1,11 @@
+using System.IO.Abstractions;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
+public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".cs";
 
@@ -19,14 +20,14 @@ public class CSharpHandler(ISymbolMapper symbolMapper) : DocumentHandlerBase
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
+        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
         var doc = document as Document;
         if (doc is null || compilation is null) return;
         
-        var syntaxTree = await doc.GetSyntaxTreeAsync();
+        var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
         if (syntaxTree is null) return;
 
-        var rootNode = await syntaxTree.GetRootAsync();
+        var rootNode = await syntaxTree.GetRootAsync().ConfigureAwait(false);
         var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
 
         foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())

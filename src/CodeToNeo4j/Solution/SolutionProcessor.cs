@@ -30,15 +30,15 @@ public class SolutionProcessor(
         workspace.RegisterWorkspaceFailedHandler(e => logger.LogWarning("Workspace warning: {Message}", e.Diagnostic.Message));
 
         logger.LogInformation("Opening solution...");
-        var solution = await workspace.OpenSolutionAsync(sln.FullName);
+        var solution = await workspace.OpenSolutionAsync(sln.FullName).ConfigureAwait(false);
         logger.LogInformation("Solution opened successfully.");
 
         if (!skipDependencies)
         {
-            await dependencyIngestor.IngestDependencies(solution, repoKey, databaseName);
+            await dependencyIngestor.IngestDependencies(solution, repoKey, databaseName).ConfigureAwait(false);
         }
 
-        var diffResult = await GetChangedFiles(sln, diffBase, extensionsToInclude);
+        var diffResult = await GetChangedFiles(sln, diffBase, extensionsToInclude).ConfigureAwait(false);
 
         if (diffResult?.DeletedFiles.Count > 0)
         {
@@ -46,35 +46,43 @@ public class SolutionProcessor(
             foreach (var deletedFile in diffResult.DeletedFiles)
             {
                 var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}";
-                await graphService.MarkFileAsDeleted(fileKey, databaseName);
+                await graphService.MarkFileAsDeleted(fileKey, databaseName).ConfigureAwait(false);
             }
         }
 
-        if (diffResult is not null && diffResult.Commits.Any())
+        if (diffResult?.Commits.Any() ?? false)
         {
             logger.LogInformation("Ingesting {Count} commits since {DiffBase}...", diffResult.Commits.Count(), diffBase);
-            await graphService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName);
+            await graphService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName).ConfigureAwait(false);
         }
 
-        var discoveredFiles = await discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude);
+        var discoveredFiles = await discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude).ConfigureAwait(false);
         var filesToProcess = FilterFiles(discoveredFiles, diffResult?.ModifiedFiles);
 
         var totalFiles = filesToProcess.Length;
-        var currentFileIndex = 0;
-
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
 
-        foreach (var file in filesToProcess)
+        for (var i = 0; i < totalFiles; i += batchSize)
         {
-            currentFileIndex++;
-            await ProcessFile(file, solutionRoot, repoKey, databaseName, batchSize, symbolBuffer, relBuffer, currentFileIndex, totalFiles, minAccessibility);
-        }
+            var chunk = filesToProcess.Skip(i).Take(batchSize).ToArray();
+            var tasks = chunk.Select((file, index) => ProcessFile(file, solutionRoot, repoKey, databaseName, i + index + 1, totalFiles, minAccessibility)).ToArray();
+            
+            var results = await Task.WhenAll(tasks.Select(t => t.AsTask())).ConfigureAwait(false);
 
-        if (symbolBuffer.Count > 0)
-        {
-            logger.LogInformation("Flushing final {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
-            await graphService.Flush(symbolBuffer, relBuffer, databaseName);
+            foreach (var result in results)
+            {
+                symbolBuffer.AddRange(result.Symbols);
+                relBuffer.AddRange(result.Relationships);
+            }
+
+            if (symbolBuffer.Count > 0 || relBuffer.Count > 0)
+            {
+                logger.LogInformation("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
+                await graphService.Flush(symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
+                symbolBuffer.Clear();
+                relBuffer.Clear();
+            }
         }
 
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
@@ -89,17 +97,24 @@ public class SolutionProcessor(
     {
         var result = discoveredFiles.ToArray();
 
-        if (changedFiles is not null && changedFiles.Any())
+        switch (changedFiles?.Any() ?? false)
         {
-            result = result
-                .Where(f => changedFiles.Contains(f.FilePath))
-                .ToArray();
-        }
-        else if (changedFiles is not null)
-        {
-            // If changedFiles is an empty collection (not null), it means we ARE in incremental mode
-            // but no files matched. So we return empty.
-            result = Array.Empty<ProcessedFile>();
+            case true:
+                result = result
+                    .Where(f => changedFiles.Contains(f.FilePath))
+                    .ToArray();
+                break;
+            default:
+            {
+                if (changedFiles is not null)
+                {
+                    // If changedFiles is an empty collection (not null), it means we ARE in incremental mode
+                    // but no files matched. So we return empty.
+                    result = [];
+                }
+
+                break;
+            }
         }
 
         return result;
@@ -109,21 +124,18 @@ public class SolutionProcessor(
     {
         if (diffBase is null) return null;
 
-        var result = await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions);
+        var result = await versionControlService.GetChangedFiles(diffBase, sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory(), includeExtensions).ConfigureAwait(false);
 
         logger.LogInformation("Incremental indexing enabled. Found {ModifiedCount} modified and {DeletedCount} deleted files since {DiffBase}", result.ModifiedFiles.Count, result.DeletedFiles.Count, diffBase);
 
         return result;
     }
 
-    private async ValueTask ProcessFile(
+    private async ValueTask<(List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
         ProcessedFile file,
         string solutionRoot,
         string repoKey,
         string databaseName,
-        int batchSize,
-        ICollection<Symbol> symbolBuffer,
-        ICollection<Relationship> relBuffer,
         int currentFileIndex,
         int totalFiles,
         Accessibility minAccessibility)
@@ -135,30 +147,26 @@ public class SolutionProcessor(
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var fileKey = $"{repoKey}:{filePath}";
-        var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath));
-        var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot);
+        var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath).ConfigureAwait(false));
+        var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
-        await graphService.UpsertFile(fileKey, filePath, fileHash, metadata, repoKey, databaseName);
-        await graphService.DeletePriorSymbols(fileKey, databaseName);
+        await graphService.UpsertFile(fileKey, filePath, fileHash, metadata, repoKey, databaseName).ConfigureAwait(false);
+        await graphService.DeletePriorSymbols(fileKey, databaseName).ConfigureAwait(false);
+
+        var symbols = new List<Symbol>();
+        var relationships = new List<Relationship>();
 
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.HandleAsync(file.Document, file.Compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
+            await handler.HandleAsync(file.Document, file.Compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
         }
         else
         {
             logger.LogDebug("No handler found for file: {FilePath}", filePath);
         }
 
-        if (symbolBuffer.Count >= batchSize)
-        {
-            logger.LogInformation("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
-            await graphService.Flush(symbolBuffer, relBuffer, databaseName);
-            symbolBuffer.Clear();
-            relBuffer.Clear();
-        }
-
         logger.LogDebug("Indexed {FilePath}", filePath);
+        return (symbols, relationships);
     }
 }

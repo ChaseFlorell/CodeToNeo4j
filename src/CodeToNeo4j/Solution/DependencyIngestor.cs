@@ -13,7 +13,7 @@ public class DependencyIngestor(
         var dependencies = new List<Dependency>();
         foreach (var project in solution.Projects)
         {
-            var compilation = await project.GetCompilationAsync();
+            var compilation = await project.GetCompilationAsync().ConfigureAwait(false);
             if (compilation is null) continue;
 
             foreach (var reference in compilation.ReferencedAssemblyNames)
@@ -24,7 +24,7 @@ public class DependencyIngestor(
         }
 
         var uniqueDeps = dependencies.DistinctBy(d => d.Key).ToArray();
-        await graphService.UpsertDependencies(repoKey, uniqueDeps, databaseName);
+        await graphService.UpsertDependencies(repoKey, uniqueDeps, databaseName).ConfigureAwait(false);
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 }

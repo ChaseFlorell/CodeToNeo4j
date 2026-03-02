@@ -1,10 +1,11 @@
+using System.IO.Abstractions;
 using System.Text.Json;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class JsonHandler : DocumentHandlerBase
+public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".json";
 
@@ -19,8 +20,8 @@ public class JsonHandler : DocumentHandlerBase
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
-        string content = await GetContent(document, filePath);
+        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
+        string content = await GetContent(document, filePath).ConfigureAwait(false);
 
         try
         {

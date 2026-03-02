@@ -9,7 +9,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
 {
     public async ValueTask<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
     {
-        var repoRoot = await GetGitRoot(workingDirectory);
+        var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
         logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
         var psi = new ProcessStartInfo
         {
@@ -22,9 +22,9 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         };
 
         using var p = Process.Start(psi) ?? throw new Exception("Failed to start git process.");
-        var output = await p.StandardOutput.ReadToEndAsync();
-        var err = await p.StandardError.ReadToEndAsync();
-        await p.WaitForExitAsync();
+        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        var err = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
+        await p.WaitForExitAsync().ConfigureAwait(false);
 
         if (p.ExitCode != 0)
         {
@@ -75,8 +75,8 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
             };
 
             using var cp = Process.Start(commitPsi) ?? throw new Exception("Failed to start git log process.");
-            var commitOutput = await cp.StandardOutput.ReadToEndAsync();
-            await cp.WaitForExitAsync();
+            var commitOutput = await cp.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+            await cp.WaitForExitAsync().ConfigureAwait(false);
 
             if (cp.ExitCode == 0)
             {
@@ -135,7 +135,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
 
     public async ValueTask<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
     {
-        var repoRoot = await GetGitRoot(workingDirectory);
+        var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
         var relPath = fileSystem.Path.GetRelativePath(repoRoot, filePath);
 
         var psi = new ProcessStartInfo
@@ -149,8 +149,8 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         };
 
         using var p = Process.Start(psi) ?? throw new Exception($"Failed to start git log for {filePath}");
-        var output = await p.StandardOutput.ReadToEndAsync();
-        await p.WaitForExitAsync();
+        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        await p.WaitForExitAsync().ConfigureAwait(false);
 
         if (p.ExitCode != 0)
         {
@@ -227,8 +227,8 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         };
 
         using var p = Process.Start(psi) ?? throw new Exception("Failed to start git process to find repo root.");
-        var output = await p.StandardOutput.ReadToEndAsync();
-        await p.WaitForExitAsync();
+        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        await p.WaitForExitAsync().ConfigureAwait(false);
 
         if (p.ExitCode != 0)
         {
