@@ -164,8 +164,8 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         }
 
         var authorMap = new Dictionary<string, (DateTimeOffset first, DateTimeOffset last, int count)>();
-        DateTimeOffset created = DateTimeOffset.MaxValue;
-        DateTimeOffset lastModified = DateTimeOffset.MinValue;
+        var created = DateTimeOffset.MaxValue;
+        var lastModified = DateTimeOffset.MinValue;
         var commits = new List<string>();
         var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

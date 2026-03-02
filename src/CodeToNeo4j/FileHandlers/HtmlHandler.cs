@@ -9,7 +9,7 @@ public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 {
     public override string FileExtension => ".html";
 
-    public override async ValueTask HandleAsync(
+    protected override async ValueTask HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -20,8 +20,7 @@ public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
-        string content = await GetContent(document, filePath).ConfigureAwait(false);
+        var content = await GetContent(document, filePath).ConfigureAwait(false);
 
         // Extract script references
         ExtractScriptReferences(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);

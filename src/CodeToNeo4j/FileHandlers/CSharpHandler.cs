@@ -9,7 +9,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
 {
     public override string FileExtension => ".cs";
 
-    public override async ValueTask HandleAsync(
+    protected override async ValueTask HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -20,7 +20,6 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
         var doc = document as Document;
         if (doc is null || compilation is null) return;
         

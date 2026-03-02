@@ -11,7 +11,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 
     public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
-    public virtual ValueTask HandleAsync(
+    public ValueTask HandleAsync(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -23,8 +23,19 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         Accessibility minAccessibility)
     {
         Interlocked.Increment(ref _numberOfFilesHandled);
-        return ValueTask.CompletedTask;
+        return HandleFile(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
     }
+
+    protected abstract ValueTask HandleFile(
+        TextDocument? document,
+        Compilation? compilation,
+        string repoKey,
+        string fileKey,
+        string filePath,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
+        string databaseName,
+        Accessibility minAccessibility);
 
     protected async ValueTask<string> GetContent(TextDocument? document, string filePath)
     {

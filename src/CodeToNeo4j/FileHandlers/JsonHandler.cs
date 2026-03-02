@@ -9,7 +9,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 {
     public override string FileExtension => ".json";
 
-    public override async ValueTask HandleAsync(
+    protected override async ValueTask HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -20,8 +20,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
-        string content = await GetContent(document, filePath).ConfigureAwait(false);
+        var content = await GetContent(document, filePath).ConfigureAwait(false);
 
         try
         {
@@ -67,7 +66,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
                 }
                 break;
             case JsonValueKind.Array:
-                int index = 0;
+                var index = 0;
                 foreach (var item in element.EnumerateArray())
                 {
                     var itemPath = $"{path}[{index}]";

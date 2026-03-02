@@ -9,7 +9,7 @@ public class AzureDevOpsProgressService(ILogger<AzureDevOpsProgressService> logg
 {
     public void ReportProgress(int current, int total, string filePath)
     {
-        double progressPercentage = (double)current / total * 100;
+        var progressPercentage = (double)current / total * 100;
         // Azure DevOps specific progress command.
         // ##vso[task.setprogress value=50;]
         System.Console.WriteLine($"##vso[task.setprogress value={progressPercentage:0};]Processing {filePath}");

@@ -9,7 +9,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
 {
     public override string FileExtension => ".xml";
 
-    public override async ValueTask HandleAsync(
+    protected override async ValueTask HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -20,8 +20,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         string databaseName,
         Accessibility minAccessibility)
     {
-        await base.HandleAsync(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility).ConfigureAwait(false);
-        string content = await GetContent(document, filePath).ConfigureAwait(false);
+        var content = await GetContent(document, filePath).ConfigureAwait(false);
 
         try
         {
