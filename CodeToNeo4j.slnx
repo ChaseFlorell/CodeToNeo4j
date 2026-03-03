@@ -7,6 +7,7 @@
     <File Path="global.json" />
     <File Path="nuget.config" />
     <File Path="README.md" />
+    <File Path="REQUIREMENTS.md" />
     <File Path="run.sh" />
   </Folder>
   <Folder Name="/.src/.github/" />

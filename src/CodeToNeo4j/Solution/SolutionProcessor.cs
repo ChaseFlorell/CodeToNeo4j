@@ -99,8 +99,7 @@ public class SolutionProcessor(
             }
 
             var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
-            var current = Interlocked.Increment(ref currentFileIndex);
-            progressService.ReportProgress(current, totalFiles, relativePath);
+            progressService.ReportProgress(currentFileIndex++, totalFiles, relativePath);
         }).ConfigureAwait(false);
 
         if (symbolBuffer.Count > 0)
