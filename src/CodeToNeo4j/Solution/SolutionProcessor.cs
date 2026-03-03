@@ -70,7 +70,7 @@ public class SolutionProcessor(
             MaxDegreeOfParallelism = 20
         };
 
-        await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, ct) =>
+        await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, _) =>
         {
             var result = await ProcessFile(file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
             await graphService.UpsertFile(result.File, databaseName).ConfigureAwait(false);
