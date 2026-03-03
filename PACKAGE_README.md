@@ -49,7 +49,7 @@ codetoneo4j \
 
 ## Prerequisites
 
-- **.NET 10 SDK** must be installed on the machine.
+- **.NET 8, 9, or 10 SDK** must be installed on the machine.
 - **Neo4j 5.0+** database.
 - **Git** (if using `--diffBase`).
 

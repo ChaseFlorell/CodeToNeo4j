@@ -22,7 +22,12 @@
 - Standard loggers (`Microsoft.Extensions.Logging`) typically append newlines to every log entry, which prevents single-line updates.
 - If a standard logger is still needed for other parts of the application, a custom `ILogger` implementation can be used to manage output formatting and suppression of specific logs during progress reporting.
 - For fatal errors, wrap the main entry point in a try-catch and use `AnsiConsole.WriteException` for rich error reporting before exiting with a non-zero code.
-- In performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` to process work in parallel when steps are independent.
+- For performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` to process work in parallel when steps are independent.
 - Use chunked parallelism (e.g., chunks of `batchSize`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
 - When parallelizing, ensure shared resources are either thread-safe or refactored to be local to the parallel task (e.g., returning results instead of populating a shared buffer).
 - For library or non-UI code, always use `ConfigureAwait(false)` on all awaits to prevent unnecessary thread marshalling back to the original synchronization context, which improves performance and avoids potential deadlocks.
+
+## .NET Global Tool Packaging
+- For .NET global tools, multi-targeting (e.g., `net10.0;net9.0;net8.0`) improves compatibility with older `dotnet` CLI versions that may not yet fully support the latest framework (like `net10.0`) during tool installation.
+- This ensures `DotnetToolSettings.xml` is present in the expected framework-specific folders (e.g., `tools/net8.0/any/`) that older installers can recognize.
+- Update `PACKAGE_README.md` to reflect the broader framework support when adding new targets.
