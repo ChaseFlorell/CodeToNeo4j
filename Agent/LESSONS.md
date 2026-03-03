@@ -46,13 +46,13 @@
 - **Lock-Free Batching**: Using a dedicated consumer task for database flushes eliminates the need for complex locking mechanisms in the parallel processing loop, reducing contention and simplifying thread-safety logic.
 
 ## Command-Line Design and Data Purging
-- When adding powerful administrative commands (like `--purge-data-by-repoKey`), always implement a confirmation prompt to prevent accidental data loss.
+- When adding powerful administrative commands (like `--purge-data-by-repository-key`), always implement a confirmation prompt to prevent accidental data loss.
 - Prefer using `AddValidator` on the `RootCommand` or individual `Option`s to handle argument validation instead of throwing exceptions inside the `SetHandler`. This allows the CLI to display standardized error messages and help text before the application starts executing.
 - Use conditional logic in the `RootCommand` handler (or a custom validator) to validate that incompatible options (e.g., `--skip-dependencies` or `--min-accessibility`) are not used alongside specific switches.
 - Make mandatory options (like `--sln`) optional in the binder when they are not relevant to the specific mode of operation (e.g., purging by key only), and enforce their presence via validators.
 - Implement flexible Cypher queries that can handle both full-scale and filtered (e.g., by extension) data deletions using conditional `WHERE` and `OPTIONAL MATCH` clauses.
 
 ## Option Binding and Simplification
-- When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, and `--verbose`), consolidate them into a single property within the `Options` class.
+- When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
 - Handle the logic for resolving these mutually exclusive options within the `BinderBase<Options>.GetBoundValue` method. This keeps the rest of the application simple and unaware of the specific CLI flags used.
 - Ensure a custom validator is used on the `RootCommand` to prevent the user from passing more than one of these options at once, maintaining a clear and unambiguous configuration state.

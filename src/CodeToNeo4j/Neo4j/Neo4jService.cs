@@ -25,7 +25,7 @@ public class Neo4jService(
         logger.LogInformation("Neo4j schema ensured for database: {DatabaseName}", databaseName);
 
         await UpsertProject(repoKey, databaseName).ConfigureAwait(false);
-        logger.LogInformation("Project upserted: {RepoKey}", repoKey);
+        logger.LogInformation("Project upserted: {RepositoryKey}", repoKey);
     }
 
     public async Task MarkFileAsDeleted(string fileKey, string databaseName)
@@ -50,7 +50,7 @@ public class Neo4jService(
 
         if (commitBatch.Length == 0) return;
 
-        logger.LogDebug("Upserting {Count} commits for {RepoKey} in database: {DatabaseName}", commitBatch.Length, repoKey, databaseName);
+        logger.LogDebug("Upserting {Count} commits for {RepositoryKey} in database: {DatabaseName}", commitBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
@@ -67,7 +67,7 @@ public class Neo4jService(
 
         if (depBatch.Length == 0) return;
 
-        logger.LogDebug("Upserting {Count} dependencies for {RepoKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
+        logger.LogDebug("Upserting {Count} dependencies for {RepositoryKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
@@ -159,7 +159,7 @@ public class Neo4jService(
 
     public async Task PurgeData(string repoKey, IEnumerable<string>? includeExtensions, string databaseName)
     {
-        logger.LogInformation("Purging data for repoKey '{RepoKey}' (Database: {DatabaseName})...", repoKey, databaseName);
+        logger.LogInformation("Purging data for repoKey '{RepositoryKey}' (Database: {DatabaseName})...", repoKey, databaseName);
         var extensions = includeExtensions?.ToArray();
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -168,7 +168,7 @@ public class Neo4jService(
             await tx.RunWithRetry(cypherService.GetCypher(Queries.PurgeData), new { repoKey, extensions }).ConfigureAwait(false);
         }).ConfigureAwait(false);
 
-        logger.LogInformation("Purge complete for repoKey '{RepoKey}'.", repoKey);
+        logger.LogInformation("Purge complete for repoKey '{RepositoryKey}'.", repoKey);
     }
 
     public async ValueTask DisposeAsync()

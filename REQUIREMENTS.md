@@ -7,7 +7,7 @@
 ### 1.1 Input
 - **Solution File**: Path to a valid `.sln` or `.csproj` file.
 - **Neo4j Configuration**: URI, Username, Password, and Database Name.
-- **Repository Metadata**: A unique `repoKey` to identify the project in the graph.
+- **Repository Metadata**: A unique repository key to identify the project in the graph.
 
 ### 1.2 Solution and Project Analysis
 - **Solution Loading**: Use `MSBuildWorkspace` to load and analyze .NET solutions and their constituent projects.
@@ -29,7 +29,7 @@
 - **Incremental Indexing**: (Optional) Only process files that have changed since a specified `diffBase` (e.g., `origin/main`).
 - **Deletion Tracking**: Identify and mark files as `deleted: true` in Neo4j if they were removed from the repository.
 - **Data Purging**:
-  - Support full deletion of all data (Projects, Files, Symbols, Commits) associated with a specific `repoKey`.
+  - Support full deletion of all data (Projects, Files, Symbols, Commits) associated with a specific repository key.
   - Support partial deletion by filtering on file extensions (via `--include`).
   - Require explicit user confirmation before any deletion operation.
 

@@ -66,7 +66,7 @@ public static class Program
             .WithDescription("The minimum accessibility level to index. Default: Private (indices all)");
         var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key")
             .WithDefaultValueFunc(() => false)
-            .WithDescription("Purge all data from Neo4j associated with the specified repoKey. Example: --purge-data-by-repoKey");
+            .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data-by-repository-key");
         var includeExtensionsOption = new Option<string[]>("--include")
             .WithDefaultValueFunc(() => allSupportedExtensions)
             .WithDescription($"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor")
@@ -105,17 +105,17 @@ public static class Program
             {
                 if (result.GetValueForOption(skipDependenciesOption))
                 {
-                    result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data-by-repoKey";
+                    result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data-by-repository-key";
                 }
 
                 if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
                 {
-                    result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data-by-repoKey";
+                    result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data-by-repository-key";
                 }
             }
             else if (result.GetValueForOption(slnOption) == null)
             {
-                result.ErrorMessage = "--sln is required when not using --purge-data-by-repoKey";
+                result.ErrorMessage = "--sln is required when not using --purge-data-by-repository-key";
             }
         });
 
@@ -142,7 +142,7 @@ public static class Program
             {
                 if (options.PurgeDataByRepoKey)
                 {
-                    Console.Write($"Are you sure you want to purge all data for repoKey '{options.RepoKey}'? (y/n): ");
+                    Console.Write($"Are you sure you want to purge all data for repository key '{options.RepoKey}'? (y/n): ");
                     var response = Console.ReadLine();
                     if (response?.ToLower() != "y")
                     {
