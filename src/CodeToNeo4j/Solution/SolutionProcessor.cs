@@ -21,7 +21,7 @@ public class SolutionProcessor(
     ISolutionFileDiscoveryService discoveryService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async ValueTask ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
+    public async Task ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
@@ -143,7 +143,7 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async ValueTask<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, HashSet<string> includeExtensions)
+    private async Task<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, HashSet<string> includeExtensions)
     {
         if (diffBase is null) return null;
 
@@ -154,7 +154,7 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async ValueTask<(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
+    private async Task<(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
         ProcessedFile file,
         string solutionRoot,
         string repoKey,

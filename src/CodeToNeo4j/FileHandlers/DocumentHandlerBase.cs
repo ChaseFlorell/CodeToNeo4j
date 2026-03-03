@@ -11,7 +11,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 
     public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
-    public ValueTask Handle(
+    public Task Handle(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -26,7 +26,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         return HandleFile(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
     }
 
-    protected abstract ValueTask HandleFile(
+    protected abstract Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
@@ -37,7 +37,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         string databaseName,
         Accessibility minAccessibility);
 
-    protected async ValueTask<string> GetContent(TextDocument? document, string filePath)
+    protected async Task<string> GetContent(TextDocument? document, string filePath)
     {
         if (document is not null)
         {

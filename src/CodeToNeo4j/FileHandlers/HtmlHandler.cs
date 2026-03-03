@@ -9,7 +9,7 @@ public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 {
     public override string FileExtension => ".html";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

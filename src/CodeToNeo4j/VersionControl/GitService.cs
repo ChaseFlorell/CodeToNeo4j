@@ -7,7 +7,7 @@ namespace CodeToNeo4j.VersionControl;
 
 public class GitService(IFileService fileService, IFileSystem fileSystem, ILogger<GitService> logger) : IVersionControlService
 {
-    public async ValueTask<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
+    public async Task<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includeExtensions)
     {
         var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
         logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
@@ -133,7 +133,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         return new DiffResult(modifiedSet, deletedSet, commits);
     }
 
-    public async ValueTask<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
+    public async Task<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
     {
         var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
         var relPath = fileSystem.Path.GetRelativePath(repoRoot, filePath);
@@ -214,7 +214,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         return new FileMetadata(created, lastModified, authors, commits, tags);
     }
 
-    private async ValueTask<string> GetGitRoot(string workingDirectory)
+    private async Task<string> GetGitRoot(string workingDirectory)
     {
         var psi = new ProcessStartInfo
         {

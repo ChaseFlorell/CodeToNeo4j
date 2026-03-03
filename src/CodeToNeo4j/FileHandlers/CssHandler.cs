@@ -9,7 +9,7 @@ public class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
 {
     public override string FileExtension => ".css";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

@@ -9,7 +9,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
 {
     public override string FileExtension => ".xml";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

@@ -7,7 +7,7 @@ public class SolutionFileDiscoveryService(
     IFileService fileService,
     IFileSystem fileSystem) : ISolutionFileDiscoveryService
 {
-    public async ValueTask<IEnumerable<ProcessedFile>> GetFilesToProcess(
+    public async Task<IEnumerable<ProcessedFile>> GetFilesToProcess(
         FileInfo sln,
         Microsoft.CodeAnalysis.Solution solution,
         IEnumerable<string> includeExtensions)

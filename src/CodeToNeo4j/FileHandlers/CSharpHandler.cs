@@ -9,7 +9,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
 {
     public override string FileExtension => ".cs";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

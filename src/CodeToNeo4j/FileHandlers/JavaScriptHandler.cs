@@ -9,7 +9,7 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
 {
     public override string FileExtension => ".js";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

@@ -14,7 +14,7 @@ public class Neo4jService(
     ILogger<Neo4jService> logger)
     : IGraphService
 {
-    public async ValueTask Initialize(string repoKey, string databaseName)
+    public async Task Initialize(string repoKey, string databaseName)
     {
         logger.LogInformation("Initializing Neo4j driver...");
 
@@ -28,14 +28,14 @@ public class Neo4jService(
         logger.LogInformation("Project upserted: {RepoKey}", repoKey);
     }
 
-    public async ValueTask MarkFileAsDeleted(string fileKey, string databaseName)
+    public async Task MarkFileAsDeleted(string fileKey, string databaseName)
     {
         logger.LogDebug("Marking file and its symbols as deleted for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
+    public async Task UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
     {
         var commitBatch = commits.Select(c => new Dictionary<string, object?>
         {
@@ -55,7 +55,7 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async ValueTask UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName)
+    public async Task UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName)
     {
         var depBatch = dependencies.Select(d => new Dictionary<string, object?>
         {
@@ -72,7 +72,7 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async ValueTask UpsertFile(FileMetaData file, string databaseName)
+    public async Task UpsertFile(FileMetaData file, string databaseName)
     {
         var fileData = new Dictionary<string, object?>
         {
@@ -159,7 +159,7 @@ public class Neo4jService(
         await driver.DisposeAsync().ConfigureAwait(false);
     }
 
-    private async ValueTask VerifyNeo4jVersion()
+    private async Task VerifyNeo4jVersion()
     {
         logger.LogDebug("Verifying Neo4j version...");
         await using var session = driver.AsyncSession();
@@ -197,7 +197,7 @@ public class Neo4jService(
         }
     }
 
-    private async ValueTask EnsureSchema(string databaseName)
+    private async Task EnsureSchema(string databaseName)
     {
         logger.LogDebug("Ensuring schema for database: {DatabaseName}", databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -210,7 +210,7 @@ public class Neo4jService(
         }
     }
 
-    private async ValueTask UpsertProject(string repoKey, string databaseName)
+    private async Task UpsertProject(string repoKey, string databaseName)
     {
         logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));

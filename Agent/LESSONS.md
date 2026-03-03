@@ -13,11 +13,13 @@
 - When handling different file types in a Roslyn solution, prefer `TextDocument` over `Document` in interfaces that need to handle `AdditionalDocument`, `AnalyzerConfigDocument`, or just regular files from disk.
 - If syntax tree operations are required (e.g., in `CSharpHandler`), cast the `TextDocument` to `Document` locally. This prevents non-C# documents (which are still `TextDocument`s) from being nulled out by an `as Document` cast at a higher level of abstraction.
 
-## Async Performance and Thread Marshalling
-- For performance-critical code, prefer `ValueTask` and `ValueTask<T>` over `Task` and `Task<T>` to reduce allocations, especially when methods may complete synchronously.
-- Ensure that all async methods in this project return `ValueTask` or `ValueTask<T>` for consistency and performance.
-- When awaiting a `ValueTask`, use `ConfigureAwait(false)` to avoid unnecessary thread marshalling.
-- If multiple `ValueTask`s need to be awaited together (e.g., in `Task.WhenAll`), convert them to `Task` using `.AsTask()` before passing them to `Task.WhenAll`.
+## Async Performance and Task Selection
+- Use `Task` and `Task<T>` as the default choice for most asynchronous methods, especially for I/O-bound operations (like Neo4j or Git calls) and long-running tasks.
+- `ValueTask` and `ValueTask<T>` should be reserved for high-performance "hot paths" where an operation frequently completes synchronously (e.g., from an in-memory cache) and the overhead of a `Task` allocation is a measurable bottleneck.
+- For library or non-UI code, always use `ConfigureAwait(false)` on all awaits to prevent unnecessary thread marshalling back to the original synchronization context, which improves performance and avoids potential deadlocks.
+- When multiple tasks need to be awaited together, use `Task.WhenAll`. If using `ValueTask`, they must be converted to `Task` via `.AsTask()` before being passed to `Task.WhenAll`.
+- A `ValueTask` should only be awaited once. If you need to await it multiple times or store it, convert it to a `Task`.
+- Ensure the main entry point (`Main`) returns `Task<int>` or `int`, as `ValueTask<int>` is not a valid entry point signature in all C# versions/environments.
 
 ## Console Output and Progress
 - Use `Console.Write("\r...")` to return the cursor to the beginning of the line for "in-place" single-line updates.
@@ -26,10 +28,9 @@
 - Standard loggers (`Microsoft.Extensions.Logging`) typically append newlines to every log entry, which prevents single-line updates. A custom `ILogger` implementation can be used to manage output formatting and suppression of specific logs (like "flushing symbols") during progress reporting to avoid interfering with the single-line display.
 - For fatal errors, wrap the main entry point in a try-catch and use `Console.Error.WriteLine(ex.ToString())` for error reporting before exiting with the exception's `HResult`.
 - Ensure the main entry point (`Main`) returns `Task<int>` or `int`, as `ValueTask<int>` is not a valid entry point signature in all C# versions/environments.
-- For performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` to process work in parallel when steps are independent.
-- Use chunked parallelism (e.g., chunks of `batchSize`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
-- When parallelizing, ensure shared resources are either thread-safe or refactored to be local to the parallel task (e.g., returning results instead of populating a shared buffer).
-- For library or non-UI code, always use `ConfigureAwait(false)` on all awaits to prevent unnecessary thread marshalling back to the original synchronization context, which improves performance and avoids potential deadlocks.
+- For performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` or `Parallel.ForEachAsync` to process work in parallel when steps are independent.
+- Use chunked parallelism or limit the degree of parallelism (e.g., `MaxDegreeOfParallelism`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
+- When parallelizing, ensure shared resources are either thread-safe or refactored to be local to the parallel task.
 
 ## .NET Global Tool Packaging
 - For .NET global tools, multi-targeting (e.g., `net10.0;net9.0;net8.0`) improves compatibility with older `dotnet` CLI versions that may not yet fully support the latest framework (like `net10.0`) during tool installation.

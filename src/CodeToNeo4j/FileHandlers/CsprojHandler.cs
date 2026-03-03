@@ -9,7 +9,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 {
     public override string FileExtension => ".csproj";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

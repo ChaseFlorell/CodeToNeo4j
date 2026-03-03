@@ -4,10 +4,10 @@ namespace CodeToNeo4j.Graph;
 
 public interface IGraphService : IAsyncDisposable
 {
-    ValueTask Initialize(string optionsRepoKey, string optionsDatabaseName);
-    ValueTask MarkFileAsDeleted(string fileKey, string databaseName);
-    ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName);
-    ValueTask UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName);
-    ValueTask UpsertFile(FileMetaData file, string databaseName);
+    Task Initialize(string repoKey, string databaseName);
+    Task MarkFileAsDeleted(string fileKey, string databaseName);
+    Task UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName);
+    Task UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName);
+    Task UpsertFile(FileMetaData file, string databaseName);
     Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName);
 }

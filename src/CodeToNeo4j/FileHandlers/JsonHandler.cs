@@ -9,7 +9,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 {
     public override string FileExtension => ".json";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,

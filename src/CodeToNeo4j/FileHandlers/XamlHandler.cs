@@ -9,7 +9,7 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 {
     public override string FileExtension => ".xaml";
 
-    protected override async ValueTask HandleFile(
+    protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
