@@ -23,7 +23,7 @@ public static class Program
         }
     }
 
-    private static async Task<int> Run(string[] args)
+    public static (RootCommand root, OptionsBinder binder) CreateRootCommand()
     {
         string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
 
@@ -177,6 +177,12 @@ public static class Program
             },
             binder);
 
+        return (root, binder);
+    }
+
+    private static async Task<int> Run(string[] args)
+    {
+        var (root, _) = CreateRootCommand();
         return await root.InvokeAsync(args);
     }
 }

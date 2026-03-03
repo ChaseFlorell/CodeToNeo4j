@@ -1,23 +1,23 @@
+using System.IO.Abstractions;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using FluentAssertions;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
-using NSubstitute;
-using System.IO.Abstractions;
+using Shouldly;
 using Xunit;
 
-namespace CodeToNeo4j.Tests;
+namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class CSharpHandlerTests
 {
     [Fact]
-    public async Task Handle_ConstructorInjectedDependency_AddsDependsOnRelationship()
+    public async Task GivenConstructorInjectedDependency_WhenHandleCalled_ThenAddsDependsOnRelationship()
     {
         // Arrange
-        var fileSystem = Substitute.For<IFileSystem>();
+        var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var handler = new CSharpHandler(symbolMapper, fileSystem);
+        var sut = new CSharpHandler(symbolMapper, fileSystem);
 
         var code = @"
 public interface IBarService { }
@@ -37,7 +37,7 @@ public class Foo
         var relBuffer = new List<Relationship>();
 
         // Act
-        await handler.Handle(
+        await sut.Handle(
             document,
             compilation,
             repoKey: "test-repo",
@@ -49,22 +49,16 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        // Log symbols for debugging
-        foreach (var s in symbolBuffer)
-        {
-            Console.WriteLine($"[DEBUG_LOG] Symbol: {s.Name}, Kind: {s.Kind}");
-        }
-
         // Find Foo symbol
         var fooSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Foo" && s.Kind == "NamedType");
-        fooSymbol.Should().NotBeNull();
+        fooSymbol.ShouldNotBeNull();
 
         // Find IBarService symbol
         var barServiceSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "IBarService" && s.Kind == "NamedType");
-        barServiceSymbol.Should().NotBeNull();
+        barServiceSymbol.ShouldNotBeNull();
 
         // Check for DEPENDS_ON relationship
-        relBuffer.Should().Contain(r => 
+        relBuffer.ShouldContain(r => 
             r.FromKey == fooSymbol.Key && 
             r.ToKey == barServiceSymbol.Key && 
             r.RelType == "DEPENDS_ON");
