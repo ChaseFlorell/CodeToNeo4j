@@ -62,11 +62,17 @@ public class SolutionProcessor(
         var totalFiles = filesToProcess.Length;
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
+        var completedFiles = 0;
 
         for (var i = 0; i < totalFiles; i += batchSize)
         {
             var chunk = filesToProcess.Skip(i).Take(batchSize).ToArray();
-            var tasks = chunk.Select((file, index) => ProcessFile(file, solutionRoot, repoKey, databaseName, i + index + 1, totalFiles, minAccessibility)).ToArray();
+            var tasks = chunk.Select(file => ProcessFile(file, solutionRoot, repoKey, databaseName, totalFiles, minAccessibility, () =>
+            {
+                var currentCount = Interlocked.Increment(ref completedFiles);
+                var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
+                progressService.ReportProgress(currentCount, totalFiles, relativePath);
+            })).ToArray();
 
             var results = await Task.WhenAll(tasks.Select(t => t.AsTask())).ConfigureAwait(false);
 
@@ -136,14 +142,11 @@ public class SolutionProcessor(
         string solutionRoot,
         string repoKey,
         string databaseName,
-        int currentFileIndex,
         int totalFiles,
-        Accessibility minAccessibility)
+        Accessibility minAccessibility,
+        Action onProcessed)
     {
         var filePath = file.FilePath;
-        var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, filePath).Replace('\\', '/');
-
-        progressService.ReportProgress(currentFileIndex, totalFiles, relativePath);
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var fileKey = $"{repoKey}:{filePath}";
@@ -167,6 +170,7 @@ public class SolutionProcessor(
         }
 
         logger.LogDebug("Indexed {FilePath}", filePath);
+        onProcessed();
         return (symbols, relationships);
     }
 }
