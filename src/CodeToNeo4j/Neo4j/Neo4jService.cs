@@ -72,9 +72,9 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async Task UpsertFile(FileMetaData file, string databaseName)
+    public async Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName)
     {
-        var fileData = new Dictionary<string, object?>
+        var fileBatch = files.Select(file => new Dictionary<string, object?>
         {
             ["fileKey"] = file.FileKey,
             ["path"] = file.FilePath,
@@ -91,15 +91,19 @@ public class Neo4jService(
             ["commits"] = file.Metadata.Commits.ToArray(),
             ["tags"] = file.Metadata.Tags.ToArray(),
             ["repoKey"] = file.RepoKey
-        };
+        }).ToArray();
 
-        logger.LogDebug("Upserting file {FileKey} to Neo4j (Database: {DatabaseName})...", file.FileKey, databaseName);
+        if (fileBatch.Length == 0) return;
+
+        logger.LogDebug("Flushing {Count} files to Neo4j (Database: {DatabaseName})...", fileBatch.Length, databaseName);
+
+        var fileKeys = fileBatch.Select(f => f["fileKey"]).ToArray();
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), fileData).ConfigureAwait(false);
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey = file.FileKey }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKeys }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { files = fileBatch }).ConfigureAwait(false);
         }).ConfigureAwait(false);
     }
 

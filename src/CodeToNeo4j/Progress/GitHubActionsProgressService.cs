@@ -14,4 +14,6 @@ public class GitHubActionsProgressService(ILogger<GitHubActionsProgressService> 
         // Some users use notice commands, but we'll stick to clear info logs for now.
         logger.LogInformation("::notice::[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", progress, filePath, current, total);
     }
+
+    public void ProgressComplete() { }
 }

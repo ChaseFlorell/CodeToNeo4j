@@ -8,6 +8,6 @@ public interface IGraphService : IAsyncDisposable
     Task MarkFileAsDeleted(string fileKey, string databaseName);
     Task UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName);
     Task UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName);
-    Task UpsertFile(FileMetaData file, string databaseName);
+    Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName);
     Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName);
 }

@@ -15,4 +15,6 @@ public class AzureDevOpsProgressService(ILogger<AzureDevOpsProgressService> logg
         System.Console.WriteLine($"##vso[task.setprogress value={progressPercentage:0};]Processing {filePath}");
         logger.LogInformation("[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", (double)current / total, filePath, current, total);
     }
+
+    public void ProgressComplete() { }
 }

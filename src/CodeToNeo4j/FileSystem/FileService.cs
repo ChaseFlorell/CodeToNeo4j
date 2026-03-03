@@ -22,4 +22,11 @@ public class FileService(IFileSystem fileSystem) : IFileService
         var hash = sha.ComputeHash(bytes);
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
+    public async Task<string> ComputeSha256(string filePath)
+    {
+        using var stream = fileSystem.File.OpenRead(filePath);
+        var hash = await SHA256.HashDataAsync(stream).ConfigureAwait(false);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
 }

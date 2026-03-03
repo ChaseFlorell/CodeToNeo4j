@@ -18,8 +18,6 @@ public class SolutionFileDiscoveryService(
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
         {
-            var compilation = await project.GetCompilationAsync().ConfigureAwait(false);
-
             // Regular Documents
             foreach (var doc in project.Documents)
             {
@@ -29,7 +27,7 @@ public class SolutionFileDiscoveryService(
 
                 if (!solutionFiles.ContainsKey(path))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, doc, compilation);
+                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
                 }
             }
 
@@ -42,7 +40,7 @@ public class SolutionFileDiscoveryService(
 
                 if (!solutionFiles.ContainsKey(path))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, doc, null);
+                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
                 }
             }
         }

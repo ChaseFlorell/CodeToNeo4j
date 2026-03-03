@@ -12,4 +12,6 @@ public class ConsoleProgressService(ILogger<ConsoleProgressService> logger) : IP
         double progress = (double)current / total;
         logger.LogInformation("[Progress: {Percentage:p2}] ({Current}/{Total})", progress, current, total);
     }
+
+    public void ProgressComplete() => Console.WriteLine();
 }

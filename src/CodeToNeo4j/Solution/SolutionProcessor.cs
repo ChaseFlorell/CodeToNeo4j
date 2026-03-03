@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Threading.Channels;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
@@ -59,54 +60,27 @@ public class SolutionProcessor(
         var discoveredFiles = await discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude).ConfigureAwait(false);
         var filesToProcess = FilterFiles(discoveredFiles, diffResult?.ModifiedFiles);
 
+        await versionControlService.LoadMetadata(solutionRoot, extensionsToInclude).ConfigureAwait(false);
+
         var totalFiles = filesToProcess.Length;
-        var currentFileIndex = 0;
-
-        var symbolBuffer = new List<Symbol>(batchSize);
-        var relBuffer = new List<Relationship>(batchSize);
-
-        var parallelOptions = new ParallelOptions
+        var channel = Channel.CreateBounded<ProcessResult>(new BoundedChannelOptions(100)
         {
-            MaxDegreeOfParallelism = 20
-        };
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true
+        });
 
-        await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, _) =>
+        var consumerTask = RunConsumer(channel.Reader, totalFiles, databaseName, batchSize);
+
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 20 };
+        await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, t) =>
         {
-            var result = await ProcessFile(file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
-            await graphService.UpsertFile(result.File, databaseName).ConfigureAwait(false);
-
-            List<Symbol>? symbolsToFlush = null;
-            List<Relationship>? relsToFlush = null;
-
-            lock (symbolBuffer)
-            {
-                symbolBuffer.AddRange(result.Symbols);
-                relBuffer.AddRange(result.Relationships);
-
-                if (symbolBuffer.Count >= batchSize)
-                {
-                    symbolsToFlush = [.. symbolBuffer];
-                    relsToFlush = [.. relBuffer];
-                    symbolBuffer.Clear();
-                    relBuffer.Clear();
-                }
-            }
-
-            if (symbolsToFlush is not null && relsToFlush is not null)
-            {
-                logger.LogDebug("Flushing {SymbolCount} symbols and {RelationshipCount} relationships", symbolsToFlush.Count, relsToFlush.Count);
-                await graphService.FlushSymbols(symbolsToFlush, relsToFlush, databaseName).ConfigureAwait(false);
-            }
-
-            var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
-            progressService.ReportProgress(currentFileIndex++, totalFiles, relativePath);
+            var result = await ProcessFile(solution, file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
+            await channel.Writer.WriteAsync(result, t).ConfigureAwait(false);
         }).ConfigureAwait(false);
 
-        if (symbolBuffer.Count > 0)
-        {
-            await graphService.FlushSymbols(symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
-        }
-
+        channel.Writer.Complete();
+        await consumerTask.ConfigureAwait(false);
+        progressService.ProgressComplete();
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
         {
             logger.LogInformation("{FileExtension} files handled: {Count}", handler.FileExtension, handler.NumberOfFilesHandled);
@@ -115,7 +89,50 @@ public class SolutionProcessor(
         logger.LogInformation("Done.");
     }
 
-    private ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
+    private async Task RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
+    {
+        var fileBuffer = new List<FileMetaData>(batchSize);
+        var symbolBuffer = new List<Symbol>(batchSize);
+        var relBuffer = new List<Relationship>(batchSize);
+        var currentFileIndex = 0;
+
+        await foreach (var result in reader.ReadAllAsync().ConfigureAwait(false))
+        {
+            fileBuffer.Add(result.File);
+            symbolBuffer.AddRange(result.Symbols);
+            relBuffer.AddRange(result.Relationships);
+
+            if (fileBuffer.Count >= batchSize || symbolBuffer.Count >= batchSize)
+            {
+                await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
+            }
+
+            progressService.ReportProgress(++currentFileIndex, totalFiles, result.RelativePath);
+        }
+
+        if (fileBuffer.Count > 0 || symbolBuffer.Count > 0)
+        {
+            await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
+        }
+    }
+
+    private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, string databaseName)
+    {
+        if (files.Count > 0)
+        {
+            await graphService.FlushFiles(files, databaseName).ConfigureAwait(false);
+            files.Clear();
+        }
+
+        if (symbols.Count > 0 || relationships.Count > 0)
+        {
+            await graphService.FlushSymbols(symbols, relationships, databaseName).ConfigureAwait(false);
+            symbols.Clear();
+            relationships.Clear();
+        }
+    }
+
+    private static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
     {
         var result = discoveredFiles.ToArray();
 
@@ -130,11 +147,8 @@ public class SolutionProcessor(
             {
                 if (changedFiles is not null)
                 {
-                    // If changedFiles is an empty collection (not null), it means we ARE in incremental mode
-                    // but no files matched. So we return empty.
                     result = [];
                 }
-
                 break;
             }
         }
@@ -153,7 +167,8 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async Task<(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
+    private async Task<ProcessResult> ProcessFile(
+        Microsoft.CodeAnalysis.Solution solution,
         ProcessedFile file,
         string solutionRoot,
         string repoKey,
@@ -164,7 +179,7 @@ public class SolutionProcessor(
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var fileKey = $"{repoKey}:{filePath}";
-        var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath).ConfigureAwait(false));
+        var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
         var fileRecord = new FileMetaData(fileKey, filePath, fileHash, metadata, repoKey);
@@ -172,17 +187,31 @@ public class SolutionProcessor(
         var symbols = new List<Symbol>();
         var relationships = new List<Relationship>();
 
+        TextDocument? document = null;
+        Compilation? compilation = null;
+
+        if (file.ProjectId != null)
+        {
+            var project = solution.GetProject(file.ProjectId);
+            if (project != null)
+            {
+                if (file.DocumentId != null)
+                {
+                    document = (TextDocument?)project.GetDocument(file.DocumentId) ?? project.GetAdditionalDocument(file.DocumentId);
+                }
+                compilation = await project.GetCompilationAsync().ConfigureAwait(false);
+            }
+        }
+
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.Handle(file.Document, file.Compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
-        }
-        else
-        {
-            logger.LogDebug("No handler found for file: {FilePath}", filePath);
+            await handler.Handle(document, compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
         }
 
-        logger.LogDebug("Indexed {FilePath}", filePath);
-        return (fileRecord, symbols, relationships);
+        var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
+        return new ProcessResult(fileRecord, symbols, relationships, relativePath);
     }
+
+    private record ProcessResult(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships, string RelativePath);
 }

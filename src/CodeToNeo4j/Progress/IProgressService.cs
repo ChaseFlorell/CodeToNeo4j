@@ -12,4 +12,6 @@ public interface IProgressService
     /// <param name="total">The total number of files to be processed.</param>
     /// <param name="filePath">The path of the file being processed.</param>
     void ReportProgress(int current, int total, string filePath);
+
+    void ProgressComplete();
 }

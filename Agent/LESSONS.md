@@ -37,12 +37,10 @@
 - This ensures `DotnetToolSettings.xml` is present in the expected framework-specific folders (e.g., `tools/net8.0/any/`) that older installers can recognize.
 - Update `PACKAGE_README.md` to reflect the broader framework support when adding new targets.
 
-## Neo4j Granularity and Progress Reporting
-- For interactive CLI tools, providing immediate, granular progress feedback (e.g., every file processed) is often more important to the user experience than the performance gains of batching.
-- While batching Neo4j writes into transactions (e.g., 200 files at once) is significantly faster, it can make progress reporting appear "stuck" or "sporadic" until the entire batch finishes.
-- Reverting to per-file writes (while still using parallel processing for CPU-bound tasks) allows for smoother and more responsive "one file at a time" progress updates.
-- Parallelizing independent file processing using `Task.WhenAll` can still provide significant performance benefits, even with individual database writes, provided the database handles the concurrency well.
-- Using a callback approach (e.g., `onProcessed` delegate) in parallel processing loops allows for immediate, thread-safe progress reporting and database updates as each task completes.
-- When processing large solutions with Roslyn, avoid launching thousands of parallel tasks for all files at once (e.g., via `Task.WhenAll` on a large collection). This can lead to `OutOfMemoryException` because each task may hold onto Roslyn documents, semantic models, and other memory-intensive objects simultaneously.
-- Instead, use a sequential `foreach` loop for top-level file processing to keep memory usage stable, while still using parallelism for smaller, lower-level operations like concurrent database writes (e.g., flushing symbols and relationships in a single transaction).
-- Memory management is as important as throughput; batching can be used to balance database performance with local resource constraints.
+## Performance and Architecture Patterns for Large Scale Code Analysis
+- **Producer-Consumer Pattern**: For processing large solutions with many files, decoupling the analysis (CPU-bound, Roslyn) from the database ingestion (I/O-bound, Neo4j) using `System.Threading.Channels` significantly improves throughput. This allows Roslyn to process files as fast as possible in parallel, while a single consumer task batches and flushes results to the database optimally.
+- **Batched Git Metadata**: Fetching file history (e.g., `git log`) for thousands of files individually is extremely slow due to process startup overhead. Instead, pre-fetch metadata for all files in a single `git log --name-only` pass and cache it.
+- **Lazy Roslyn Loading**: To minimize memory pressure, avoid loading all `Compilation` and `Document` objects for a solution up front. Store only `ProjectId` and `DocumentId`, and load the required Roslyn objects lazily within the parallel processing loop. This keeps the number of active compilations proportional to the `MaxDegreeOfParallelism`.
+- **Database Batching with UNWIND**: When using Neo4j, always prefer batching multiple operations (e.g., `UpsertFile`, `DeletePriorSymbols`) into a single transaction using the `UNWIND` Cypher pattern. This reduces session overhead and network roundtrips.
+- **Streaming I/O**: For calculating file hashes (e.g., SHA256), use streaming APIs like `File.OpenRead` and `HashDataAsync` instead of `ReadAllBytesAsync` to prevent large memory allocations, especially for large source files.
+- **Lock-Free Batching**: Using a dedicated consumer task for database flushes eliminates the need for complex locking mechanisms in the parallel processing loop, reducing contention and simplifying thread-safety logic.
