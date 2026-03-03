@@ -37,7 +37,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Neo4j.Driver" />
     <PackageReference Include="Polly" />
-    <PackageReference Include="Spectre.Console" />
     <PackageReference Include="System.CommandLine" />
     <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>

@@ -33,6 +33,16 @@ dotnet tool update --global CodeToNeo4j
 
 The tool follows a `1.0.[GITHUB_RUN_NUMBER]` versioning scheme for automated builds. You can find the specific version in the GitHub Actions run details or by checking the NuGet package properties.
 
+#### Local Development
+
+If you are developing CodeToNeo4j and want to test changes locally as a global tool, you can use the provided `run.sh` script:
+
+1. **Run the script**:
+   ```bash
+   ./run.sh
+   ```
+   This script will clean up old packages, pack the tool with version `1.0.99`, uninstall any existing global `codetoneo4j` tool, and install the new version from the local `nupkg` folder.
+
 #### From Source
 
 1. Clone the repository:

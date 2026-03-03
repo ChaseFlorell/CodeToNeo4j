@@ -34,7 +34,7 @@ public static class ContainerModule
         services.AddLogging(builder =>
         {
             builder.ClearProviders();
-            builder.AddProvider(new SpectreConsoleLoggerProvider(minLogLevel));
+            builder.AddProvider(new ConsoleLoggerProvider(minLogLevel));
             builder.SetMinimumLevel(minLogLevel);
         });
 
@@ -71,7 +71,7 @@ public static class ContainerModule
         }
         else
         {
-            services.AddSingleton<IProgressService>(_ => new ConsoleProgressService(minLogLevel));
+            services.AddSingleton<IProgressService, ConsoleProgressService>();
         }
 
         return services;

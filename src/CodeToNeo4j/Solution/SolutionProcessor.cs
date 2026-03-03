@@ -60,35 +60,16 @@ public class SolutionProcessor(
         var filesToProcess = FilterFiles(discoveredFiles, diffResult?.ModifiedFiles);
 
         var totalFiles = filesToProcess.Length;
-        var symbolBuffer = new List<Symbol>(batchSize);
-        var relBuffer = new List<Relationship>(batchSize);
-        var completedFiles = 0;
+        var currentFileIndex = 0;
 
-        for (var i = 0; i < totalFiles; i += batchSize)
+        foreach (var file in filesToProcess)
         {
-            var chunk = filesToProcess.Skip(i).Take(batchSize).ToArray();
-            var tasks = chunk.Select(file => ProcessFile(file, solutionRoot, repoKey, databaseName, totalFiles, minAccessibility, () =>
-            {
-                var currentCount = Interlocked.Increment(ref completedFiles);
-                var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
-                progressService.ReportProgress(currentCount, totalFiles, relativePath);
-            })).ToArray();
+            currentFileIndex++;
+            var result = await ProcessFile(file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
+            await graphService.UpsertFile(result.File, result.Symbols, result.Relationships, databaseName).ConfigureAwait(false);
 
-            var results = await Task.WhenAll(tasks.Select(t => t.AsTask())).ConfigureAwait(false);
-
-            foreach (var result in results)
-            {
-                symbolBuffer.AddRange(result.Symbols);
-                relBuffer.AddRange(result.Relationships);
-            }
-
-            if (symbolBuffer.Count > 0 || relBuffer.Count > 0)
-            {
-                logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
-                await graphService.Flush(symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
-                symbolBuffer.Clear();
-                relBuffer.Clear();
-            }
+            var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
+            progressService.ReportProgress(currentFileIndex, totalFiles, relativePath);
         }
 
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
@@ -137,14 +118,12 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async ValueTask<(List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
+    private async ValueTask<(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships)> ProcessFile(
         ProcessedFile file,
         string solutionRoot,
         string repoKey,
         string databaseName,
-        int totalFiles,
-        Accessibility minAccessibility,
-        Action onProcessed)
+        Accessibility minAccessibility)
     {
         var filePath = file.FilePath;
         logger.LogDebug("Processing file: {FilePath}", filePath);
@@ -153,8 +132,7 @@ public class SolutionProcessor(
         var fileHash = fileService.ComputeSha256(await fileSystem.File.ReadAllBytesAsync(filePath).ConfigureAwait(false));
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
-        await graphService.UpsertFile(fileKey, filePath, fileHash, metadata, repoKey, databaseName).ConfigureAwait(false);
-        await graphService.DeletePriorSymbols(fileKey, databaseName).ConfigureAwait(false);
+        var fileRecord = new FileMetaData(fileKey, filePath, fileHash, metadata, repoKey);
 
         var symbols = new List<Symbol>();
         var relationships = new List<Relationship>();
@@ -162,7 +140,7 @@ public class SolutionProcessor(
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.HandleAsync(file.Document, file.Compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
+            await handler.Handle(file.Document, file.Compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
         }
         else
         {
@@ -170,7 +148,6 @@ public class SolutionProcessor(
         }
 
         logger.LogDebug("Indexed {FilePath}", filePath);
-        onProcessed();
-        return (symbols, relationships);
+        return (fileRecord, symbols, relationships);
     }
 }

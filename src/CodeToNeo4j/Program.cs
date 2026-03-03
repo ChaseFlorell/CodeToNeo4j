@@ -5,7 +5,6 @@ using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
-using Spectre.Console;
 
 namespace CodeToNeo4j;
 
@@ -19,7 +18,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            AnsiConsole.WriteException(ex);
+            Console.Error.WriteLine(ex.ToString());
             return ex.HResult != 0 ? ex.HResult : 1;
         }
     }

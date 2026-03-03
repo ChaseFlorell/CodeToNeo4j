@@ -28,42 +28,6 @@ public class Neo4jService(
         logger.LogInformation("Project upserted: {RepoKey}", repoKey);
     }
 
-    public async ValueTask UpsertFile(string fileKey, string filePath, string fileHash, FileMetadata metadata, string repoKey, string databaseName)
-    {
-        logger.LogDebug("Upserting file: {FilePath} in database: {DatabaseName}", filePath, databaseName);
-        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx =>
-        {
-            var authors = metadata.Authors.Select(a => new
-            {
-                name = a.Name,
-                firstCommit = a.FirstCommit.ToString("O"),
-                lastCommit = a.LastCommit.ToString("O"),
-                commitCount = a.CommitCount
-            }).ToArray();
-
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new
-            {
-                fileKey,
-                path = filePath,
-                hash = fileHash,
-                created = metadata.Created.ToString("O"),
-                lastModified = metadata.LastModified.ToString("O"),
-                authors,
-                commits = metadata.Commits.ToArray(),
-                tags = metadata.Tags.ToArray(),
-                repoKey
-            }).ConfigureAwait(false);
-        }).ConfigureAwait(false);
-    }
-
-    public async ValueTask DeletePriorSymbols(string fileKey, string databaseName)
-    {
-        logger.LogDebug("Deleting prior symbols for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
-        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
-    }
-
     public async ValueTask MarkFileAsDeleted(string fileKey, string databaseName)
     {
         logger.LogDebug("Marking file and its symbols as deleted for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
@@ -73,15 +37,15 @@ public class Neo4jService(
 
     public async ValueTask UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
     {
-        var commitBatch = commits.Select(c => new
+        var commitBatch = commits.Select(c => new Dictionary<string, object?>
         {
-            hash = c.Hash,
-            authorName = c.AuthorName,
-            authorEmail = c.AuthorEmail,
-            date = c.Date.ToString("O"),
-            message = c.Message,
-            repoKey,
-            changedFiles = c.ChangedFiles.Select(f => $"{repoKey}:{fileService.GetRelativePath(solutionRoot, f)}").ToArray()
+            ["hash"] = c.Hash,
+            ["authorName"] = c.AuthorName,
+            ["authorEmail"] = c.AuthorEmail,
+            ["date"] = c.Date.ToString("O"),
+            ["message"] = c.Message,
+            ["repoKey"] = repoKey,
+            ["changedFiles"] = c.ChangedFiles.Select(f => $"{repoKey}:{fileService.GetRelativePath(solutionRoot, f)}").ToArray()
         }).ToArray();
 
         if (commitBatch.Length == 0) return;
@@ -93,12 +57,12 @@ public class Neo4jService(
 
     public async ValueTask UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName)
     {
-        var depBatch = dependencies.Select(d => new
+        var depBatch = dependencies.Select(d => new Dictionary<string, object?>
         {
-            key = d.Key,
-            name = d.Name,
-            version = d.Version,
-            repoKey
+            ["key"] = d.Key,
+            ["name"] = d.Name,
+            ["version"] = d.Version,
+            ["repoKey"] = repoKey
         }).ToArray();
 
         if (depBatch.Length == 0) return;
@@ -108,8 +72,27 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async ValueTask Flush(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
+    public async ValueTask UpsertFile(FileMetaData file, IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
     {
+        var fileData = new Dictionary<string, object?>
+        {
+            ["fileKey"] = file.FileKey,
+            ["path"] = file.FilePath,
+            ["hash"] = file.FileHash,
+            ["created"] = file.Metadata.Created.ToString("O"),
+            ["lastModified"] = file.Metadata.LastModified.ToString("O"),
+            ["authors"] = file.Metadata.Authors.Select(a => new Dictionary<string, object?>
+            {
+                ["name"] = a.Name,
+                ["firstCommit"] = a.FirstCommit.ToString("O"),
+                ["lastCommit"] = a.LastCommit.ToString("O"),
+                ["commitCount"] = a.CommitCount
+            }).ToArray(),
+            ["commits"] = file.Metadata.Commits.ToArray(),
+            ["tags"] = file.Metadata.Tags.ToArray(),
+            ["repoKey"] = file.RepoKey
+        };
+
         var symbolBatch = symbols.Select(s => new Dictionary<string, object?>
         {
             ["key"] = s.Key,
@@ -132,18 +115,23 @@ public class Neo4jService(
             ["relType"] = r.RelType
         }).ToArray();
 
-        if (symbolBatch.Length == 0 && relBatch.Length == 0)
-        {
-            return;
-        }
-
-        logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbolBatch.Length, relBatch.Length, databaseName);
+        logger.LogDebug("Upserting file {FileKey} with {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", file.FileKey, symbolBatch.Length, relBatch.Length, databaseName);
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch }).ConfigureAwait(false);
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), fileData).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey = file.FileKey }).ConfigureAwait(false);
+
+            if (symbolBatch.Length > 0)
+            {
+                await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch }).ConfigureAwait(false);
+            }
+
+            if (relBatch.Length > 0)
+            {
+                await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch }).ConfigureAwait(false);
+            }
         }).ConfigureAwait(false);
     }
 

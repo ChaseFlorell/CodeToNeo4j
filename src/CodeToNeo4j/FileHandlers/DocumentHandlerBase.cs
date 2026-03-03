@@ -11,7 +11,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 
     public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
-    public ValueTask HandleAsync(
+    public ValueTask Handle(
         TextDocument? document,
         Compilation? compilation,
         string repoKey,
