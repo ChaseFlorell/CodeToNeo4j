@@ -27,7 +27,7 @@ public class SpectreConsoleLogger(string name, LogLevel minLogLevel) : ILogger
         };
 
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        AnsiConsole.MarkupLine($"[{color}]{timestamp} {logLevel.ToString().ToUpper()} {name}[{eventId.Id}] {Markup.Escape(message)}[/]");
+        AnsiConsole.MarkupLine($"[{color}]{timestamp} {logLevel.ToString().ToUpper()} {Markup.Escape(name)}[{eventId.Id}] {Markup.Escape(message)}[/]");
 
         if (exception != null)
         {
