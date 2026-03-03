@@ -14,6 +14,14 @@
 - If syntax tree operations are required (e.g., in `CSharpHandler`), cast the `TextDocument` to `Document` locally. This prevents non-C# documents (which are still `TextDocument`s) from being nulled out by an `as Document` cast at a higher level of abstraction.
 
 ## Async Performance and Thread Marshalling
+
+## Console Output and Progress with Spectre.Console
+- Use `AnsiConsole.Markup` with a carriage return (`\r`) for "in-place" single-line updates, and `AnsiConsole.MarkupLine` for traditional multi-line logging.
+- When progress reporting depends on the `LogLevel`, branch the behavior within the `IProgressService` implementation by passing the `minLogLevel` to its constructor.
+- For `LogLevel.Information`, use single-line updates; for `LogLevel.Debug` or lower, use multi-line updates; for `LogLevel.Warning` or higher, suppress output entirely.
+- Standard loggers (`Microsoft.Extensions.Logging`) typically append newlines to every log entry, which prevents single-line updates.
+- If a standard logger is still needed for other parts of the application, a custom `ILogger` implementation can be used to manage output formatting and suppression of specific logs during progress reporting.
+- For fatal errors, wrap the main entry point in a try-catch and use `AnsiConsole.WriteException` for rich error reporting before exiting with a non-zero code.
 - In performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` to process work in parallel when steps are independent.
 - Use chunked parallelism (e.g., chunks of `batchSize`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
 - When parallelizing, ensure shared resources are either thread-safe or refactored to be local to the parallel task (e.g., returning results instead of populating a shared buffer).

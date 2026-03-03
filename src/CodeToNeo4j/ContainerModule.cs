@@ -5,6 +5,7 @@ using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Logging;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
@@ -32,11 +33,8 @@ public static class ContainerModule
     {
         services.AddLogging(builder =>
         {
-            builder.AddSimpleConsole(options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "HH:mm:ss ";
-            });
+            builder.ClearProviders();
+            builder.AddProvider(new SpectreConsoleLoggerProvider(minLogLevel));
             builder.SetMinimumLevel(minLogLevel);
         });
 
@@ -58,6 +56,9 @@ public static class ContainerModule
         services.AddSingleton<IDocumentHandler, CssHandler>();
         services.AddSingleton<IDocumentHandler, CsprojHandler>();
 
+        services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
+        services.AddSingleton<IGraphService, Neo4jService>();
+
         services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
 
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
@@ -70,11 +71,8 @@ public static class ContainerModule
         }
         else
         {
-            services.AddSingleton<IProgressService, ConsoleProgressService>();
+            services.AddSingleton<IProgressService>(_ => new ConsoleProgressService(minLogLevel));
         }
-
-        services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
-        services.AddSingleton<IGraphService, Neo4jService>();
 
         return services;
     }

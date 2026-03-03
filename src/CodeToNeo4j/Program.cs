@@ -5,12 +5,26 @@ using Microsoft.Build.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
+using Spectre.Console;
 
 namespace CodeToNeo4j;
 
 public static class Program
 {
     public static async Task<int> Main(string[] args)
+    {
+        try
+        {
+            return await Run(args);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.WriteException(ex);
+            return ex.HResult != 0 ? ex.HResult : 1;
+        }
+    }
+
+    private static async Task<int> Run(string[] args)
     {
         string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
 

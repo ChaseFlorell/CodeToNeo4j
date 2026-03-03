@@ -67,7 +67,7 @@ public class SolutionProcessor(
         {
             var chunk = filesToProcess.Skip(i).Take(batchSize).ToArray();
             var tasks = chunk.Select((file, index) => ProcessFile(file, solutionRoot, repoKey, databaseName, i + index + 1, totalFiles, minAccessibility)).ToArray();
-            
+
             var results = await Task.WhenAll(tasks.Select(t => t.AsTask())).ConfigureAwait(false);
 
             foreach (var result in results)
@@ -78,7 +78,7 @@ public class SolutionProcessor(
 
             if (symbolBuffer.Count > 0 || relBuffer.Count > 0)
             {
-                logger.LogInformation("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
+                logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j...", symbolBuffer.Count, relBuffer.Count);
                 await graphService.Flush(symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
                 symbolBuffer.Clear();
                 relBuffer.Clear();
