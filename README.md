@@ -1,5 +1,8 @@
 # CodeToNeo4j
 
+[![Build and Package](https://github.com/ChaseFlorell/CodeToNeo4j/actions/workflows/build.yml/badge.svg)](https://github.com/ChaseFlorell/CodeToNeo4j/actions/workflows/build.yml)
+[![NuGet](https://img.shields.io/nuget/v/CodeToNeo4j.svg)](https://www.nuget.org/packages/CodeToNeo4j)
+
 CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions and index their codebase structure (projects, files, symbols, and relationships) into a Neo4j knowledge base. It leverages Roslyn for semantic code analysis and Neo4j for powerful graph-based querying of your architecture.
 
 ## Setup
