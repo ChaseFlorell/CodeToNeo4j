@@ -14,14 +14,14 @@ public class OptionsBinder(
     Option<string?> diffBaseOption,
     Option<int> batchSizeOption,
     Option<string> databaseOption,
-    Option<LogLevel> logLevelOption,
-    Option<bool> skipDependenciesOption,
     Option<Accessibility> minAccessibilityOption,
-    Option<string[]> includeExtensionsOption,
-    Option<bool> purgeDataByRepoKeyOption,
+    Option<LogLevel> logLevelOption,
     Option<bool> debugOption,
     Option<bool> verboseOption,
-    Option<bool> quietOption) : BinderBase<Options>
+    Option<bool> quietOption,
+    Option<bool> skipDependenciesOption,
+    Option<bool> purgeDataByRepoKeyOption,
+    Option<string[]> includeExtensionsOption) : BinderBase<Options>
 {
     protected override Options GetBoundValue(BindingContext bindingContext)
     {

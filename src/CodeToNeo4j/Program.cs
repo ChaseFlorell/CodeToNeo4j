@@ -40,39 +40,36 @@ public static class Program
             .WithAlias("-r");
         var uriOption = new Option<string>("--uri")
             .WithDefaultValueFunc(() => "bolt://localhost:7687")
-            .WithDescription("The Neo4j connection string. Example: bolt://localhost:7687")
+            .WithDescription("The Neo4j connection string.")
             .WithAlias("-u")
             .WithAlias("--url");
         var userOption = new Option<string>("--user")
             .WithDefaultValueFunc(() => "neo4j")
-            .WithDescription("Neo4j username. Example: neo4j");
+            .WithDescription("Neo4j username.");
         var databaseOption = new Option<string>("--database")
             .WithDefaultValueFunc(() => "neo4j")
-            .WithDescription("Neo4j database name. Example: my-db")
+            .WithDescription("Neo4j database name.")
             .WithAlias("-db");
         var diffBaseOption = new Option<string?>("--diff-base")
             .WithDescription("Optional git base ref for incremental indexing. Example: origin/main");
         var batchSizeOption = new Option<int>("--batch-size")
             .WithDefaultValueFunc(() => 500)
-            .WithDescription("Number of symbols to batch before flushing to Neo4j. Example: 500");
+            .WithDescription("Number of symbols to batch before flushing to Neo4j.");
         var logLevelOption = new Option<LogLevel>("--log-level")
             .WithDefaultValueFunc(() => LogLevel.Information)
-            .WithDescription("The minimum log level to display. Example: Information")
+            .WithDescription("The minimum log level to display.")
             .WithAlias("-l");
         var skipDependenciesOption = new Option<bool>("--skip-dependencies")
             .WithDefaultValueFunc(() => false)
             .WithDescription("Skip NuGet dependency ingestion. Example: --skip-dependencies");
         var minAccessibilityOption = new Option<Accessibility>("--min-accessibility")
             .WithDefaultValueFunc(() => Accessibility.Private)
-            .WithDescription("The minimum accessibility level to index. Default: Private (indices all)");
-        var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key")
-            .WithDefaultValueFunc(() => false)
-            .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data-by-repository-key");
+            .WithArgumentHelpName(string.Join('|', Accessibility.Private, Accessibility.Internal, Accessibility.Protected, Accessibility.Public))
+            .WithDescription("The minimum accessibility level to index.");
         var includeExtensionsOption = new Option<string[]>("--include")
             .WithDefaultValueFunc(() => allSupportedExtensions)
-            .WithDescription($"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor")
-            .WithAlias("-i")
-            .WithArgumentHelpName(string.Join('|', allSupportedExtensions));
+            .WithDescription($"File extensions to include. Example: --include .cs --include .razor")
+            .WithAlias("-i");
         var debugOption = new Option<bool>("--debug")
             .WithDescription("Turn on debug logging. Example: --debug")
             .WithAlias("-d");
@@ -82,6 +79,9 @@ public static class Program
         var quietOption = new Option<bool>("--quiet")
             .WithDescription("Mute all logging output. Example: --quiet")
             .WithAlias("-q");
+        var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key")
+            .WithDefaultValueFunc(() => false)
+            .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data-by-repository-key");
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
@@ -129,15 +129,11 @@ public static class Program
             diffBaseOption,
             batchSizeOption,
             databaseOption,
-            logLevelOption,
-            skipDependenciesOption,
             minAccessibilityOption,
-            includeExtensionsOption,
-            purgeDataByRepoKeyOption,
+            logLevelOption,
             debugOption,
             verboseOption,
-            quietOption
-        );
+            quietOption, skipDependenciesOption, purgeDataByRepoKeyOption, includeExtensionsOption);
 
         root.SetHandler(async (Options options) =>
             {
