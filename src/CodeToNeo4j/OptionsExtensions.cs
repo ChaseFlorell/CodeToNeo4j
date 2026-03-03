@@ -21,4 +21,16 @@ public static class OptionsExtensions
         option.ArgumentHelpName = argumentHelpName;
         return option;
     }
+
+    public static Option<T> WithDescription<T>(this Option<T> option, string description)
+    {
+        option.Description = description;
+        return option;
+    }
+
+    public static Option<T> WithDefaultValueFunc<T>(this Option<T> option, Func<T> defaultValue)
+    {
+        option.SetDefaultValueFactory(() => defaultValue());
+        return option;
+    }
 }

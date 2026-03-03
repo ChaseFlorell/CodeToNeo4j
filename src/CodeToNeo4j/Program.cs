@@ -27,36 +27,60 @@ public static class Program
     {
         string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
 
-        var slnOption = new Option<FileInfo?>("--sln", "Path to the .sln file to index. Example: ./MySolution.sln");
-        var passOption = new Option<string>("--password", "Password for the Neo4j database. Example: your-pass") { IsRequired = true };
-        var repoKeyOption = new Option<string>("--repository-key", "A unique identifier for the repository in Neo4j. Example: my-repo") { IsRequired = true };
-        var uriOption = new Option<string>("--uri", () => "bolt://localhost:7687", "The Neo4j connection string. Example: bolt://localhost:7687");
-        var userOption = new Option<string>("--user", () => "neo4j", "Neo4j username. Example: neo4j");
-        var databaseOption = new Option<string>("--database", () => "neo4j", "Neo4j database name. Example: my-db");
-        var diffBaseOption = new Option<string?>("--diff-base", "Optional git base ref for incremental indexing. Example: origin/main");
-        var batchSizeOption = new Option<int>("--batch-size", () => 500, "Number of symbols to batch before flushing to Neo4j. Example: 500");
-        var logLevelOption = new Option<LogLevel>("--log-level", () => LogLevel.Information, "The minimum log level to display. Example: Information");
-        var skipDependenciesOption = new Option<bool>("--skip-dependencies", () => false, "Skip NuGet dependency ingestion. Example: --skip-dependencies");
-        var minAccessibilityOption = new Option<Accessibility>("--min-accessibility", () => Accessibility.Private, "The minimum accessibility level to index. Default: Private (indices all)");
-        var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key", () => false, "Purge all data from Neo4j associated with the specified repoKey. Example: --purge-data-by-repoKey");
-        var includeExtensionsOption = new Option<string[]>("--include", () => allSupportedExtensions, $"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor");
-        var debugOption = new Option<bool>("--debug", "Turn on debug logging. Example: --debug");
-        var verboseOption = new Option<bool>("--verbose", "Turn on trace logging. Example: --verbose");
-        var quietOption = new Option<bool>("--quiet", "Mute all logging output. Example: --quiet");
-
-        passOption.AddAlias("-p");
-        repoKeyOption.AddAlias("-r");
-        uriOption.AddAlias("-u");
-        uriOption.AddAlias("--url");
-        databaseOption.AddAlias("-db");
-        logLevelOption.AddAlias("-l");
-        includeExtensionsOption.AddAlias("-i");
-        debugOption.AddAlias("-d");
-        verboseOption.AddAlias("-v");
-        quietOption.AddAlias("-q");
-
-        includeExtensionsOption.ArgumentHelpName = string.Join('|', allSupportedExtensions);
-
+        var slnOption = new Option<FileInfo?>("--sln")
+            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
+        var passOption = new Option<string>("--password")
+            .WithDescription("Password for the Neo4j database. Example: your-pass")
+            .IsRequired()
+            .WithAlias("-p");
+        var repoKeyOption = new Option<string>("--repository-key")
+            .WithDescription("A unique identifier for the repository in Neo4j. Example: my-repo")
+            .IsRequired()
+            .WithAlias("-r");
+        var uriOption = new Option<string>("--uri")
+            .WithDefaultValueFunc(() => "bolt://localhost:7687")
+            .WithDescription("The Neo4j connection string. Example: bolt://localhost:7687")
+            .WithAlias("-u")
+            .WithAlias("--url");
+        var userOption = new Option<string>("--user")
+            .WithDefaultValueFunc(() => "neo4j")
+            .WithDescription("Neo4j username. Example: neo4j");
+        var databaseOption = new Option<string>("--database")
+            .WithDefaultValueFunc(() => "neo4j")
+            .WithDescription("Neo4j database name. Example: my-db")
+            .WithAlias("-db");
+        var diffBaseOption = new Option<string?>("--diff-base")
+            .WithDescription("Optional git base ref for incremental indexing. Example: origin/main");
+        var batchSizeOption = new Option<int>("--batch-size")
+            .WithDefaultValueFunc(() => 500)
+            .WithDescription("Number of symbols to batch before flushing to Neo4j. Example: 500");
+        var logLevelOption = new Option<LogLevel>("--log-level")
+            .WithDefaultValueFunc(() => LogLevel.Information)
+            .WithDescription("The minimum log level to display. Example: Information")
+            .WithAlias("-l");
+        var skipDependenciesOption = new Option<bool>("--skip-dependencies")
+            .WithDefaultValueFunc(() => false)
+            .WithDescription("Skip NuGet dependency ingestion. Example: --skip-dependencies");
+        var minAccessibilityOption = new Option<Accessibility>("--min-accessibility")
+            .WithDefaultValueFunc(() => Accessibility.Private)
+            .WithDescription("The minimum accessibility level to index. Default: Private (indices all)");
+        var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key")
+            .WithDefaultValueFunc(() => false)
+            .WithDescription("Purge all data from Neo4j associated with the specified repoKey. Example: --purge-data-by-repoKey");
+        var includeExtensionsOption = new Option<string[]>("--include")
+            .WithDefaultValueFunc(() => allSupportedExtensions)
+            .WithDescription($"File extensions to include. Supported: {string.Join(", ", allSupportedExtensions)}. Example: --include .cs --include .razor")
+            .WithAlias("-i")
+            .WithArgumentHelpName(string.Join('|', allSupportedExtensions));
+        var debugOption = new Option<bool>("--debug")
+            .WithDescription("Turn on debug logging. Example: --debug")
+            .WithAlias("-d");
+        var verboseOption = new Option<bool>("--verbose")
+            .WithDescription("Turn on trace logging. Example: --verbose")
+            .WithAlias("-v");
+        var quietOption = new Option<bool>("--quiet")
+            .WithDescription("Mute all logging output. Example: --quiet")
+            .WithAlias("-q");
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
