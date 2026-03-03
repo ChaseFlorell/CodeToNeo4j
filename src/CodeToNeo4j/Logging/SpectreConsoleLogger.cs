@@ -27,7 +27,17 @@ public class SpectreConsoleLogger(string name, LogLevel minLogLevel) : ILogger
         };
 
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        AnsiConsole.MarkupLine($"[{color}]{timestamp} {logLevel.ToString().ToUpper()} {Markup.Escape(name)}[{eventId.Id}] {Markup.Escape(message)}[/]");
+        var logLineMarkup = $"[{color}]{timestamp} {logLevel.ToString().ToUpper()} {Markup.Escape(name)}[[{eventId.Id}]] {Markup.Escape(message)}[/]";
+        
+        try
+        {
+            AnsiConsole.MarkupLine(logLineMarkup);
+        }
+        catch (InvalidOperationException)
+        {
+            // Fallback: Just write the text without markup if markup fails.
+            AnsiConsole.WriteLine($"{timestamp} {logLevel.ToString().ToUpper()} {name}[{eventId.Id}] {message}");
+        }
 
         if (exception != null)
         {

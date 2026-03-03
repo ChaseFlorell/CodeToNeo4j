@@ -22,12 +22,12 @@ public class ConsoleProgressService(LogLevel minLogLevel) : IProgressService
         if (minLogLevel <= LogLevel.Debug)
         {
             // Debug or Trace (Verbose) - multi-line behavior
-            AnsiConsole.MarkupLine($"[grey]{timestamp} {minLogLevel.ToString().ToUpper()} {Markup.Escape(logName)}[0] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
+            AnsiConsole.MarkupLine($"[grey]{timestamp} {minLogLevel.ToString().ToUpper()} {Markup.Escape(logName)}[[0]] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
         }
         else
         {
             // Information - single-line behavior
-            AnsiConsole.Markup($"\r[white]{timestamp} INFO {Markup.Escape(logName)}[0] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
+            AnsiConsole.Markup($"\r[white]{timestamp} INFO {Markup.Escape(logName)}[[0]] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
 
             if (current == total)
             {
