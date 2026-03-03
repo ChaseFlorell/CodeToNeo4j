@@ -7,7 +7,7 @@ CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions 
 ### Prerequisites
 - **.NET 10 SDK**: Specifically version `10.0.103` (defined in `global.json`).
 - **Neo4j Database**: Version 5.0 or higher.
-- **Git**: Required if using incremental indexing (`--diffBase`) or tracking file authors.
+- **Git**: Required if using incremental indexing (`--diff-base`) or tracking file authors.
 
 ### Installation
 
@@ -21,7 +21,7 @@ The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you
    ```
 2. **Run the tool**:
    ```bash
-   codetoneo4j --sln ./MySolution.sln --password your-pass --repository-key my-repo --database my-db --uri bolt://localhost:7687
+   codetoneo4j -s ./MySolution.sln --password your-pass --repository-key my-repo --database my-db --uri bolt://localhost:7687
    ```
 
 To update the tool to the latest version:
@@ -62,19 +62,19 @@ You can run the tool by pointing it to a .NET solution file (`.sln`).
 
 If installed as a global tool:
 ```bash
-codetoneo4j --sln /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name --database my-custom-db
+codetoneo4j -s /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name --database my-custom-db
 ```
 
 If running from the build output:
 ```bash
-./CodeToNeo4j --sln /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name
+./CodeToNeo4j -s /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name
 ```
 
 ### Options
 
 | Option                           | Description                                                                                                                | Default |
 |----------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
-| `--sln`                          | **Required** unless using `--purge-data-by-repository-key`. Path to the `.sln` file to index.                              | |
+| `--sln`, `-s`                  | **Required** unless using `--purge-data-by-repository-key`. Path to the `.sln` file to index.                              | |
 | `--repository-key`, `-r`         | **Required**. A unique identifier for the repository in Neo4j.                                                             | |
 | `--password`, `-p`               | **Required**. Password for the Neo4j database.                                                                             | |
 | `--uri`, `-u`, `--url`           | The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
@@ -136,7 +136,7 @@ jobs:
       - name: Run CodeToNeo4j
         run: |
           codetoneo4j \
-            --sln ./MySolution.sln \
+            -s ./MySolution.sln \
             --repository-key my-repo \
             --uri ${{ secrets.NEO4J_URL }} \
             --password ${{ secrets.NEO4J_PASS }} \
@@ -161,7 +161,7 @@ jobs:
     - **Csproj**: Extracts `PackageReference`, `ProjectReference`, and project properties (e.g., `OutputType`, `TargetFramework`).
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
-- **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. When using incremental indexing (`--diffBase`), it also ingests detailed information for all commits between the base and HEAD, including hashes, authors, dates, and commit messages, linking them to the modified files. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
+- **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. When using incremental indexing (`--diff-base`), it also ingests detailed information for all commits between the base and HEAD, including hashes, authors, dates, and commit messages, linking them to the modified files. Incremental indexing requires a valid Git repository and the `git` executable in the PATH. Deleted files are marked as `deleted: true` to preserve historical context.
 
 ---
 

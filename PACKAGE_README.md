@@ -7,7 +7,7 @@ CodeToNeo4j is a .NET tool that analyzes .NET solutions and indexes their struct
 - **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
 - **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, Directives, UI Elements).
 - **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
-- **Incremental Indexing**: Only process changed files using `--diffBase`. When enabled, also ingests detailed commit history (hashes, authors, messages) and links them to the modified files.
+- **Incremental Indexing**: Only process changed files using `--diff-base`. When enabled, also ingests detailed commit history (hashes, authors, messages) and links them to the modified files.
 - **Git Metadata**: Tracks file metadata including creation/modification dates, commits, and individual author statistics (contribution counts and dates).
 - **Administrative Tools**: Safely purge data by repository key using `--purge-data-by-repository-key`.
 - **Accessibility Filtering**: Control which members are indexed using `--min-accessibility`.
@@ -27,7 +27,7 @@ Run the tool by pointing it to your solution file and providing Neo4j credential
 
 ```bash
 codetoneo4j \
-  --sln ./MySolution.sln \
+  -sln ./MySolution.sln \
   --uri bolt://localhost:7687 \
   --password your-password \
   --repository-key my-repo-id
@@ -37,7 +37,7 @@ codetoneo4j \
 
 | Option                           | Description                                                                            |
 |----------------------------------|----------------------------------------------------------------------------------------|
-| `--sln`                          | **Required** unless using `--purge-data-by-repository-key`. Path to the `.sln` file to index. |
+| `--sln`, `-s`                  | **Required** unless using `--purge-data-by-repository-key`. Path to the `.sln` file to index. |
 | `--repository-key`, `-r`         | **Required**. A unique identifier for the repository in Neo4j.                         |
 | `--password`, `-p`               | **Required**. Password for the Neo4j database.                                         |
 | `--uri`, `-u`, `--url`           | Neo4j connection string (Default: `bolt://localhost:7687`).                            |
@@ -72,7 +72,7 @@ codetoneo4j \
 
 - **.NET 8, 9, or 10 SDK** must be installed on the machine.
 - **Neo4j 5.0+** database.
-- **Git** (if using `--diffBase`).
+- **Git** (if using `--diff-base`).
 
 For more detailed documentation, visit the [GitHub Repository](https://github.com/chaseflorell/CodeToNeo4j).
 
@@ -94,7 +94,7 @@ You can install and run `CodeToNeo4j` directly in your GitHub workflows:
 - name: Run CodeToNeo4j
   run: |
     codetoneo4j \
-      --sln ./MySolution.sln \
+      -s ./MySolution.sln \
       --repository-key my-repo \
       --uri ${{ secrets.NEO4J_URL }} \
       --password ${{ secrets.NEO4J_PASS }} \
@@ -117,7 +117,7 @@ steps:
 
 - script: |
     codetoneo4j \
-      --sln ./MySolution.sln \
+      -s ./MySolution.sln \
       --repository-key my-repo \
       --uri $(NEO4J_URL) \
       --password $(NEO4J_PASS) \

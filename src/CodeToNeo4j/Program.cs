@@ -28,6 +28,7 @@ public static class Program
         string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
 
         var slnOption = new Option<FileInfo?>("--sln")
+            .WithAlias("-s")
             .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
             .WithDescription("Password for the Neo4j database. Example: your-pass")
