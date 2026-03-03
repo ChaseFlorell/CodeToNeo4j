@@ -21,6 +21,7 @@
 - For `LogLevel.Information`, use single-line updates; for `LogLevel.Debug` or lower, use multi-line updates; for `LogLevel.Warning` or higher, suppress output entirely.
 - Standard loggers (`Microsoft.Extensions.Logging`) typically append newlines to every log entry, which prevents single-line updates.
 - If a standard logger is still needed for other parts of the application, a custom `ILogger` implementation can be used to manage output formatting and suppression of specific logs during progress reporting.
+- **CRITICAL: Always use `Markup.Escape()` when passing strings (like log messages, file paths, or class names) to `AnsiConsole.Markup` or `AnsiConsole.MarkupLine`. Failure to do so will cause `InvalidOperationException: Unbalanced markup stack` if the input contains brackets (`[` or `]`).**
 - For fatal errors, wrap the main entry point in a try-catch and use `AnsiConsole.WriteException` for rich error reporting before exiting with a non-zero code.
 - For performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` to process work in parallel when steps are independent.
 - Use chunked parallelism (e.g., chunks of `batchSize`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
