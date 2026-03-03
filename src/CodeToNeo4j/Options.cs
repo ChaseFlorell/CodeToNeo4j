@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 namespace CodeToNeo4j;
 
 public class Options(
-    FileInfo sln,
+    FileInfo? sln,
     string uri,
     string user,
     string pass,
@@ -15,9 +15,10 @@ public class Options(
     LogLevel logLevel,
     bool skipDependencies,
     Accessibility minAccessibility,
-    IEnumerable<string> includeExtensions)
+    IEnumerable<string> includeExtensions,
+    bool purgeDataByRepoKey)
 {
-    public FileInfo Sln { get; } = sln;
+    public FileInfo? Sln { get; } = sln;
     public string Uri { get; } = uri;
     public string User { get; } = user;
     public string Pass { get; } = pass;
@@ -29,4 +30,5 @@ public class Options(
     public bool SkipDependencies { get; } = skipDependencies;
     public Accessibility MinAccessibility { get; } = minAccessibility;
     public IEnumerable<string> IncludeExtensions { get; } = includeExtensions;
+    public bool PurgeDataByRepoKey { get; } = purgeDataByRepoKey;
 }

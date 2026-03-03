@@ -157,6 +157,20 @@ public class Neo4jService(
         }).ConfigureAwait(false);
     }
 
+    public async Task PurgeData(string repoKey, IEnumerable<string>? includeExtensions, string databaseName)
+    {
+        logger.LogInformation("Purging data for repoKey '{RepoKey}' (Database: {DatabaseName})...", repoKey, databaseName);
+        var extensions = includeExtensions?.ToArray();
+
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+        {
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.PurgeData), new { repoKey, extensions }).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+        logger.LogInformation("Purge complete for repoKey '{RepoKey}'.", repoKey);
+    }
+
     public async ValueTask DisposeAsync()
     {
         logger.LogDebug("Disposing Neo4j driver...");

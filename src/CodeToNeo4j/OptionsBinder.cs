@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 namespace CodeToNeo4j;
 
 public class OptionsBinder(
-    Option<FileInfo> slnOption,
+    Option<FileInfo?> slnOption,
     Option<string> uriOption,
     Option<string> userOption,
     Option<string> passOption,
@@ -17,10 +17,29 @@ public class OptionsBinder(
     Option<LogLevel> logLevelOption,
     Option<bool> skipDependenciesOption,
     Option<Accessibility> minAccessibilityOption,
-    Option<string[]> includeExtensionsOption) : BinderBase<Options>
+    Option<string[]> includeExtensionsOption,
+    Option<bool> purgeDataByRepoKeyOption,
+    Option<bool> debugOption,
+    Option<bool> verboseOption,
+    Option<bool> quietOption) : BinderBase<Options>
 {
-    protected override Options GetBoundValue(BindingContext bindingContext) =>
-        new(
+    protected override Options GetBoundValue(BindingContext bindingContext)
+    {
+        var logLevel = bindingContext.ParseResult.GetValueForOption(logLevelOption);
+        if (bindingContext.ParseResult.GetValueForOption(debugOption))
+        {
+            logLevel = LogLevel.Debug;
+        }
+        else if (bindingContext.ParseResult.GetValueForOption(verboseOption))
+        {
+            logLevel = LogLevel.Trace;
+        }
+        else if (bindingContext.ParseResult.GetValueForOption(quietOption))
+        {
+            logLevel = LogLevel.None;
+        }
+
+        return new(
             bindingContext.ParseResult.GetValueForOption(slnOption)!,
             bindingContext.ParseResult.GetValueForOption(uriOption)!,
             bindingContext.ParseResult.GetValueForOption(userOption)!,
@@ -29,9 +48,11 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(diffBaseOption),
             bindingContext.ParseResult.GetValueForOption(batchSizeOption),
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
-            bindingContext.ParseResult.GetValueForOption(logLevelOption),
+            logLevel,
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
-            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!
+            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
+            bindingContext.ParseResult.GetValueForOption(purgeDataByRepoKeyOption)
         );
+    }
 }

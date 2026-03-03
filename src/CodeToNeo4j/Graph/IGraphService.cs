@@ -10,4 +10,5 @@ public interface IGraphService : IAsyncDisposable
     Task UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName);
     Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName);
     Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName);
+    Task PurgeData(string repoKey, IEnumerable<string>? includeExtensions, string databaseName);
 }

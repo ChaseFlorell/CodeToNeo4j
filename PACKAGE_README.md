@@ -8,6 +8,8 @@ CodeToNeo4j is a .NET tool that analyzes .NET solutions and indexes their struct
 - **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, Directives, UI Elements).
 - **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
 - **Incremental Indexing**: Only process changed files using `--diffBase`. When enabled, also ingests detailed commit history (hashes, authors, messages) and links them to the modified files.
+- **Git Metadata**: Tracks file metadata including creation/modification dates, commits, and individual author statistics (contribution counts and dates).
+- **Administrative Tools**: Safely purge data by repoKey using `--purge-data-by-repoKey`.
 - **Accessibility Filtering**: Control which members are indexed using `--min-accessibility`.
 - **Platform Native Progress**: Special progress reporting for GitHub Actions and Azure DevOps.
 
@@ -27,25 +29,44 @@ Run the tool by pointing it to your solution file and providing Neo4j credential
 codetoneo4j \
   --sln ./MySolution.sln \
   --uri bolt://localhost:7687 \
-  --pass your-password \
-  --repoKey my-repo-id
+  --password your-password \
+  --repository-key my-repo-id
 ```
 
 ## Key Options
 
 | Option | Description |
 | --- | --- |
-| `--sln` | **Required**. Path to the `.sln` file to index. |
-| `--repoKey` | **Required**. A unique identifier for the repository in Neo4j. |
-| `--pass` | **Required**. Password for the Neo4j database. |
-| `--uri` | Neo4j connection string (Default: `bolt://localhost:7687`). |
+| `--sln` | **Required** unless using `--purge-data-by-repoKey`. Path to the `.sln` file to index. |
+| `--repository-key`, `-r` | **Required**. A unique identifier for the repository in Neo4j. |
+| `--password`, `-p` | **Required**. Password for the Neo4j database. |
+| `--uri`, `-u`, `--url` | Neo4j connection string (Default: `bolt://localhost:7687`). |
 | `--user` | Neo4j username (Default: `neo4j`). |
-| `--database` | Neo4j database name (Default: `neo4j`). |
-| `--diffBase` | Optional git base ref (e.g., `origin/main`) for incremental indexing. |
-| `--logLevel` | Logging verbosity (`Information`, `Debug`, etc.). |
+| `--database`, `-db` | Neo4j database name (Default: `neo4j`). |
+| `--diff-base` | Optional git base ref (e.g., `origin/main`) for incremental indexing. |
+| `--log-level`, `-l` | Logging verbosity (`Information`, `Debug`, etc.). |
+| `--debug`, `-d` | Turn on debug logging. |
+| `--verbose`, `-v`| Turn on trace logging. |
+| `--quiet`, `-q` | Mute all logging output. |
 | `--skip-dependencies` | Skip NuGet dependency ingestion. |
 | `--min-accessibility` | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). |
-| `--include` | File extensions to include (Default: all supported). |
+| `--include`, `-i` | File extensions to include (Default: all supported). |
+| `--purge-data-by-repoKey` | Purge data associated with the repoKey. |
+
+> Note: When using `--purge-data-by-repoKey`, `--sln` is not required. The tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+
+### Purge examples
+
+- Full purge:
+  ```bash
+  codetoneo4j --repository-key my-repo --password your-pass --uri bolt://localhost:7687 --database neo4j --purge-data-by-repoKey
+  ```
+- Purge only certain file types:
+  ```bash
+  codetoneo4j --repository-key my-repo --password your-pass --uri bolt://localhost:7687 --database neo4j \
+    --purge-data-by-repoKey \
+    --include .cs --include .razor
+  ```
 
 ## Prerequisites
 
@@ -74,10 +95,10 @@ You can install and run `CodeToNeo4j` directly in your GitHub workflows:
   run: |
     codetoneo4j \
       --sln ./MySolution.sln \
-      --repoKey my-repo \
+      --repository-key my-repo \
       --uri ${{ secrets.NEO4J_URL }} \
-      --pass ${{ secrets.NEO4J_PASS }} \
-      --diffBase ${{ github.event.before }}
+      --password ${{ secrets.NEO4J_PASS }} \
+      --diff-base ${{ github.event.before }}
 ```
 
 ### Azure DevOps
@@ -97,9 +118,9 @@ steps:
 - script: |
     codetoneo4j \
       --sln ./MySolution.sln \
-      --repoKey my-repo \
+      --repository-key my-repo \
       --uri $(NEO4J_URL) \
-      --pass $(NEO4J_PASS) \
-      --diffBase $(System.PullRequest.SourceCommitId)
+      --password $(NEO4J_PASS) \
+      --diff-base $(System.PullRequest.SourceCommitId)
   displayName: 'Run CodeToNeo4j'
 ```
