@@ -62,14 +62,44 @@ public class SolutionProcessor(
         var totalFiles = filesToProcess.Length;
         var currentFileIndex = 0;
 
+        var symbolBuffer = new List<Symbol>(batchSize);
+        var relBuffer = new List<Relationship>(batchSize);
+
         foreach (var file in filesToProcess)
         {
-            currentFileIndex++;
             var result = await ProcessFile(file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
-            await graphService.UpsertFile(result.File, result.Symbols, result.Relationships, databaseName).ConfigureAwait(false);
+            await graphService.UpsertFile(result.File, databaseName).ConfigureAwait(false);
+
+            lock (symbolBuffer)
+            {
+                symbolBuffer.AddRange(result.Symbols);
+                relBuffer.AddRange(result.Relationships);
+            }
+
+            if (symbolBuffer.Count >= batchSize)
+            {
+                List<Symbol> symbolsToFlush;
+                List<Relationship> relsToFlush;
+                lock (symbolBuffer)
+                {
+                    symbolsToFlush = [.. symbolBuffer];
+                    relsToFlush = [.. relBuffer];
+                    symbolBuffer.Clear();
+                    relBuffer.Clear();
+                }
+
+                logger.LogDebug("Flushing {SymbolCount} symbols and {RelationshipCount} relationships", symbolsToFlush.Count, relsToFlush.Count);
+                await graphService.FlushSymbols(symbolsToFlush, relsToFlush, databaseName).ConfigureAwait(false);
+            }
 
             var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
-            progressService.ReportProgress(currentFileIndex, totalFiles, relativePath);
+            var current = Interlocked.Increment(ref currentFileIndex);
+            progressService.ReportProgress(current, totalFiles, relativePath);
+        }
+
+        if (symbolBuffer.Count > 0)
+        {
+            await graphService.FlushSymbols(symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
         }
 
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))

@@ -72,7 +72,7 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async ValueTask UpsertFile(FileMetaData file, IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
+    public async ValueTask UpsertFile(FileMetaData file, string databaseName)
     {
         var fileData = new Dictionary<string, object?>
         {
@@ -93,6 +93,18 @@ public class Neo4jService(
             ["repoKey"] = file.RepoKey
         };
 
+        logger.LogDebug("Upserting file {FileKey} to Neo4j (Database: {DatabaseName})...", file.FileKey, databaseName);
+
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+        {
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), fileData).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey = file.FileKey }).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+    }
+
+    public async Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
+    {
         var symbolBatch = symbols.Select(s => new Dictionary<string, object?>
         {
             ["key"] = s.Key,
@@ -115,22 +127,28 @@ public class Neo4jService(
             ["relType"] = r.RelType
         }).ToArray();
 
-        logger.LogDebug("Upserting file {FileKey} with {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", file.FileKey, symbolBatch.Length, relBatch.Length, databaseName);
+        if (symbolBatch.Length == 0 && relBatch.Length == 0) return;
+
+        logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbolBatch.Length, relBatch.Length, databaseName);
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), fileData).ConfigureAwait(false);
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKey = file.FileKey }).ConfigureAwait(false);
+            var tasks = new List<Task>();
 
             if (symbolBatch.Length > 0)
             {
-                await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch }).ConfigureAwait(false);
+                tasks.Add(tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertSymbols), new { symbols = symbolBatch }));
             }
 
             if (relBatch.Length > 0)
             {
-                await tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch }).ConfigureAwait(false);
+                tasks.Add(tx.RunWithRetry(cypherService.GetCypher(Queries.MergeRelationships), new { rels = relBatch }));
+            }
+
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
         }).ConfigureAwait(false);
     }

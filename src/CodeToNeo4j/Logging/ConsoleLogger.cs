@@ -13,13 +13,6 @@ public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
         if (!IsEnabled(logLevel)) return;
 
         var message = formatter(state, exception);
-
-        // once it starts logging progress, I'd like it to _not_ log whenever it's flushing symbols.
-        if (logLevel == LogLevel.Information && (message.Contains("Flushing") || message.Contains("Upserting")))
-        {
-             return;
-        }
-
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
         var logLevelString = logLevel.Truncate();
 
@@ -28,8 +21,7 @@ public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
             Console.Write($"\r{timestamp} {logLevelString} {name}[{eventId.Id}] {message}");
             return;
         }
-        
-        // HH:mm:ss [INFO] CategoryName[0] Message
+
         Console.WriteLine($"{timestamp} {logLevelString} {name}[{eventId.Id}] {message}");
 
         if (exception != null)

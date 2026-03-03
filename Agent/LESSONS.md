@@ -42,3 +42,6 @@
 - Reverting to per-file writes (while still using parallel processing for CPU-bound tasks) allows for smoother and more responsive "one file at a time" progress updates.
 - Parallelizing independent file processing using `Task.WhenAll` can still provide significant performance benefits, even with individual database writes, provided the database handles the concurrency well.
 - Using a callback approach (e.g., `onProcessed` delegate) in parallel processing loops allows for immediate, thread-safe progress reporting and database updates as each task completes.
+- When processing large solutions with Roslyn, avoid launching thousands of parallel tasks for all files at once (e.g., via `Task.WhenAll` on a large collection). This can lead to `OutOfMemoryException` because each task may hold onto Roslyn documents, semantic models, and other memory-intensive objects simultaneously.
+- Instead, use a sequential `foreach` loop for top-level file processing to keep memory usage stable, while still using parallelism for smaller, lower-level operations like concurrent database writes (e.g., flushing symbols and relationships in a single transaction).
+- Memory management is as important as throughput; batching can be used to balance database performance with local resource constraints.
