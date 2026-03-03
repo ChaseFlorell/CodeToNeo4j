@@ -65,29 +65,35 @@ public class SolutionProcessor(
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
 
-        foreach (var file in filesToProcess)
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = 20
+        };
+
+        await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, ct) =>
         {
             var result = await ProcessFile(file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
             await graphService.UpsertFile(result.File, databaseName).ConfigureAwait(false);
+
+            List<Symbol>? symbolsToFlush = null;
+            List<Relationship>? relsToFlush = null;
 
             lock (symbolBuffer)
             {
                 symbolBuffer.AddRange(result.Symbols);
                 relBuffer.AddRange(result.Relationships);
-            }
 
-            if (symbolBuffer.Count >= batchSize)
-            {
-                List<Symbol> symbolsToFlush;
-                List<Relationship> relsToFlush;
-                lock (symbolBuffer)
+                if (symbolBuffer.Count >= batchSize)
                 {
                     symbolsToFlush = [.. symbolBuffer];
                     relsToFlush = [.. relBuffer];
                     symbolBuffer.Clear();
                     relBuffer.Clear();
                 }
+            }
 
+            if (symbolsToFlush is not null && relsToFlush is not null)
+            {
                 logger.LogDebug("Flushing {SymbolCount} symbols and {RelationshipCount} relationships", symbolsToFlush.Count, relsToFlush.Count);
                 await graphService.FlushSymbols(symbolsToFlush, relsToFlush, databaseName).ConfigureAwait(false);
             }
@@ -95,7 +101,7 @@ public class SolutionProcessor(
             var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
             var current = Interlocked.Increment(ref currentFileIndex);
             progressService.ReportProgress(current, totalFiles, relativePath);
-        }
+        }).ConfigureAwait(false);
 
         if (symbolBuffer.Count > 0)
         {
