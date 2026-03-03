@@ -1,9 +1,5 @@
 UNWIND $rels AS r
 MATCH (a:Symbol {key:r.fromKey})
 MATCH (b:Symbol {key:r.toKey})
-CALL {
-  WITH a, b, r
-  // Relationship type is fixed in v1, safe to switch later
-  MERGE (a)-[:CONTAINS]->(b)
-}
+CALL apoc.merge.relationship(a, r.relType, {}, {}, b, {}) YIELD rel
 RETURN count(*) AS created

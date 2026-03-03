@@ -106,6 +106,21 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
             symbolBuffer.Add(memberRec);
 
             relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
+
+            if (member is ConstructorDeclarationSyntax cds)
+            {
+                foreach (var parameter in cds.ParameterList.Parameters)
+                {
+                    var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
+                    if (parameterSymbol is null) continue;
+
+                    var parameterType = parameterSymbol.Type;
+                    if (parameterType is null or IErrorTypeSymbol) continue;
+
+                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, parameterType);
+                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+                }
+            }
         }
     }
 }
