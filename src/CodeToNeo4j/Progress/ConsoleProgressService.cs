@@ -1,3 +1,4 @@
+using CodeToNeo4j.Logging;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 
@@ -15,19 +16,19 @@ public class ConsoleProgressService(LogLevel minLogLevel) : IProgressService
             return;
         }
 
-        var percentage = (double)current / total * 100;
+        var percentage = (double)current / total;
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
         var logName = typeof(ConsoleProgressService).FullName ?? "CodeToNeo4j.Progress.ConsoleProgressService";
 
         if (minLogLevel <= LogLevel.Debug)
         {
             // Debug or Trace (Verbose) - multi-line behavior
-            AnsiConsole.MarkupLine($"[grey]{timestamp} {minLogLevel.ToString().ToUpper()} {Markup.Escape(logName)}[[0]] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
+            AnsiConsole.MarkupLine($"[grey]{timestamp} {minLogLevel.Truncate()} {Markup.Escape(logName)}[[0]] [[Progress: {percentage:P2}]] [[{current}/{total}]][/]");
         }
         else
         {
             // Information - single-line behavior
-            AnsiConsole.Markup($"\r[white]{timestamp} INFO {Markup.Escape(logName)}[[0]] [[Progress: {percentage:F2} %]] [[{current}/{total}]][/]");
+            AnsiConsole.Markup($"\r[white]{timestamp} {LogLevel.Information.Truncate()} {Markup.Escape(logName)}[[0]] [[Progress: {percentage:P2}]] [[{current}/{total}]][/]");
 
             if (current == total)
             {
