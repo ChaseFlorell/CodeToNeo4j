@@ -77,7 +77,7 @@ If running from the build output:
 
 | Option                        | Description                                                                                                                | Default |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
-| `--sln`, `-s`                 | **Required** unless using `--purge-data`. Path to the `.sln` file to index.                              | |
+| `--sln`, `-s`                 | **Required** unless using `--purge-data`. Path to the `.sln` file to index. The filename (without extension) is used as the **case-insensitive** repository key. | |
 | `--no-key`                    | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.                              | `false` |
 | `--password`, `-p`            | **Required**. Password for the Neo4j database.                                                                             | |
 | `--uri`, `-u`, `--url`        | The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
@@ -92,9 +92,9 @@ If running from the build output:
 | `--skip-dependencies`         | Skip NuGet dependency ingestion.                                                                                           | `false` |
 | `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
 | `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
-| `--purge-data`                | Purge data from Neo4j associated with the repository.                                                                      | `false` |
+| `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
 
-> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge data
 

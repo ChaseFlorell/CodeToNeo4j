@@ -3,8 +3,11 @@
 - `ISolutionFileDiscoveryService` is responsible for finding files to process. It considers regular documents, additional documents, and files from disk in the solution directory.
 - `IDocumentHandler` is the interface for processing individual files. It uses `TextDocument` to allow for broad file type support (including `AdditionalDocument`).
 - `CSharpHandler`, `RazorHandler`, `HtmlHandler`, `JavaScriptHandler`, `XamlHandler`, `XmlHandler`, `JsonHandler`, `CssHandler`, and `CsprojHandler` implement specific file processing logic.
-    - `CsprojHandler` extracts `PackageReference`, `ProjectReference`, and `PropertyGroup` properties (as `ProjectProperty` symbols).
 - `IGraphService` handles interaction with the Neo4j database, including upserting symbols and relationships.
+- **Data Consistency**: Repository keys (`repoKey`) and derived keys (e.g., `FileKey`, `SymbolKey`) are normalized to lowercase in the application before being sent to Neo4j. This ensures case-insensitivity and optimal index performance.
+- **Neo4j 5.x Requirements**:
+    - Use `IF NOT EXISTS` for all schema commands.
+    - Explicitly alias all parameters in `WITH` clauses (e.g., `WITH $param AS param`), especially within `CALL` subqueries.
 
 # Performance Principles
 - **Batching**: Always prefer batching I/O operations (database writes, git commands) to minimize overhead.

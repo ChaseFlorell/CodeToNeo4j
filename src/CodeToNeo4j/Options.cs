@@ -23,7 +23,7 @@ public class Options(
     public string User { get; } = user;
     public string Pass { get; } = pass;
     public bool HasRepoKey { get; } = !noKey;
-    public string? RepoKey => HasRepoKey ? Path.GetFileNameWithoutExtension(Sln.Name) : null;
+    public string? RepoKey => HasRepoKey ? Path.GetFileNameWithoutExtension(Sln.Name).ToLowerInvariant() : null;
     public string? DiffBase { get; } = diffBase;
     public int BatchSize { get; } = batchSize;
     public string DatabaseName { get; } = databaseName;
