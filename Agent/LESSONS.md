@@ -51,7 +51,7 @@
 - Use conditional logic in the `RootCommand` handler (or a custom validator) to validate that incompatible options (e.g., `--skip-dependencies` or `--min-accessibility`) are not used alongside specific switches.
 - Make mandatory options (like `--sln`) optional in the binder when they are not relevant to the specific mode of operation (e.g., purging by key only), and enforce their presence via validators.
 - Implement flexible Cypher queries that can handle both full-scale and filtered (e.g., by extension) data deletions using conditional `WHERE` and `OPTIONAL MATCH` clauses.
-
+- **Neo4j 5.x Parameter Aliasing**: When using parameters (e.g., `$repoKey`) in a `WITH` clause, especially inside a `CALL` subquery, Neo4j 5.x requires they be explicitly aliased (e.g., `WITH $repoKey AS repoKey`). Failing to do so results in a `42N21: Expression in WITH must be aliased (use AS)` error.
 ## Option Binding and Simplification
 - When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
 - Handle the logic for resolving these mutually exclusive options within the `BinderBase<Options>.GetBoundValue` method. This keeps the rest of the application simple and unaware of the specific CLI flags used.

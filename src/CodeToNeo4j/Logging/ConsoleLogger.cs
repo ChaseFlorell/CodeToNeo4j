@@ -16,9 +16,9 @@ public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
         }
 
         var message = formatter(state, exception);
-        var isProgress = message.StartsWith("::progress");
+        var isProgress = message.Contains("[Progress");
 
-        if (!message.StartsWith("::") && !message.StartsWith("##vso"))
+        if (!IsRunningOnCI(message))
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             var logLevelString = logLevel.Truncate();
@@ -43,4 +43,8 @@ public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
             Console.Error.WriteLine(exception.ToString());
         }
     }
+
+    private static bool IsRunningOnCI(string message) =>
+        message.StartsWith("::")
+        || message.StartsWith("##vso");
 }

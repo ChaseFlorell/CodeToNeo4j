@@ -9,11 +9,11 @@ public class AzureDevOpsProgressService(ILogger<AzureDevOpsProgressService> logg
 {
     public void ReportProgress(int current, int total, string filePath)
     {
-        var progressPercentage = (double)current / total * 100;
+        var progress = (double)current / total;
         // Azure DevOps specific progress command.
         // ##vso[task.setprogress value=50;]
-        System.Console.WriteLine($"##vso[task.setprogress value={progressPercentage:0};]Processing {filePath}");
-        logger.LogInformation("[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", (double)current / total, filePath, current, total);
+        System.Console.WriteLine($"##vso[task.setprogress value={progress:0P};]Processing {filePath}");
+        logger.LogInformation("[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", progress, filePath, current, total);
     }
 
     public void ProgressComplete() { }
