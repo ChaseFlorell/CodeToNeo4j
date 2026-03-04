@@ -12,7 +12,7 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
     protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,

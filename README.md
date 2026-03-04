@@ -24,7 +24,7 @@ The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you
    ```
 2. **Run the tool**:
    ```bash
-   codetoneo4j -s ./MySolution.sln --password your-pass --repository-key my-repo --database my-db --uri bolt://localhost:7687
+   codetoneo4j -s ./MySolution.sln --password your-pass --database my-db --uri bolt://localhost:7687
    ```
 
 To update the tool to the latest version:
@@ -65,50 +65,52 @@ You can run the tool by pointing it to a .NET solution file (`.sln`).
 
 If installed as a global tool:
 ```bash
-codetoneo4j -s /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name --database my-custom-db
+codetoneo4j -s /path/to/YourSolution.sln --password your-neo4j-password --database my-custom-db
 ```
 
 If running from the build output:
 ```bash
-./CodeToNeo4j -s /path/to/YourSolution.sln --password your-neo4j-password --repository-key my-project-name
+./CodeToNeo4j -s /path/to/YourSolution.sln --password your-neo4j-password
 ```
 
 ### Options
 
-| Option                           | Description                                                                                                                | Default |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
-| `--sln`, `-s`                  | **Required** unless using `--purge-data-by-repository-key`. Path to the `.sln` file to index.                              | |
-| `--repository-key`, `-r`         | **Required**. A unique identifier for the repository in Neo4j.                                                             | |
-| `--password`, `-p`               | **Required**. Password for the Neo4j database.                                                                             | |
-| `--uri`, `-u`, `--url`           | The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
-| `--user`                         | Neo4j username.                                                                                                            | `neo4j` |
-| `--database`, `-db`              | Neo4j database name.                                                                                                       | `neo4j` |
-| `--log-level`, `-l`              | The minimum log level to display.                                                                                          | `Information` |
-| `--debug`, `-d`                  | Turn on debug logging.                                                                                                     | `false` |
-| `--verbose`, `-v`                | Turn on trace logging.                                                                                                     | `false` |
-| `--quiet`, `-q`                  | Mute all logging output.                                                                                                   | `false` |
-| `--diff-base`                    | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
-| `--batch-size`                   | Number of symbols to batch before flushing to Neo4j.                                                                       | `500` |
-| `--skip-dependencies`            | Skip NuGet dependency ingestion.                                                                                           | `false` |
-| `--min-accessibility`            | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
-| `--include`, `-i`                | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
-| `--purge-data-by-repository-key`       | Purge all data from Neo4j associated with the specified repository key.                                                    | `false` |
+| Option                        | Description                                                                                                                | Default |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
+| `--sln`, `-s`                 | **Required** unless using `--purge-data`. Path to the `.sln` file to index.                              | |
+| `--no-key`                    | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.                              | `false` |
+| `--password`, `-p`            | **Required**. Password for the Neo4j database.                                                                             | |
+| `--uri`, `-u`, `--url`        | The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
+| `--user`                      | Neo4j username.                                                                                                            | `neo4j` |
+| `--database`, `-db`           | Neo4j database name.                                                                                                       | `neo4j` |
+| `--log-level`, `-l`           | The minimum log level to display.                                                                                          | `Information` |
+| `--debug`, `-d`               | Turn on debug logging.                                                                                                     | `false` |
+| `--verbose`, `-v`             | Turn on trace logging.                                                                                                     | `false` |
+| `--quiet`, `-q`               | Mute all logging output.                                                                                                   | `false` |
+| `--diff-base`                 | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
+| `--batch-size`                | Number of symbols to batch before flushing to Neo4j.                                                                       | `500` |
+| `--skip-dependencies`         | Skip NuGet dependency ingestion.                                                                                           | `false` |
+| `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
+| `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
+| `--purge-data`                | Purge data from Neo4j associated with the repository.                                                                      | `false` |
 
-> **Note**: When using `--purge-data-by-repository-key`, the `--sln` option is not required. The tool will ask for confirmation before deleting any data. If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
-### Purge data by repository key
+### Purge data
 
-Purge all data previously ingested by this tool for a given repository key.
+Purge data previously ingested by this tool.
 
-- Full purge (all file types):
+- Purge by derived repository key:
   ```bash
-  codetoneo4j --repository-key my-repo --password your-pass --uri bolt://localhost:7687 --database neo4j --purge-data-by-repository-key
+  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data
+  ```
+- Purge all CodeToNeo4j data (when using --no-key):
+  ```bash
+  codetoneo4j --no-key --password your-pass --purge-data
   ```
 - Filtered purge (only specific file extensions):
   ```bash
-  codetoneo4j --repository-key my-repo --password your-pass --uri bolt://localhost:7687 --database neo4j \
-    --purge-data-by-repository-key \
-    --include .cs --include .razor
+  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data --include .cs --include .razor
   ```
 
 You will be prompted to confirm before deletion proceeds.
@@ -140,7 +142,6 @@ jobs:
         run: |
           codetoneo4j \
             -s ./MySolution.sln \
-            --repository-key my-repo \
             --uri ${{ secrets.NEO4J_URL }} \
             --password ${{ secrets.NEO4J_PASS }} \
             --database my-database \

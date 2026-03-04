@@ -10,19 +10,33 @@ public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
-        if (!IsEnabled(logLevel)) return;
-
-        var message = formatter(state, exception);
-        var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        var logLevelString = logLevel.Truncate();
-
-        if (logLevel == LogLevel.Information && message.StartsWith("[Progress:"))
+        if (!IsEnabled(logLevel))
         {
-            Console.Write($"\r{timestamp} {logLevelString} {name}[{eventId.Id}] {message}");
             return;
         }
 
-        Console.WriteLine($"{timestamp} {logLevelString} {name}[{eventId.Id}] {message}");
+        var message = formatter(state, exception);
+        var isProgress = message.StartsWith("::progress");
+
+        if (!message.StartsWith("::") && !message.StartsWith("##vso"))
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss");
+            var logLevelString = logLevel.Truncate();
+            message = $"{timestamp} {logLevelString} {name}[{eventId.Id}] {message}";
+        }
+        else
+        {
+            message = $"{name}[{eventId.Id}] {message}";
+        }
+
+
+        if (logLevel == LogLevel.Information && isProgress)
+        {
+            Console.Write($"\r{message}");
+            return;
+        }
+
+        Console.WriteLine($"{message}");
 
         if (exception != null)
         {

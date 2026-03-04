@@ -7,5 +7,5 @@ public record FileMetaData(
     string FilePath,
     string FileHash,
     FileMetadata Metadata,
-    string RepoKey
+    string? RepoKey
 );

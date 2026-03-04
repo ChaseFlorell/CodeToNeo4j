@@ -12,7 +12,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
     protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,

@@ -24,7 +24,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--password", "pass", "--repository-key", "repo" };
+        var args = new[] { "--sln", "test.sln", "--password", "pass" };
 
         // act
         var result = sut.Parse(args);
@@ -38,7 +38,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--password", "pass", "--repository-key", "repo", "--debug", "--quiet" };
+        var args = new[] { "--sln", "test.sln", "--password", "pass", "--debug", "--quiet" };
 
         // act
         var result = sut.Parse(args);
@@ -52,13 +52,13 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--purge-data-by-repository-key", "--password", "pass", "--repository-key", "repo", "--skip-dependencies" };
+        var args = new[] { "--sln", "test.sln", "--purge-data", "--password", "pass", "--skip-dependencies" };
 
         // act
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "--skip-dependencies is not allowed when using --purge-data-by-repository-key");
+        result.Errors.ShouldContain(e => e.Message == "--skip-dependencies is not allowed when using --purge-data");
     }
 
     [Fact]
@@ -66,13 +66,13 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--purge-data-by-repository-key", "--password", "pass", "--repository-key", "repo", "--min-accessibility", "Public" };
+        var args = new[] { "--sln", "test.sln", "--purge-data", "--password", "pass", "--min-accessibility", "Public" };
 
         // act
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "--min-accessibility is not allowed when using --purge-data-by-repository-key");
+        result.Errors.ShouldContain(e => e.Message == "--min-accessibility is not allowed when using --purge-data");
     }
 
     [Fact]
@@ -80,13 +80,13 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--password", "pass", "--repository-key", "repo" };
+        var args = new[] { "--password", "pass" };
 
         // act
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "--sln is required when not using --purge-data-by-repository-key");
+        result.Errors.ShouldContain(e => e.Message == "Option '--sln' is required.");
     }
 
     [Theory]
@@ -99,7 +99,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = $"--sln test.sln --password pass --repository-key repo {logArg}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var args = $"--sln test.sln --password pass {logArg}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         // act
         var result = sut.Parse(args);
@@ -107,5 +107,33 @@ public class ProgramTests
         // assert
         result.Errors.ShouldBeEmpty();
         // Since we can't easily test the binding here, we at least verify that the options are recognized without errors.
+    }
+
+    [Fact]
+    public void GivenNoKeyAndNoSlnAndNotPurge_WhenParsing_ThenShouldHaveValidationError()
+    {
+        // arrange
+        var (sut, _) = Program.CreateRootCommand();
+        var args = new[] { "--no-key", "--password", "pass" };
+
+        // act
+        var result = sut.Parse(args);
+
+        // assert
+        result.Errors.ShouldContain(e => e.Message == "Option '--sln' is required.");
+    }
+
+    [Fact]
+    public void GivenNoKeyAndPurge_WhenParsing_ThenShouldNotHaveErrors()
+    {
+        // arrange
+        var (sut, _) = Program.CreateRootCommand();
+        var args = new[] { "--sln", "test.sln", "--no-key", "--purge-data", "--password", "pass" };
+
+        // act
+        var result = sut.Parse(args);
+
+        // assert
+        result.Errors.ShouldBeEmpty();
     }
 }

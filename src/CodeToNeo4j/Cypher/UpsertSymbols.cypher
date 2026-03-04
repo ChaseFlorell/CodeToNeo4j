@@ -10,7 +10,8 @@ SET n.name = s.name,
     n.endLine = s.endLine,
     n.documentation = s.documentation,
     n.comments = s.comments,
-    n.updatedAt = datetime()
+    n.updatedAt = datetime(),
+    n.CodeToNeo4j = true
 WITH n, s
 MATCH (f:File {key:s.fileKey})
 MERGE (f)-[:DECLARES]->(n)

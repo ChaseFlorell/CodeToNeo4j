@@ -14,7 +14,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
     public Task Handle(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,
@@ -29,7 +29,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
     protected abstract Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,

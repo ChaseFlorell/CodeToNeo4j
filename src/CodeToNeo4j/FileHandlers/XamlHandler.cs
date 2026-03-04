@@ -12,7 +12,7 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
     protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,
@@ -35,7 +35,7 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         }
     }
 
-    private void ProcessElement(XElement element, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         var name = element.Name.LocalName;
         var keySuffix = "";

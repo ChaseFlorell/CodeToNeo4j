@@ -27,17 +27,16 @@ public static class Program
     {
         string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
 
-        var slnOption = new Option<FileInfo?>("--sln")
+        var slnOption = new Option<FileInfo>("--sln")
             .WithAlias("-s")
-            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
+            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln")
+            .IsRequired();
         var passOption = new Option<string>("--password")
             .WithDescription("Password for the Neo4j database. Example: your-pass")
             .IsRequired()
             .WithAlias("-p");
-        var repoKeyOption = new Option<string>("--repository-key")
-            .WithDescription("A unique identifier for the repository in Neo4j. Example: my-repo")
-            .IsRequired()
-            .WithAlias("-r");
+        var noKeyOption = new Option<bool>("--no-key")
+            .WithDescription("Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.");
         var uriOption = new Option<string>("--uri")
             .WithDefaultValueFunc(() => "bolt://localhost:7687")
             .WithDescription("The Neo4j connection string.")
@@ -79,13 +78,13 @@ public static class Program
         var quietOption = new Option<bool>("--quiet")
             .WithDescription("Mute all logging output. Example: --quiet")
             .WithAlias("-q");
-        var purgeDataByRepoKeyOption = new Option<bool>("--purge-data-by-repository-key")
+        var purgeDataOption = new Option<bool>("--purge-data")
             .WithDefaultValueFunc(() => false)
-            .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data-by-repository-key");
+            .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data");
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
-            slnOption, uriOption, userOption, passOption, repoKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption, purgeDataByRepoKeyOption, debugOption, verboseOption, quietOption
+            slnOption, uriOption, userOption, passOption, noKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption, purgeDataOption, debugOption, verboseOption, quietOption
         };
 
         root.AddValidator(result =>
@@ -101,22 +100,18 @@ public static class Program
                 result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
             }
 
-            var isPurge = result.GetValueForOption(purgeDataByRepoKeyOption);
+            var isPurge = result.GetValueForOption(purgeDataOption);
             if (isPurge)
             {
                 if (result.GetValueForOption(skipDependenciesOption))
                 {
-                    result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data-by-repository-key";
+                    result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data";
                 }
 
                 if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
                 {
-                    result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data-by-repository-key";
+                    result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
                 }
-            }
-            else if (result.GetValueForOption(slnOption) == null)
-            {
-                result.ErrorMessage = "--sln is required when not using --purge-data-by-repository-key";
             }
         });
 
@@ -125,7 +120,7 @@ public static class Program
             uriOption,
             userOption,
             passOption,
-            repoKeyOption,
+            noKeyOption,
             diffBaseOption,
             batchSizeOption,
             databaseOption,
@@ -133,13 +128,14 @@ public static class Program
             logLevelOption,
             debugOption,
             verboseOption,
-            quietOption, skipDependenciesOption, purgeDataByRepoKeyOption, includeExtensionsOption);
+            quietOption, skipDependenciesOption, purgeDataOption, includeExtensionsOption);
 
-        root.SetHandler(async (Options options) =>
+        root.SetHandler(async options =>
             {
-                if (options.PurgeDataByRepoKey)
+                if (options.PurgeData)
                 {
-                    Console.Write($"Are you sure you want to purge all data for repository key '{options.RepoKey}'? (y/n): ");
+                    var purgeTarget = options.RepoKey is null ? "ALL CodeToNeo4j data" : $"all data for repository key '{options.RepoKey}'";
+                    Console.Write($"Are you sure you want to purge {purgeTarget}? (y/n): ");
                     var response = Console.ReadLine();
                     if (response?.ToLower() != "y")
                     {
@@ -166,14 +162,14 @@ public static class Program
 
                 await graphService.Initialize(options.RepoKey, options.DatabaseName);
 
-                if (options.PurgeDataByRepoKey)
+                if (options.PurgeData)
                 {
                     var includeExtensions = options.IncludeExtensions.SequenceEqual(allSupportedExtensions) ? null : options.IncludeExtensions;
                     await graphService.PurgeData(options.RepoKey, includeExtensions, options.DatabaseName);
                     return;
                 }
 
-                await processor.ProcessSolution(options.Sln!, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
+                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
             },
             binder);
 

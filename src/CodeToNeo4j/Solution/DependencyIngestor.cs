@@ -7,7 +7,7 @@ public class DependencyIngestor(
     IGraphService graphService,
     ILogger<DependencyIngestor> logger) : IDependencyIngestor
 {
-    public async Task IngestDependencies(Microsoft.CodeAnalysis.Solution solution, string repoKey, string databaseName)
+    public async Task IngestDependencies(Microsoft.CodeAnalysis.Solution solution, string? repoKey, string databaseName)
     {
         logger.LogInformation("Ingesting NuGet dependencies...");
         var dependencies = new List<Dependency>();

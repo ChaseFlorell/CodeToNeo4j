@@ -9,7 +9,7 @@ public interface IDocumentHandler
     Task Handle(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,

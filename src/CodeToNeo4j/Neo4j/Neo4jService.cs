@@ -14,7 +14,7 @@ public class Neo4jService(
     ILogger<Neo4jService> logger)
     : IGraphService
 {
-    public async Task Initialize(string repoKey, string databaseName)
+    public async Task Initialize(string? repoKey, string databaseName)
     {
         logger.LogInformation("Initializing Neo4j driver...");
 
@@ -24,8 +24,11 @@ public class Neo4jService(
         await EnsureSchema(databaseName).ConfigureAwait(false);
         logger.LogInformation("Neo4j schema ensured for database: {DatabaseName}", databaseName);
 
-        await UpsertProject(repoKey, databaseName).ConfigureAwait(false);
-        logger.LogInformation("Project upserted: {RepositoryKey}", repoKey);
+        if (repoKey is not null)
+        {
+            await UpsertProject(repoKey, databaseName).ConfigureAwait(false);
+            logger.LogInformation("Project upserted: {RepositoryKey}", repoKey);
+        }
     }
 
     public async Task MarkFileAsDeleted(string fileKey, string databaseName)
@@ -35,7 +38,7 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async Task UpsertCommits(string repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
+    public async Task UpsertCommits(string? repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
     {
         var commitBatch = commits.Select(c => new Dictionary<string, object?>
         {
@@ -55,7 +58,7 @@ public class Neo4jService(
         await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertCommit), new { commits = commitBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
-    public async Task UpsertDependencies(string repoKey, IEnumerable<Dependency> dependencies, string databaseName)
+    public async Task UpsertDependencies(string? repoKey, IEnumerable<Dependency> dependencies, string databaseName)
     {
         var depBatch = dependencies.Select(d => new Dictionary<string, object?>
         {
@@ -157,9 +160,10 @@ public class Neo4jService(
         }).ConfigureAwait(false);
     }
 
-    public async Task PurgeData(string repoKey, IEnumerable<string>? includeExtensions, string databaseName)
+    public async Task PurgeData(string? repoKey, IEnumerable<string>? includeExtensions, string databaseName)
     {
-        logger.LogInformation("Purging data for repoKey '{RepositoryKey}' (Database: {DatabaseName})...", repoKey, databaseName);
+        var purgeTarget = repoKey is null ? "ALL CodeToNeo4j data" : $"repoKey '{repoKey}'";
+        logger.LogInformation("Purging data for {PurgeTarget} (Database: {DatabaseName})...", purgeTarget, databaseName);
         var extensions = includeExtensions?.ToArray();
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -168,7 +172,7 @@ public class Neo4jService(
             await tx.RunWithRetry(cypherService.GetCypher(Queries.PurgeData), new { repoKey, extensions }).ConfigureAwait(false);
         }).ConfigureAwait(false);
 
-        logger.LogInformation("Purge complete for repoKey '{RepositoryKey}'.", repoKey);
+        logger.LogInformation("Purge complete for {PurgeTarget}.", purgeTarget);
     }
 
     public async ValueTask DisposeAsync()

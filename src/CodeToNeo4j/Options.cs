@@ -4,11 +4,11 @@ using Microsoft.CodeAnalysis;
 namespace CodeToNeo4j;
 
 public class Options(
-    FileInfo? sln,
+    FileInfo sln,
     string uri,
     string user,
     string pass,
-    string repoKey,
+    bool noKey,
     string? diffBase,
     int batchSize,
     string databaseName,
@@ -16,13 +16,14 @@ public class Options(
     bool skipDependencies,
     Accessibility minAccessibility,
     IEnumerable<string> includeExtensions,
-    bool purgeDataByRepoKey)
+    bool purgeData)
 {
-    public FileInfo? Sln { get; } = sln;
+    public FileInfo Sln { get; } = sln;
     public string Uri { get; } = uri;
     public string User { get; } = user;
     public string Pass { get; } = pass;
-    public string RepoKey { get; } = repoKey;
+    public bool HasRepoKey { get; } = !noKey;
+    public string? RepoKey => HasRepoKey ? Path.GetFileNameWithoutExtension(Sln.Name) : null;
     public string? DiffBase { get; } = diffBase;
     public int BatchSize { get; } = batchSize;
     public string DatabaseName { get; } = databaseName;
@@ -30,5 +31,5 @@ public class Options(
     public bool SkipDependencies { get; } = skipDependencies;
     public Accessibility MinAccessibility { get; } = minAccessibility;
     public IEnumerable<string> IncludeExtensions { get; } = includeExtensions;
-    public bool PurgeDataByRepoKey { get; } = purgeDataByRepoKey;
+    public bool PurgeData { get; } = purgeData;
 }

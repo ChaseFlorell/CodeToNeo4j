@@ -22,7 +22,7 @@ public class SolutionProcessor(
     ISolutionFileDiscoveryService discoveryService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    public async Task ProcessSolution(FileInfo sln, string repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
+    public async Task ProcessSolution(FileInfo sln, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
@@ -171,7 +171,7 @@ public class SolutionProcessor(
         Microsoft.CodeAnalysis.Solution solution,
         ProcessedFile file,
         string solutionRoot,
-        string repoKey,
+        string? repoKey,
         string databaseName,
         Accessibility minAccessibility)
     {

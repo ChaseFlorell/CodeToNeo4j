@@ -12,7 +12,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
     protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,
@@ -38,7 +38,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
     private void ProcessTypeDeclaration(
         BaseTypeDeclarationSyntax typeDecl,
         SemanticModel semanticModel,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,
@@ -71,7 +71,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
         }
     }
 
-    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, EnumDeclarationSyntax eds, Symbol typeRec, Accessibility minAccessibility)
+    private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, EnumDeclarationSyntax eds, Symbol typeRec, Accessibility minAccessibility)
     {
         foreach (var member in eds.Members)
         {
@@ -90,7 +90,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
         }
     }
 
-    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, TypeDeclarationSyntax tds, Symbol typeRec, Accessibility minAccessibility)
+    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, TypeDeclarationSyntax tds, Symbol typeRec, Accessibility minAccessibility)
     {
         foreach (var member in tds.Members)
         {

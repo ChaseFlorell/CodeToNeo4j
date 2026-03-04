@@ -6,11 +6,11 @@ using Microsoft.CodeAnalysis;
 namespace CodeToNeo4j;
 
 public class OptionsBinder(
-    Option<FileInfo?> slnOption,
+    Option<FileInfo> slnOption,
     Option<string> uriOption,
     Option<string> userOption,
     Option<string> passOption,
-    Option<string> repoKeyOption,
+    Option<bool> noKeyOption,
     Option<string?> diffBaseOption,
     Option<int> batchSizeOption,
     Option<string> databaseOption,
@@ -20,7 +20,7 @@ public class OptionsBinder(
     Option<bool> verboseOption,
     Option<bool> quietOption,
     Option<bool> skipDependenciesOption,
-    Option<bool> purgeDataByRepoKeyOption,
+    Option<bool> purgeDataOption,
     Option<string[]> includeExtensionsOption) : BinderBase<Options>
 {
     protected override Options GetBoundValue(BindingContext bindingContext)
@@ -44,7 +44,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(uriOption)!,
             bindingContext.ParseResult.GetValueForOption(userOption)!,
             bindingContext.ParseResult.GetValueForOption(passOption)!,
-            bindingContext.ParseResult.GetValueForOption(repoKeyOption)!,
+            bindingContext.ParseResult.GetValueForOption(noKeyOption),
             bindingContext.ParseResult.GetValueForOption(diffBaseOption),
             bindingContext.ParseResult.GetValueForOption(batchSizeOption),
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
@@ -52,7 +52,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataByRepoKeyOption)
+            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
         );
     }
 }

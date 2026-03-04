@@ -1,12 +1,13 @@
 UNWIND $commits AS commit
 MERGE (c:Commit {hash: commit.hash})
-SET c.date = datetime(commit.date), c.message = commit.message
+SET c.date = datetime(commit.date), c.message = commit.message, c.CodeToNeo4j = true
 WITH c, commit
-MATCH (p:Project {key: commit.repoKey})
-MERGE (c)-[:PART_OF_PROJECT]->(p)
+OPTIONAL MATCH (p:Project {key: commit.repoKey})
+WHERE commit.repoKey IS NOT NULL
+FOREACH (ignoreMe IN CASE WHEN p IS NOT NULL THEN [1] ELSE [] END | MERGE (c)-[:PART_OF_PROJECT]->(p))
 WITH c, commit
 MERGE (a:Author {name: commit.authorName})
-ON CREATE SET a.email = commit.authorEmail
+SET a.email = commit.authorEmail, a.CodeToNeo4j = true
 MERGE (a)-[:COMMITTED]->(c)
 WITH c, commit
 UNWIND commit.changedFiles AS fileKey

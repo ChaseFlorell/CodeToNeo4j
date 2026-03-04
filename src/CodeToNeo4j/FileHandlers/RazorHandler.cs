@@ -12,7 +12,7 @@ public class RazorHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSys
     protected override async Task HandleFile(
         TextDocument? document,
         Compilation? compilation,
-        string repoKey,
+        string? repoKey,
         string fileKey,
         string filePath,
         ICollection<Symbol> symbolBuffer,
@@ -39,7 +39,7 @@ public class RazorHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         }
     }
 
-    private void ExtractDirectives(string content, string repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractDirectives(string content, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 

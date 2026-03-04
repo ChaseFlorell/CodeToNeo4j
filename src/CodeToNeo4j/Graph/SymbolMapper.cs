@@ -5,7 +5,7 @@ namespace CodeToNeo4j.Graph;
 
 public class SymbolMapper : ISymbolMapper
 {
-    public Symbol ToSymbolRecord(string repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node)
+    public Symbol ToSymbolRecord(string? repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node)
     {
         var kind = symbol.Kind.ToString();
         var name = symbol.Name;
@@ -30,7 +30,7 @@ public class SymbolMapper : ISymbolMapper
         );
     }
 
-    public string BuildStableSymbolKey(string repoKey, ISymbol symbol)
+    public string BuildStableSymbolKey(string? repoKey, ISymbol symbol)
     {
         var display = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
         return $"{repoKey}:{display}";
