@@ -136,8 +136,8 @@ public static class Program
                 {
                     var purgeTarget = options.RepoKey is null ? "ALL CodeToNeo4j data" : $"all data for repository key '{options.RepoKey}'";
                     Console.Write($"Are you sure you want to purge {purgeTarget}? (y/n): ");
-                    var response = Console.ReadLine();
-                    if (response?.ToLower() != "y")
+                    var response = Console.ReadKey();
+                    if (response.Key != ConsoleKey.Y)
                     {
                         Console.WriteLine("Purge aborted.");
                         return;
