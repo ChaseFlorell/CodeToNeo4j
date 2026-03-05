@@ -1,6 +1,6 @@
 using System.CommandLine;
 
-namespace CodeToNeo4j;
+namespace CodeToNeo4j.ProgramOptions;
 
 public static class OptionsExtensions
 {

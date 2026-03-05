@@ -1,10 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Binding;
-using System.CommandLine.Parsing;
-using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 
-namespace CodeToNeo4j;
+namespace CodeToNeo4j.ProgramOptions;
 
 public class OptionsBinder(
     Option<FileInfo> slnOption,
@@ -24,32 +23,34 @@ public class OptionsBinder(
     Option<bool> purgeDataOption,
     Option<string[]> includeExtensionsOption) : BinderBase<Options>
 {
-    public void Validate(CommandResult result)
+    public void AddToCommand(Command command)
     {
-        var usedLogLevel = result.FindResultFor(logLevelOption) is not null && !result.FindResultFor(logLevelOption)!.IsImplicit;
-        var usedDebug = result.FindResultFor(debugOption) is not null;
-        var usedVerbose = result.FindResultFor(verboseOption) is not null;
-        var usedQuiet = result.FindResultFor(quietOption) is not null;
+        command.AddOption(slnOption);
+        command.AddOption(uriOption);
+        command.AddOption(userOption);
+        command.AddOption(passOption);
+        command.AddOption(noKeyOption);
+        command.AddOption(diffBaseOption);
+        command.AddOption(batchSizeOption);
+        command.AddOption(databaseOption);
+        command.AddOption(minAccessibilityOption);
+        command.AddOption(logLevelOption);
+        command.AddOption(debugOption);
+        command.AddOption(verboseOption);
+        command.AddOption(quietOption);
+        command.AddOption(skipDependenciesOption);
+        command.AddOption(purgeDataOption);
+        command.AddOption(includeExtensionsOption);
 
-        int logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
-        if (logOptionsCount > 1)
-        {
-            result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
-        }
-
-        var isPurge = result.GetValueForOption(purgeDataOption);
-        if (isPurge)
-        {
-            if (result.GetValueForOption(skipDependenciesOption))
-            {
-                result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data";
-            }
-
-            if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
-            {
-                result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
-            }
-        }
+        command.AddValidator(result => OptionsBinderValidator.Validate(
+            result,
+            logLevelOption,
+            debugOption,
+            verboseOption,
+            quietOption,
+            purgeDataOption,
+            skipDependenciesOption,
+            minAccessibilityOption));
     }
 
     protected override Options GetBoundValue(BindingContext bindingContext)
