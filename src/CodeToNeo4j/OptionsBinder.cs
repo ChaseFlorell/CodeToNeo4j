@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Binding;
+using System.CommandLine.Parsing;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
 
@@ -21,8 +22,60 @@ public class OptionsBinder(
     Option<bool> quietOption,
     Option<bool> skipDependenciesOption,
     Option<bool> purgeDataOption,
-    Option<string[]> includeExtensionsOption) : BinderBase<Options>
+    Option<string[]> includeExtensionsOption,
+    Option<bool> enableCompletionsOption) : BinderBase<Options>
 {
+    public void Validate(CommandResult result)
+    {
+        var isEnableCompletions = result.GetValueForOption(enableCompletionsOption);
+        if (isEnableCompletions)
+        {
+            var otherOptionsPresent = result.Children
+                .OfType<OptionResult>()
+                .Any(or => or.Option != enableCompletionsOption && !or.IsImplicit);
+
+            if (otherOptionsPresent)
+            {
+                result.ErrorMessage = "No other switches are allowed when using --enable-completions";
+            }
+            return;
+        }
+
+        if (result.FindResultFor(slnOption) is null || result.FindResultFor(slnOption)!.IsImplicit)
+        {
+            result.ErrorMessage = "Option '--sln' is required.";
+        }
+        if (result.FindResultFor(passOption) is null || result.FindResultFor(passOption)!.IsImplicit)
+        {
+            result.ErrorMessage = "Option '--password' is required.";
+        }
+
+        var usedLogLevel = result.FindResultFor(logLevelOption) is not null && !result.FindResultFor(logLevelOption)!.IsImplicit;
+        var usedDebug = result.FindResultFor(debugOption) is not null;
+        var usedVerbose = result.FindResultFor(verboseOption) is not null;
+        var usedQuiet = result.FindResultFor(quietOption) is not null;
+
+        int logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
+        if (logOptionsCount > 1)
+        {
+            result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
+        }
+
+        var isPurge = result.GetValueForOption(purgeDataOption);
+        if (isPurge)
+        {
+            if (result.GetValueForOption(skipDependenciesOption))
+            {
+                result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data";
+            }
+
+            if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
+            {
+                result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
+            }
+        }
+    }
+
     protected override Options GetBoundValue(BindingContext bindingContext)
     {
         var logLevel = bindingContext.ParseResult.GetValueForOption(logLevelOption);
@@ -52,7 +105,8 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
+            bindingContext.ParseResult.GetValueForOption(purgeDataOption),
+            bindingContext.ParseResult.GetValueForOption(enableCompletionsOption)
         );
     }
 }

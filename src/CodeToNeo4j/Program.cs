@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using CodeToNeo4j.Completions;
 using CodeToNeo4j.Graph;
 using CodeToNeo4j.Solution;
 using Microsoft.Build.Locator;
@@ -29,11 +30,9 @@ public static class Program
 
         var slnOption = new Option<FileInfo>("--sln")
             .WithAlias("-s")
-            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln")
-            .IsRequired();
+            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
             .WithDescription("Password for the Neo4j database. Example: your-pass")
-            .IsRequired()
             .WithAlias("-p");
         var noKeyOption = new Option<bool>("--no-key")
             .WithDescription("Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.");
@@ -81,40 +80,14 @@ public static class Program
         var purgeDataOption = new Option<bool>("--purge-data")
             .WithDefaultValueFunc(() => false)
             .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data");
+        var enableCompletionsOption = new Option<bool>("--enable-completions")
+            .WithDescription("Enable tab completions for the command line.");
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
         {
-            slnOption, uriOption, userOption, passOption, noKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption, purgeDataOption, debugOption, verboseOption, quietOption
+            slnOption, uriOption, userOption, passOption, noKeyOption, diffBaseOption, batchSizeOption, databaseOption, logLevelOption, skipDependenciesOption, minAccessibilityOption, includeExtensionsOption, purgeDataOption, debugOption, verboseOption, quietOption, enableCompletionsOption
         };
-
-        root.AddValidator(result =>
-        {
-            var usedLogLevel = result.FindResultFor(logLevelOption) is not null && !result.FindResultFor(logLevelOption)!.IsImplicit;
-            var usedDebug = result.FindResultFor(debugOption) is not null;
-            var usedVerbose = result.FindResultFor(verboseOption) is not null;
-            var usedQuiet = result.FindResultFor(quietOption) is not null;
-
-            int logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
-            if (logOptionsCount > 1)
-            {
-                result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
-            }
-
-            var isPurge = result.GetValueForOption(purgeDataOption);
-            if (isPurge)
-            {
-                if (result.GetValueForOption(skipDependenciesOption))
-                {
-                    result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data";
-                }
-
-                if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
-                {
-                    result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
-                }
-            }
-        });
-
+        
         var binder = new OptionsBinder(
             slnOption,
             uriOption,
@@ -128,10 +101,32 @@ public static class Program
             logLevelOption,
             debugOption,
             verboseOption,
-            quietOption, skipDependenciesOption, purgeDataOption, includeExtensionsOption);
+            quietOption,
+            skipDependenciesOption,
+            purgeDataOption,
+            includeExtensionsOption,
+            enableCompletionsOption);
+
+        root.AddValidator(binder.Validate);
 
         root.SetHandler(async options =>
             {
+                if (options.EnableCompletions)
+                {
+                    var completionServices = new ServiceCollection()
+                        .AddLogging(builder =>
+                        {
+                            builder.ClearProviders();
+                            builder.AddProvider(new CodeToNeo4j.Logging.ConsoleLoggerProvider(LogLevel.Information));
+                        })
+                        .AddSingleton<IConsoleCompletionsService, ConsoleCompletionsService>();
+
+                    await using var completionServiceProvider = completionServices.BuildServiceProvider();
+                    var completionsService = completionServiceProvider.GetRequiredService<IConsoleCompletionsService>();
+                    await completionsService.EnableCompletions();
+                    return;
+                }
+
                 if (options.PurgeData)
                 {
                     var purgeTarget = options.RepoKey is null ? "ALL CodeToNeo4j data" : $"all data for repository key '{options.RepoKey}'";

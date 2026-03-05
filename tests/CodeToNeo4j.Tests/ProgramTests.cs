@@ -95,7 +95,7 @@ public class ProgramTests
     [InlineData("--quiet")]
     [InlineData("--log-level Information")]
     [InlineData("--log-level Warning")]
-    public void GivenLogOptions_WhenParsing_ThenLogLevelOptionIsPresent(string logArg)
+    public void GivenLogOptions_WhenParsing_ThenShouldNotHaveErrors(string logArg)
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
@@ -106,7 +106,6 @@ public class ProgramTests
 
         // assert
         result.Errors.ShouldBeEmpty();
-        // Since we can't easily test the binding here, we at least verify that the options are recognized without errors.
     }
 
     [Fact]
@@ -135,5 +134,33 @@ public class ProgramTests
 
         // assert
         result.Errors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void GivenEnableCompletions_WhenParsing_ThenShouldNotHaveErrors()
+    {
+        // arrange
+        var (sut, _) = Program.CreateRootCommand();
+        var args = new[] { "--enable-completions" };
+
+        // act
+        var result = sut.Parse(args);
+
+        // assert
+        result.Errors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void GivenEnableCompletionsWithOtherSwitches_WhenParsing_ThenShouldHaveValidationError()
+    {
+        // arrange
+        var (sut, _) = Program.CreateRootCommand();
+        var args = new[] { "--enable-completions", "--sln", "test.sln" };
+
+        // act
+        var result = sut.Parse(args);
+
+        // assert
+        result.Errors.ShouldContain(e => e.Message == "No other switches are allowed when using --enable-completions");
     }
 }

@@ -178,7 +178,7 @@ public class SolutionProcessor(
         var filePath = file.FilePath;
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
-        var fileKey = $"{repoKey}:{filePath}".ToLowerInvariant();
+        var fileKey = $"{repoKey?.ToLowerInvariant()}:{filePath}";
         var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 

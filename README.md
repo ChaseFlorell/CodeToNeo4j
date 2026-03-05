@@ -93,8 +93,9 @@ If running from the build output:
 | `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
 | `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
+| `--enable-completions`        | Enable tab completions for the command line (detects shell and configures `dotnet-suggest`).                               | `false` |
 
-> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used. `--enable-completions` is a standalone switch and cannot be used with any other options.
 
 ### Purge data
 

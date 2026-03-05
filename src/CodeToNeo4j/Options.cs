@@ -16,7 +16,8 @@ public class Options(
     bool skipDependencies,
     Accessibility minAccessibility,
     IEnumerable<string> includeExtensions,
-    bool purgeData)
+    bool purgeData,
+    bool enableCompletions)
 {
     public FileInfo Sln { get; } = sln;
     public string Uri { get; } = uri;
@@ -32,4 +33,5 @@ public class Options(
     public Accessibility MinAccessibility { get; } = minAccessibility;
     public IEnumerable<string> IncludeExtensions { get; } = includeExtensions;
     public bool PurgeData { get; } = purgeData;
+    public bool EnableCompletions { get; } = enableCompletions;
 }

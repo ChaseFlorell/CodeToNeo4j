@@ -52,13 +52,30 @@
 - Make mandatory options (like `--sln`) optional in the binder when they are not relevant to the specific mode of operation (e.g., purging by key only), and enforce their presence via validators.
 - Implement flexible Cypher queries that can handle both full-scale and filtered (e.g., by extension) data deletions using conditional `WHERE` and `OPTIONAL MATCH` clauses.
 - **Neo4j 5.x Parameter Aliasing**: When using parameters (e.g., `$repoKey`) in a `WITH` clause, especially inside a `CALL` subquery, Neo4j 5.x requires they be explicitly aliased (e.g., `WITH $repoKey AS repoKey`). Failing to do so results in a `42N21: Expression in WITH must be aliased (use AS)` error.
-- **Case-Insensitive Repository Keys**: To make `repoKey` case-insensitive, normalize it to lowercase at the source (e.g., in the `Options` class). All derived keys (e.g., `FileKey`, `SymbolKey`) that incorporate the `repoKey` should also be normalized to lowercase to ensure consistency across the application and the database.
+- **Case-Insensitive Repository Keys**: Repository keys (`repoKey`) are normalized to lowercase at the source (e.g., in the `Options` class) to ensure case-insensitivity for the repository identity. However, derived keys (e.g., `FileKey`, `SymbolKey`) should only have the `repoKey` prefix normalized; the remaining parts of the key (file paths, namespaces, symbol names) MUST remain case-sensitive to accurately reflect the source code and avoid unintended collisions or display issues.
+- **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
+- **FakeItEasy and IFileSystem.Path.Combine**: When using `FakeItEasy` to mock `IFileSystem.Path.Combine`, prefer two-argument overloads (e.g., `Path.Combine(a, b)`). Expression trees used by `A.CallTo` have difficulty with the expanded form of `params` array collection parameters, making multi-argument `Path.Combine(a, b, c, d, e)` calls significantly harder to mock correctly in unit tests.
+- **Conditional Requirements**: If some options are required only in certain modes, remove `IsRequired()` from the option definition and enforce the requirement manually in a `RootCommand` validator.
+
+## Validation Logic Management
+- As command-line validation logic grows (e.g., checking for mutual exclusivity, conditional requirements, or complex option combinations), it can clutter `Program.cs`. 
+- Extract this logic into a dedicated `RootValidator` class (e.g., in a `Validation` namespace). 
+- Use a static `Validate` method that accepts the `CommandResult` and all relevant `Option` instances. This keeps `Program.cs` clean and separates the command definition from the validation rules.
+- In `Program.cs`, simply call `root.AddValidator(result => RootValidator.Validate(result, ...))`.
 ## Option Binding and Simplification
 - When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
 - Handle the logic for resolving these mutually exclusive options within the `BinderBase<Options>.GetBoundValue` method. This keeps the rest of the application simple and unaware of the specific CLI flags used.
 - Ensure a custom validator is used on the `RootCommand` to prevent the user from passing more than one of these options at once, maintaining a clear and unambiguous configuration state.
+- **Redundant Command Prefixes**: When wrapping an external tool's execution (e.g., calling `dotnet dotnet-suggest` from C#), ensure the arguments do not redundantly include the command name if it's already part of the `dotnet` host invocation. For example, use `RunCommand("dotnet", "dotnet-suggest script")` instead of `RunCommand("dotnet", "dotnet-suggest dotnet-suggest script")`.
+- **Global Tool Execution and CoreCLR Errors**: On some environments (especially macOS or resource-constrained shells), running a .NET global tool directly (e.g., `dotnet-suggest`) may fail with `Failed to create CoreCLR, HRESULT: 0x80070008`. In these cases, try running the tool via `dotnet exec` by pointing to the actual `.dll` in the `.dotnet/tools/.store` directory. This is more robust than relying on the shim executable.
+- **System.CommandLine Shell Types**: When calling `dotnet-suggest script`, the shell type argument is case-sensitive and must match the `ShellType` enum (e.g., `Zsh`, `Bash`, `PowerShell`). Using lowercase (e.g., `zsh`) will result in a parsing error.
 
 ## CI/CD and Test Integration
 - For CI/CD environments like GitHub Actions, integrate test execution directly into the workflow file (`.github/workflows/build.yml`) rather than relying solely on MSBuild targets in `Directory.Build.props`. This provides better visibility of test steps and ensures that failures correctly stop the pipeline before deployment steps.
 - Always include `pull_request` triggers in the workflow to ensure that all changes are validated by tests before they can be merged into the main branch.
 - Use `dotnet test --no-build` in the CI pipeline to avoid redundant compilation after the initial `dotnet build` step.
+
+## Coding and Testing Standards
+- **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
+- **Unit Test Isolation**: Do not use constructors for global setup in unit tests to prevent state leakage and ensure isolation. Use `TestCaseSource` or local setup within each test.
+- **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
