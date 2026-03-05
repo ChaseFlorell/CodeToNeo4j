@@ -18,6 +18,8 @@ public sealed record Options(
     IEnumerable<string> IncludeExtensions,
     bool PurgeData)
 {
-    public bool HasRepoKey { get; } = !NoKey;
-    public string? RepoKey => HasRepoKey ? Path.GetFileNameWithoutExtension(Sln.Name).ToLowerInvariant() : null;
+    public string? RepoKey =>
+        NoKey
+            ? null
+            : Path.GetFileNameWithoutExtension(Sln.Name).ToLowerInvariant();
 }
