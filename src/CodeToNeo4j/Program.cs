@@ -1,8 +1,5 @@
 ﻿using System.CommandLine;
-using CodeToNeo4j.Graph;
-using CodeToNeo4j.Solution;
-using Microsoft.Build.Locator;
-using Microsoft.Extensions.DependencyInjection;
+using CodeToNeo4j.ProgramOptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
 
@@ -101,69 +98,10 @@ public static class Program
             purgeDataOption,
             includeExtensionsOption);
 
-        var root = new RootCommand("Index .NET solution into Neo4j via Roslyn")
-        {
-            slnOption,
-            uriOption,
-            userOption,
-            passOption,
-            noKeyOption,
-            diffBaseOption,
-            batchSizeOption,
-            databaseOption,
-            logLevelOption,
-            skipDependenciesOption,
-            minAccessibilityOption,
-            includeExtensionsOption,
-            purgeDataOption,
-            debugOption,
-            verboseOption,
-            quietOption
-        };
-
-        root.AddValidator(binder.Validate);
-
-        root.SetHandler(async options =>
-            {
-                if (options.PurgeData)
-                {
-                    var purgeTarget = options.RepoKey is null ? "ALL CodeToNeo4j data" : $"all data for repository key '{options.RepoKey}'";
-                    Console.Write($"Are you sure you want to purge {purgeTarget}? (y/n): ");
-                    var response = Console.ReadKey();
-                    if (response.Key != ConsoleKey.Y)
-                    {
-                        Console.WriteLine("Purge aborted.");
-                        return;
-                    }
-                }
-
-                if (!MSBuildLocator.IsRegistered)
-                {
-                    var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
-                    if (instances.Any())
-                    {
-                        MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
-                    }
-                }
-
-                var services = new ServiceCollection()
-                    .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel);
-
-                await using var serviceProvider = services.BuildServiceProvider();
-                var graphService = serviceProvider.GetRequiredService<IGraphService>();
-                var processor = serviceProvider.GetRequiredService<ISolutionProcessor>();
-
-                await graphService.Initialize(options.RepoKey, options.DatabaseName);
-
-                if (options.PurgeData)
-                {
-                    var includeExtensions = options.IncludeExtensions.SequenceEqual(allSupportedExtensions) ? null : options.IncludeExtensions;
-                    await graphService.PurgeData(options.RepoKey, includeExtensions, options.DatabaseName);
-                    return;
-                }
-
-                await processor.ProcessSolution(options.Sln, options.RepoKey, options.DiffBase, options.DatabaseName, options.BatchSize, options.SkipDependencies, options.MinAccessibility, options.IncludeExtensions);
-            },
+        var root = new RootCommand("Index .NET solution into Neo4j via Roslyn");
+        binder.AddToCommand(root);
+        root.SetHandler(options => OptionsHandlerChainBuilder.BuildChain(allSupportedExtensions)
+                .Handle(options, new HandlerContext()),
             binder);
 
         return (root, binder);

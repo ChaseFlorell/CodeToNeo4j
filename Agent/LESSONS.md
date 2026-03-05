@@ -58,10 +58,14 @@
 - **Conditional Requirements**: If some options are required only in certain modes, remove `IsRequired()` from the option definition and enforce the requirement manually in a `RootCommand` validator.
 
 ## Validation Logic Management
-- As command-line validation logic grows (e.g., checking for mutual exclusivity, conditional requirements, or complex option combinations), it can clutter `Program.cs`. 
-- Extract this logic into a dedicated `RootValidator` class (e.g., in a `Validation` namespace). 
-- Use a static `Validate` method that accepts the `CommandResult` and all relevant `Option` instances. This keeps `Program.cs` clean and separates the command definition from the validation rules.
-- In `Program.cs`, simply call `root.AddValidator(result => RootValidator.Validate(result, ...))`.
+- As command-line validation logic grows (e.g., checking for mutual exclusivity, conditional requirements, or complex option combinations), it can clutter `Program.cs` or `OptionsBinder.cs`.
+- Extract this logic into a dedicated `OptionsBinderValidator` class (e.g., in a `Validation` namespace) to improve testability and separate concerns.
+- Use a static `Validate` method that accepts the `CommandResult` and all relevant `Option` instances. This allows testing the validation logic in isolation without needing a full `BinderBase` or `RootCommand` execution.
+- When testing validators in isolation, ensure that any `Option<T>` with default values in the production code also has the same default values in the test setup. Otherwise, `GetValueForOption` might return unexpected values (like `default(T)` instead of the desired default), causing false-positive validation errors in tests.
+- In `OptionsBinder`, simply call `command.AddValidator(result => OptionsBinderValidator.Validate(result, ...))`.
+- **Chain of Responsibility for CLI Execution**: For complex command-line tool workflows, extracting the `SetHandler` logic into a Chain of Responsibility (CoR) pattern improves modularity and testability. Each step (e.g., confirmation, environment setup, processing) becomes a discrete handler that can be tested in isolation and easily reordered or extended.
+- **Handler Context**: When using a CoR pattern for application startup, use a `HandlerContext` object to pass shared state (like an `IServiceProvider`) between handlers. This avoids polluting the `Options` class with runtime-only dependencies.
+- **Member Order Vigilance**: When refactoring or adding new classes, always double-check the project's member order guidelines (e.g., constructors, then public, then internal, then protected, then private). It's easy to overlook this during complex refactorings.
 ## Option Binding and Simplification
 - When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
 - Handle the logic for resolving these mutually exclusive options within the `BinderBase<Options>.GetBoundValue` method. This keeps the rest of the application simple and unaware of the specific CLI flags used.
