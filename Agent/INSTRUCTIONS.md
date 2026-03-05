@@ -41,3 +41,7 @@
 # Testing Standards
 - **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action]_Then[Result]()`.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
+
+# Documentation Standards
+- **README Synchronicity**: Every time `README.md` is updated, `PACKAGE_README.md` MUST also be updated to ensure they remain in sync. 
+- **README Content**: `README.md` and `PACKAGE_README.md` might contain slightly different information due to their different uses, but the overall commandline switches and instructions should match.

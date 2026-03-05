@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
-using CodeToNeo4j.Completions;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
@@ -40,12 +39,9 @@ public static class ContainerModule
         });
 
         services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
-        services.AddSingleton<IProcessRunner, ProcessRunner>();
-        services.AddSingleton<IEnvironmentService, EnvironmentService>();
         services.AddSingleton<ICypherService, CypherService>();
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IVersionControlService, GitService>();
-        services.AddSingleton<IConsoleCompletionsService, ConsoleCompletionsService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
         services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
         services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();

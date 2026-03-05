@@ -36,10 +36,10 @@ codetoneo4j \
 
 | Option                      | Description                                                                            |
 |-----------------------------|----------------------------------------------------------------------------------------|
-| `--sln`, `-s`               | **Required** unless using `--purge-data`. Path to the `.sln` file to index. |
+| `--sln`, `-s`               | **Required**. Path to the `.sln` file to index. |
 | `--no-key`                  | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository. |
 | `--password`, `-p`          | **Required**. Password for the Neo4j database.                                         |
-| `--uri`, `-u`, `--url`      | Neo4j connection string (Default: `bolt://localhost:7687`).                            |
+| `--uri`, `-u`, `--url`      | **Required**. Neo4j connection string (Default: `bolt://localhost:7687`).                            |
 | `--user`                    | Neo4j username (Default: `neo4j`).                                                     |
 | `--database`, `-db`         | Neo4j database name (Default: `neo4j`).                                                |
 | `--diff-base`               | Optional git base ref (e.g., `origin/main`) for incremental indexing.                  |
@@ -52,7 +52,7 @@ codetoneo4j \
 | `--include`, `-i`           | File extensions to include (Default: all supported).                                   |
 | `--purge-data`              | Purge data associated with the repository.                                         |
 
-> Note: When using `--purge-data`, `--sln` is not required if `--no-key` is used. The tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> Note: When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge examples
 
