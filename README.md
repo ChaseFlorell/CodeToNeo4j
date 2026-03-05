@@ -77,10 +77,10 @@ If running from the build output:
 
 | Option                        | Description                                                                                                                | Default |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
-| `--sln`, `-s`                 | **Required** unless using `--purge-data`. Path to the `.sln` file to index. The filename (without extension) is used as the **case-insensitive** repository key. | |
+| `--sln`, `-s`                 | **Required**. Path to the `.sln` file to index. The filename (without extension) is used as the **case-insensitive** repository key. | |
 | `--no-key`                    | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.                              | `false` |
 | `--password`, `-p`            | **Required**. Password for the Neo4j database.                                                                             | |
-| `--uri`, `-u`, `--url`        | The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
+| `--uri`, `-u`, `--url`        | **Required**. The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
 | `--user`                      | Neo4j username.                                                                                                            | `neo4j` |
 | `--database`, `-db`           | Neo4j database name.                                                                                                       | `neo4j` |
 | `--log-level`, `-l`           | The minimum log level to display.                                                                                          | `Information` |
@@ -93,9 +93,8 @@ If running from the build output:
 | `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
 | `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
-| `--enable-completions`        | Enable tab completions for the command line (detects shell and configures `dotnet-suggest`).                               | `false` |
 
-> **Note**: When using `--purge-data`, the `--sln` option is not required if `--no-key` is used. The tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used. `--enable-completions` is a standalone switch and cannot be used with any other options.
+> **Note**: When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge data
 

@@ -22,34 +22,10 @@ public class OptionsBinder(
     Option<bool> quietOption,
     Option<bool> skipDependenciesOption,
     Option<bool> purgeDataOption,
-    Option<string[]> includeExtensionsOption,
-    Option<bool> enableCompletionsOption) : BinderBase<Options>
+    Option<string[]> includeExtensionsOption) : BinderBase<Options>
 {
     public void Validate(CommandResult result)
     {
-        var isEnableCompletions = result.GetValueForOption(enableCompletionsOption);
-        if (isEnableCompletions)
-        {
-            var otherOptionsPresent = result.Children
-                .OfType<OptionResult>()
-                .Any(or => or.Option != enableCompletionsOption && !or.IsImplicit);
-
-            if (otherOptionsPresent)
-            {
-                result.ErrorMessage = "No other switches are allowed when using --enable-completions";
-            }
-            return;
-        }
-
-        if (result.FindResultFor(slnOption) is null || result.FindResultFor(slnOption)!.IsImplicit)
-        {
-            result.ErrorMessage = "Option '--sln' is required.";
-        }
-        if (result.FindResultFor(passOption) is null || result.FindResultFor(passOption)!.IsImplicit)
-        {
-            result.ErrorMessage = "Option '--password' is required.";
-        }
-
         var usedLogLevel = result.FindResultFor(logLevelOption) is not null && !result.FindResultFor(logLevelOption)!.IsImplicit;
         var usedDebug = result.FindResultFor(debugOption) is not null;
         var usedVerbose = result.FindResultFor(verboseOption) is not null;
@@ -105,8 +81,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataOption),
-            bindingContext.ParseResult.GetValueForOption(enableCompletionsOption)
+            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
         );
     }
 }
