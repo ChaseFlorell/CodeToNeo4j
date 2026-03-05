@@ -46,7 +46,7 @@ public class SolutionProcessor(
             logger.LogInformation("Marking {Count} files as deleted that were removed in git...", diffResult.DeletedFiles.Count);
             foreach (var deletedFile in diffResult.DeletedFiles)
             {
-                var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}".ToLowerInvariant();
+                var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}";
                 await graphService.MarkFileAsDeleted(fileKey, databaseName).ConfigureAwait(false);
             }
         }
@@ -178,7 +178,7 @@ public class SolutionProcessor(
         var filePath = file.FilePath;
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
-        var fileKey = $"{repoKey?.ToLowerInvariant()}:{filePath}";
+        var fileKey = $"{repoKey}:{filePath}";
         var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
