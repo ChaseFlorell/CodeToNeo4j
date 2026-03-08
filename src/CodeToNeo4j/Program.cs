@@ -101,17 +101,12 @@ public static class Program
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn");
         binder.AddToCommand(root);
-
-        var services = new ServiceCollection()
-            .AddTransient<IOptionsHandler, PurgeConfirmationHandler>()
-            .AddTransient<IOptionsHandler, MsBuildRegistrationHandler>()
-            .AddTransient<IOptionsHandler, EnvironmentSetupHandler>()
-            .AddTransient<IOptionsHandler, PurgeExecutionHandler>()
-            .AddTransient<IOptionsHandler, SolutionProcessingHandler>()
-            .BuildServiceProvider();
-
         root.SetHandler(async options =>
             {
+                await using var services = new ServiceCollection()
+                    .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel)
+                    .BuildServiceProvider();
+
                 var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
                 await handlers.BuildChain().Handle(options);
             },
