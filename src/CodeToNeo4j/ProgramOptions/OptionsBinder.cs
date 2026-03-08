@@ -85,6 +85,11 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(purgeDataOption)
         );
 
+        if (logLevel == LogLevel.Trace)
+        {
+            Console.WriteLine($"[VERB] {options}");
+        }
+
         return options;
     }
 }

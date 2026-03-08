@@ -88,7 +88,21 @@ public class OptionsHandlerTests
         A.CallTo(() => h2.SetNext(h3)).MustHaveHappenedOnceExactly();
     }
 
-    private static Options CreateOptions(bool purgeData = false) => new(
+    [Fact]
+    public void GivenOptions_WhenToStringCalled_ThenIncludeExtensionsAreFormattedCorrectly()
+    {
+        // arrange
+        var options = CreateOptions(includeExtensions: [".cs", ".xml"]);
+
+        // act
+        var result = options.ToString();
+
+        // assert
+        Assert.Contains("IncludeExtensions = [ .cs, .xml ]", result);
+    }
+
+    private static Options CreateOptions(bool purgeData = false,
+        string[]? includeExtensions = null) => new(
         new FileInfo("test.sln"),
         "bolt://localhost",
         "user",
@@ -100,6 +114,6 @@ public class OptionsHandlerTests
         Microsoft.Extensions.Logging.LogLevel.Information,
         false,
         Microsoft.CodeAnalysis.Accessibility.Private,
-        [],
+        includeExtensions ?? [],
         purgeData);
 }
