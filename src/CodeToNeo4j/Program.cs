@@ -110,7 +110,7 @@ public class Program
                     .BuildServiceProvider();
 
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogInformation("Options: {Options}", options);
+                logger.LogInformation("{Options}", options);
                 var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
                 await handlers.BuildChain().Handle(options);
             },
