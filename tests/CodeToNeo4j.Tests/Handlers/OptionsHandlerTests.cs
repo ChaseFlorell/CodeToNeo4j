@@ -24,6 +24,7 @@ public class OptionsHandlerTests
 
     private class TestHandler : OptionsHandler
     {
+        protected override Task<bool> HandleOptions(Options options) => Task.FromResult(true);
     }
 
     [Fact]
