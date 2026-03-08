@@ -102,6 +102,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
 
                     ProcessMemberSymbol(variableSymbol, variable, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, typeRec, minAccessibility);
                 }
+
                 continue;
             }
 
@@ -158,54 +159,52 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
                 relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
             }
 
-            var baseMethodSymbol = semanticModel.GetDeclaredSymbol(bmds) as IMethodSymbol;
-            if (baseMethodSymbol is { ReturnType: not null and not IErrorTypeSymbol }
+            if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
                 && baseMethodSymbol.MethodKind != MethodKind.Constructor)
             {
                 var depKey = symbolMapper.BuildStableSymbolKey(repoKey, baseMethodSymbol.ReturnType);
                 relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
             }
         }
-        else if (memberSymbol is IPropertySymbol propertySymbol)
-        {
-            if (propertySymbol.Type is not (null or IErrorTypeSymbol))
+        else
+            switch (memberSymbol)
             {
-                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, propertySymbol.Type);
-                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-            }
-        }
-        else if (memberSymbol is IEventSymbol eventSymbol)
-        {
-            if (eventSymbol.Type is not null)
-            {
-                var eventType = eventSymbol.Type;
-                if (eventType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.Name == "Nullable")
+                case IPropertySymbol { Type: not (null or IErrorTypeSymbol) } propertySymbol:
                 {
-                    eventType = namedType.TypeArguments[0];
-                }
+                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, propertySymbol.Type);
+                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
 
-                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, eventType);
-                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+                    break;
+                }
+                case IEventSymbol eventSymbol:
+                {
+                    var eventType = eventSymbol.Type;
+                    if (eventType is INamedTypeSymbol { IsGenericType: true, Name: "Nullable" } namedType)
+                    {
+                        eventType = namedType.TypeArguments[0];
+                    }
+
+                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, eventType);
+                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+
+                    break;
+                }
+                case IFieldSymbol { Type: not (null or IErrorTypeSymbol) } fieldSymbol:
+                {
+                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, fieldSymbol.Type);
+                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+
+                    break;
+                }
             }
-        }
-        else if (memberSymbol is IFieldSymbol fieldSymbol)
-        {
-            if (fieldSymbol.Type is not (null or IErrorTypeSymbol))
-            {
-                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, fieldSymbol.Type);
-                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-            }
-        }
     }
 
-    private static bool IsExplicitInterfaceImplementation(ISymbol symbol)
-    {
-        return symbol switch
+    private static bool IsExplicitInterfaceImplementation(ISymbol symbol) =>
+        symbol switch
         {
             IMethodSymbol method => method.ExplicitInterfaceImplementations.Any(),
             IPropertySymbol property => property.ExplicitInterfaceImplementations.Any(),
             IEventSymbol @event => @event.ExplicitInterfaceImplementations.Any(),
             _ => false
         };
-    }
 }
