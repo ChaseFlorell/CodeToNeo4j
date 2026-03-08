@@ -4,13 +4,13 @@ public abstract class OptionsHandler : IOptionsHandler
 {
     public virtual async Task Handle(Options options)
     {
-        if (Next != null)
+        if (_next != null)
         {
-            await Next.Handle(options);
+            await _next.Handle(options);
         }
     }
 
-    public void SetNext(IOptionsHandler next) => Next = next;
+    public void SetNext(IOptionsHandler next) => _next = next;
 
-    protected IOptionsHandler? Next { get; private set; }
+    private IOptionsHandler? _next;
 }
