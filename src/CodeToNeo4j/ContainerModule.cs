@@ -7,6 +7,7 @@ using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
 using CodeToNeo4j.Logging;
 using CodeToNeo4j.Neo4j;
+using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
@@ -55,6 +56,12 @@ public static class ContainerModule
         services.AddSingleton<IDocumentHandler, JsonHandler>();
         services.AddSingleton<IDocumentHandler, CssHandler>();
         services.AddSingleton<IDocumentHandler, CsprojHandler>();
+
+        services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
+        services.AddTransient<IOptionsHandler, MsBuildRegistrationHandler>();
+        services.AddTransient<IOptionsHandler, EnvironmentSetupHandler>();
+        services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
+        services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
 
         services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
         services.AddSingleton<IGraphService, Neo4jService>();
