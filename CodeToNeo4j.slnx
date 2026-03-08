@@ -10,13 +10,13 @@
     <File Path="REQUIREMENTS.md" />
     <File Path="run.sh" />
   </Folder>
+  <Folder Name="/.src/.agent/">
+    <File Path=".agent/INSTRUCTIONS.md" />
+    <File Path=".agent/LESSONS.md" />
+  </Folder>
   <Folder Name="/.src/.github/" />
   <Folder Name="/.src/.github/workflows/">
-    <File Path=".github\workflows\build.yml" />
-  </Folder>
-  <Folder Name="/.src/Agent/">
-    <File Path="Agent\INSTRUCTIONS.md" />
-    <File Path="Agent\LESSONS.md" />
+    <File Path=".github/workflows/build.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
   <Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />

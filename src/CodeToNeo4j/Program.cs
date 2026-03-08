@@ -15,7 +15,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(ex.ToString());
+            await Console.Error.WriteLineAsync(ex.ToString());
             return ex.HResult != 0 ? ex.HResult : 1;
         }
     }
@@ -30,7 +30,6 @@ public static class Program
             .WithAlias("-u")
             .WithAlias("--url");
         var slnOption = new Option<FileInfo>("--sln")
-            .IsRequired()
             .WithAlias("-s")
             .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
