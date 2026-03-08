@@ -69,9 +69,9 @@ public class SolutionProcessor(
             SingleReader = true
         });
 
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 20 };
         var consumerTask = RunConsumer(channel.Reader, totalFiles, databaseName, batchSize);
 
-        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 20 };
         await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, t) =>
         {
             var result = await ProcessFile(solution, file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
@@ -79,8 +79,13 @@ public class SolutionProcessor(
         }).ConfigureAwait(false);
 
         channel.Writer.Complete();
-        await consumerTask.ConfigureAwait(false);
+        var (totalSymbols, totalRelationships) = await consumerTask.ConfigureAwait(false);
         progressService.ProgressComplete();
+
+        logger.LogInformation("Processing complete.");
+        logger.LogInformation("Total nodes (symbols) created: {Count}", totalSymbols);
+        logger.LogInformation("Total relationships created: {Count}", totalRelationships);
+
         foreach (var handler in handlers.Where(h => h.NumberOfFilesHandled > 0))
         {
             logger.LogInformation("{FileExtension} files handled: {Count}", handler.FileExtension, handler.NumberOfFilesHandled);
@@ -89,18 +94,23 @@ public class SolutionProcessor(
         logger.LogInformation("Done.");
     }
 
-    private async Task RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
+    private async Task<(int TotalSymbols, int TotalRelationships)> RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
     {
         var fileBuffer = new List<FileMetaData>(batchSize);
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
         var currentFileIndex = 0;
+        var totalSymbols = 0;
+        var totalRelationships = 0;
 
         await foreach (var result in reader.ReadAllAsync().ConfigureAwait(false))
         {
             fileBuffer.Add(result.File);
             symbolBuffer.AddRange(result.Symbols);
             relBuffer.AddRange(result.Relationships);
+
+            totalSymbols += result.Symbols.Count;
+            totalRelationships += result.Relationships.Count;
 
             if (fileBuffer.Count >= batchSize || symbolBuffer.Count >= batchSize)
             {
@@ -114,6 +124,8 @@ public class SolutionProcessor(
         {
             await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
         }
+
+        return (totalSymbols, totalRelationships);
     }
 
     private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, string databaseName)
