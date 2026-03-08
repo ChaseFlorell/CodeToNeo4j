@@ -2,6 +2,7 @@
 using CodeToNeo4j.ProgramOptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeToNeo4j;
 
@@ -30,6 +31,7 @@ public static class Program
             .WithAlias("-u")
             .WithAlias("--url");
         var slnOption = new Option<FileInfo>("--sln")
+            .IsRequired()
             .WithAlias("-s")
             .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
@@ -99,8 +101,20 @@ public static class Program
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn");
         binder.AddToCommand(root);
-        root.SetHandler(options => OptionsHandlerChainBuilder.BuildChain(allSupportedExtensions)
-                .Handle(options, new HandlerContext()),
+
+        var services = new ServiceCollection()
+            .AddTransient<IOptionsHandler, PurgeConfirmationHandler>()
+            .AddTransient<IOptionsHandler, MsBuildRegistrationHandler>()
+            .AddTransient<IOptionsHandler, EnvironmentSetupHandler>()
+            .AddTransient<IOptionsHandler, PurgeExecutionHandler>()
+            .AddTransient<IOptionsHandler, SolutionProcessingHandler>()
+            .BuildServiceProvider();
+
+        root.SetHandler(async options =>
+            {
+                var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
+                await handlers.BuildChain().Handle(options);
+            },
             binder);
 
         return (root, binder);

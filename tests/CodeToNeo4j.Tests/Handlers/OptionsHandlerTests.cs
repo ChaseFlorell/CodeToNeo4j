@@ -14,59 +14,76 @@ public class OptionsHandlerTests
         var nextHandler = A.Fake<IOptionsHandler>();
         handler.SetNext(nextHandler);
         var options = CreateOptions();
-        var context = new HandlerContext();
 
         // act
-        await handler.Handle(options, context);
+        await handler.Handle(options);
 
         // assert
-        A.CallTo(() => nextHandler.Handle(options, context)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
     }
 
-    private class TestHandler : OptionsHandler { }
+    private class TestHandler : OptionsHandler
+    {
+    }
 
     [Fact]
     public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledAndChainTerminates()
     {
         // arrange
-        string[] allSupportedExtensions = [".cs"];
-        var handler = new PurgeExecutionHandler(allSupportedExtensions);
+
+        var graphService = A.Fake<CodeToNeo4j.Graph.IGraphService>();
+        var handler = new PurgeExecutionHandler(graphService);
         var nextHandler = A.Fake<IOptionsHandler>();
         handler.SetNext(nextHandler);
-        
+
         var options = CreateOptions(purgeData: true);
-        
+
         var serviceProvider = A.Fake<IServiceProvider>();
-        var graphService = A.Fake<CodeToNeo4j.Graph.IGraphService>();
         A.CallTo(() => serviceProvider.GetService(typeof(CodeToNeo4j.Graph.IGraphService))).Returns(graphService);
-        
-        var context = new HandlerContext(serviceProvider);
+
 
         // act
-        await handler.Handle(options, context);
+        await handler.Handle(options);
 
         // assert
         A.CallTo(() => graphService.PurgeData(A<string>._, A<IEnumerable<string>>._, A<string>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => nextHandler.Handle(A<Options>._, A<HandlerContext>._)).MustNotHaveHappened();
+        A.CallTo(() => nextHandler.Handle(A<Options>._)).MustNotHaveHappened();
     }
 
     [Fact]
     public async Task GivenPurgeDataFalse_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsNotCalledAndChainContinues()
     {
         // arrange
-        string[] allSupportedExtensions = [".cs"];
-        var handler = new PurgeExecutionHandler(allSupportedExtensions);
+        var graphService = A.Fake<CodeToNeo4j.Graph.IGraphService>();
+        var handler = new PurgeExecutionHandler(graphService);
         var nextHandler = A.Fake<IOptionsHandler>();
         handler.SetNext(nextHandler);
-        
+
         var options = CreateOptions(purgeData: false);
-        var context = new HandlerContext();
 
         // act
-        await handler.Handle(options, context);
+        await handler.Handle(options);
 
         // assert
-        A.CallTo(() => nextHandler.Handle(options, context)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public void GivenHandlers_WhenBuildChainCalled_ThenHandlersAreChainedCorrectly()
+    {
+        // arrange
+        var h1 = A.Fake<IOptionsHandler>();
+        var h2 = A.Fake<IOptionsHandler>();
+        var h3 = A.Fake<IOptionsHandler>();
+        var handlers = new[] { h1, h2, h3 };
+
+        // act
+        var result = handlers.BuildChain();
+
+        // assert
+        Assert.Same(h1, result);
+        A.CallTo(() => h1.SetNext(h2)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => h2.SetNext(h3)).MustHaveHappenedOnceExactly();
     }
 
     private static Options CreateOptions(bool purgeData = false) => new(
