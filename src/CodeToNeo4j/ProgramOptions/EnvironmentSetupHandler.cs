@@ -4,10 +4,9 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class EnvironmentSetupHandler(IGraphService graphService) : OptionsHandler
 {
-    public override async Task Handle(Options options)
+    protected override async Task<bool> HandleOptions(Options options)
     {
         await graphService.Initialize(options.RepoKey, options.DatabaseName);
-
-        await base.Handle(options);
+        return true;
     }
 }

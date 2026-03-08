@@ -1,8 +1,21 @@
+using System.CommandLine.Parsing;
+
 namespace CodeToNeo4j.ProgramOptions;
 
 public abstract class OptionsHandler : IOptionsHandler
 {
-    public virtual async Task Handle(Options options)
+    public async Task Handle(Options options)
+    {
+        var handleNext = await HandleOptions(options);
+        if (handleNext)
+        {
+            await HandleInternal(options);
+        }
+    }
+
+    protected abstract Task<bool> HandleOptions(Options options);
+
+    private async Task HandleInternal(Options options)
     {
         if (_next != null)
         {
