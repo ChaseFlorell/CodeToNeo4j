@@ -22,7 +22,7 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
     {
         var doc = document as Document;
         if (doc is null || compilation is null) return;
-        
+
         var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
         if (syntaxTree is null) return;
 
@@ -76,17 +76,16 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
         foreach (var member in eds.Members)
         {
             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
-            if (memberSymbol is null) continue;
 
-            if (memberSymbol.DeclaredAccessibility < minAccessibility && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
+            if (memberSymbol is not null
+                && (memberSymbol.DeclaredAccessibility >= minAccessibility
+                    || memberSymbol.DeclaredAccessibility == Accessibility.NotApplicable))
             {
-                continue;
+                var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
+                symbolBuffer.Add(memberRec);
+
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
             }
-
-            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
-            symbolBuffer.Add(memberRec);
-
-            relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
         }
     }
 
@@ -107,19 +106,21 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
 
             relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
 
-            if (member is ConstructorDeclarationSyntax cds)
+            if (member is not ConstructorDeclarationSyntax cds)
             {
-                foreach (var parameter in cds.ParameterList.Parameters)
-                {
-                    var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
-                    if (parameterSymbol is null) continue;
+                continue;
+            }
 
-                    var parameterType = parameterSymbol.Type;
-                    if (parameterType is null or IErrorTypeSymbol) continue;
+            foreach (var parameter in cds.ParameterList.Parameters)
+            {
+                var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
+                if (parameterSymbol is null) continue;
 
-                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, parameterType);
-                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-                }
+                var parameterType = parameterSymbol.Type;
+                if (parameterType is null or IErrorTypeSymbol) continue;
+
+                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, parameterType);
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
             }
         }
     }
