@@ -3,15 +3,22 @@ using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class CSharpHandlerTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public CSharpHandlerTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
     [Fact]
     public async Task GivenExplicitInterfaceImplementation_WhenHandleCalled_ThenShouldIngestMember()
     {
@@ -61,8 +68,8 @@ public class Foo : IBar
         explicitMember.ShouldNotBeNull("Explicit interface implementation should be ingested even if minAccessibility is Public");
 
         // Let's log what the accessibility actually is
-        Console.WriteLine($"[DEBUG_LOG] Accessibility: {explicitMember.Accessibility}");
-        Console.WriteLine($"[DEBUG_LOG] Name: {explicitMember.Name}");
+        _testOutputHelper.WriteLine($"[DEBUG_LOG] Accessibility: {explicitMember.Accessibility}");
+        _testOutputHelper.WriteLine($"[DEBUG_LOG] Name: {explicitMember.Name}");
     }
 
     [Fact]
@@ -200,8 +207,8 @@ public class Foo
             minAccessibility: Accessibility.Public);
 
         // Assert
-        var operators = symbolBuffer.Where(s => s.Kind == "Method" && (s.Name.Contains("op_") || s.Name.Contains("operator"))).ToList();
-        
+        _ = symbolBuffer.Where(s => s.Kind == "Method" && (s.Name.Contains("op_") || s.Name.Contains("operator"))).ToList();
+
         // Roslyn names operators as op_Equality, op_Inequality, op_Implicit, op_Explicit
         symbolBuffer.ShouldContain(s => s.Name.Contains("op_Equality"));
         symbolBuffer.ShouldContain(s => s.Name.Contains("op_Inequality"));
@@ -252,14 +259,14 @@ public class Foo
         // Assert
         var events = symbolBuffer.Where(s => s.Kind == "Event").ToList();
         events.Count.ShouldBe(2);
-        
+
         symbolBuffer.ShouldContain(s => s.Name == "MyEvent");
         symbolBuffer.ShouldContain(s => s.Name == "OtherEvent");
 
         // Check dependencies for event types
         // MyEvent depends on MyHandler
         relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == "DEPENDS_ON");
-        
+
         // OtherEvent depends on MyHandler
         relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == "DEPENDS_ON");
     }
@@ -309,9 +316,110 @@ public class Foo
         // Check for dependency on EventHandler<EventArgs>
         // Since it's an ErrorType in this limited test context (due to missing dependencies in AdhocWorkspace),
         // but we now allow ErrorTypes to be processed if they are Nullable<T>, it should be there.
-        relBuffer.ShouldContain(r => 
-            r.FromKey == "test-repo:Foo" && 
+        relBuffer.ShouldContain(r =>
+            r.FromKey == "test-repo:Foo" &&
             r.RelType == "DEPENDS_ON" &&
             r.ToKey.Contains("EventHandler"));
+    }
+
+    [Fact]
+    public async Task GivenNonNullableEvent_WhenHandleCalled_ThenShouldIngestEvent()
+    {
+        // Arrange
+        var fileSystem = A.Fake<IFileSystem>();
+        var symbolMapper = new SymbolMapper();
+        var sut = new CSharpHandler(symbolMapper, fileSystem);
+
+        var code = @"
+using System;
+public class Foo
+{
+    public event EventHandler MyEvent;
+}";
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(EventHandler).Assembly.Location));
+        var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
+        var compilation = await document.Project.GetCompilationAsync();
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document,
+            compilation,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: "Foo.cs",
+            symbolBuffer,
+            relBuffer,
+            databaseName: "neo4j",
+            minAccessibility: Accessibility.Public);
+
+        // Assert
+        var eventSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MyEvent");
+        eventSymbol.ShouldNotBeNull();
+        eventSymbol.Kind.ShouldBe("Event");
+
+        // Check for dependency on EventHandler
+        relBuffer.ShouldContain(r =>
+            r.FromKey == "test-repo:Foo" &&
+            r.RelType == "DEPENDS_ON" &&
+            r.ToKey.Contains("EventHandler"));
+    }
+
+    [Fact]
+    public async Task GivenNonNullableGenericEvent_WhenHandleCalled_ThenShouldIngestEvent()
+    {
+        // Arrange
+        var fileSystem = A.Fake<IFileSystem>();
+        var symbolMapper = new SymbolMapper();
+        var sut = new CSharpHandler(symbolMapper, fileSystem);
+
+        var code = @"
+using System;
+public class MyEventArgs : EventArgs { }
+public class Foo
+{
+    public event EventHandler<MyEventArgs> MyEvent;
+}";
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(EventArgs).Assembly.Location));
+        var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
+        var compilation = await document.Project.GetCompilationAsync();
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document,
+            compilation,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: "Foo.cs",
+            symbolBuffer,
+            relBuffer,
+            databaseName: "neo4j",
+            minAccessibility: Accessibility.Public);
+
+        // Assert
+        var eventSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MyEvent");
+        eventSymbol.ShouldNotBeNull();
+        eventSymbol.Kind.ShouldBe("Event");
+
+        // Check for dependency on EventHandler<MyEventArgs>
+        // Depending on how SymbolMapper builds the key, it should at least contain EventHandler and MyEventArgs
+        relBuffer.ShouldContain(r =>
+            r.FromKey == "test-repo:Foo" &&
+            r.RelType == "DEPENDS_ON" &&
+            r.ToKey.Contains("EventHandler") &&
+            r.ToKey.Contains("MyEventArgs"));
     }
 }
