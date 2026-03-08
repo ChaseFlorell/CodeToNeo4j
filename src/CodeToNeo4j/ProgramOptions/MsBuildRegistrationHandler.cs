@@ -8,8 +8,8 @@ public class MsBuildRegistrationHandler : OptionsHandler
     {
         if (!MSBuildLocator.IsRegistered)
         {
-            var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
-            if (instances.Any())
+            var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
+            if (instances.Length != 0)
             {
                 MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
             }
