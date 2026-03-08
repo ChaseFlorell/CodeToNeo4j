@@ -1,4 +1,15 @@
-# Lessons Learned
+## Lessons Learned
+
+## Class Member Order Rules
+- Maintain a strict order for class members from top to bottom:
+    1. Constructors
+    2. Public members
+    3. Internal members
+    4. Protected members
+    5. Private members
+    6. Private static members
+    7. Private const members (CRITICAL: These must be at the very bottom of the class)
+- This order applies to all new and refactored classes to ensure consistency across the codebase.
 
 ## Multi-edit Tool usage
 - When using `multi_edit`, be extremely careful not to accidentally delete methods or logic that were not intended to be changed. Always verify the resulting file structure.
@@ -72,8 +83,9 @@
 - **Member Dependency Extraction**: When extracting dependencies (e.g., `DEPENDS_ON` relationships) for class members, ensure you handle all member types:
     - Methods/Constructors/Operators: Parameters and Return Type.
     - Properties: Property Type.
-    - Events: Event/Delegate Type.
+    - Events: Event/Delegate Type (including handling of `Nullable<T>` wrappers).
     - Fields: Field Type.
+- **Explicit Interface Implementations**: Explicit interface implementations (e.g., `void IInterface.Method()`) are treated as `Accessibility.Private` (or sometimes `Accessibility.NotApplicable`) by Roslyn. If filtering by accessibility, these must be explicitly detected using `ExplicitInterfaceImplementations.Any()` on the symbol to ensure they are ingested.
 - **Unit Testing Dependencies**: When writing unit tests for symbol extraction that involve types from other assemblies (like `EventHandler` from `System`), ensure the `AdhocWorkspace` project has the necessary metadata references (e.g., `MetadataReference.CreateFromFile(typeof(EventHandler).Assembly.Location)`). If a type is not found, Roslyn will treat it as an error type, which might cause dependency extraction to skip it.
 ## Option Binding and Simplification
 - When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
@@ -92,4 +104,4 @@
 - **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
 - **Unit Test Isolation**: Do not use constructors for global setup in unit tests to prevent state leakage and ensure isolation. Use `TestCaseSource` or local setup within each test.
 - **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
-- **Explicit interface implementations**: Explicit interface implementations in C# (e.g., `void IInterface.Method()`) are treated as `Accessibility.Private` by Roslyn's `ISymbol.DeclaredAccessibility`. If the tool filters by accessibility (e.g., only `Public`), these members will be missed unless explicitly handled. Use `method.ExplicitInterfaceImplementations.Any()` (for methods, properties, or events) to identify them and include them in the ingestion process.
+- **Explicit interface implementations**: Explicit interface implementations (covered under "Roslyn and C# Syntax").

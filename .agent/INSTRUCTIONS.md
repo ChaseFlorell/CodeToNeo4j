@@ -1,11 +1,13 @@
 # Architecture
-- `ISolutionProcessor` is the entry point for solution processing. It coordinates file discovery, git diffing, dependency ingestion, and file-by-file symbol extraction.
+- `ISolutionProcessor` is the entry point for solution processing. It coordinates file discovery, git diffing, and file-by-file symbol extraction using a producer-consumer pattern via `System.Threading.Channels`.
 - `IOptionsHandler` defines the Chain of Responsibility for handling command-line options and executing the application workflow.
 - `OptionsHandlerChainBuilder` assembles the default chain of handlers.
-- `ISolutionFileDiscoveryService` is responsible for finding files to process.
+- `ISolutionFileDiscoveryService` is responsible for finding files to process within a solution.
 - `IDocumentHandler` is the interface for processing individual files. It uses `TextDocument` to allow for broad file type support (including `AdditionalDocument`).
-- `CSharpHandler`, `RazorHandler`, `HtmlHandler`, `JavaScriptHandler`, `XamlHandler`, `XmlHandler`, `JsonHandler`, `CssHandler`, and `CsprojHandler` implement specific file processing logic.
-- `IGraphService` handles interaction with the Neo4j database, including upserting symbols and relationships.
+- `CSharpHandler` implements C# specific processing, extracting symbols for types, members (methods, properties, fields, events, operators), and their dependencies (`DEPENDS_ON` relationships).
+- `ISymbolMapper` provides stable key generation and mapping from Roslyn symbols to graph records.
+- `IDependencyIngestor` handles the extraction and ingestion of external (NuGet) dependencies.
+- `IGraphService` handles interaction with the Neo4j database, including upserting symbols, relationships, file metadata, and commits.
 - **Data Consistency**: Repository keys (`repoKey`) are normalized to lowercase in the application before being sent to Neo4j. This ensures case-insensitivity for the repository identity. Derived keys (e.g., `FileKey`, `SymbolKey`) use the normalized `repoKey` as a prefix, but the remaining parts (file paths, namespaces, symbol names) remain case-sensitive to match the source code.
 - **Neo4j 5.x Requirements**:
     - Use `IF NOT EXISTS` for all schema commands.
@@ -14,14 +16,6 @@
     - Use `dotnet-suggest` for tab completions.
     - Implement a `IConsoleCompletionsService` to handle terminal detection and `dotnet-suggest` configuration.
     - Supported shells: zsh, bash, pwsh.
-- **Class Member Order**: Maintain a consistent order for class members from top to bottom:
-    1. Constructors
-    2. Public members
-    3. Internal members
-    4. Protected members
-    5. Private members
-    6. Private static members
-    7. Private const members (CRITICAL: These must be at the very bottom of the class)
 
 # Performance Principles
 - **Batching**: Always prefer batching I/O operations (database writes, git commands) to minimize overhead.
@@ -30,17 +24,15 @@
 - **Producer-Consumer**: Decouple analysis from ingestion using `System.Threading.Channels` to ensure a responsive UI and optimal database batching.
 - **Async Efficiency**: Use `Task` and `ConfigureAwait(false)` for all I/O-bound code. Reserve `ValueTask` for proven, high-frequency synchronous hot paths.
 
-# Coding Standards
-- **Class Member Order**: Maintain a consistent order for class members from top to bottom:
+# Coding and Testing Standards
+- **Class Member Order**: Maintain a strict order for class members from top to bottom:
     1. Constructors
     2. Public members
     3. Internal members
     4. Protected members
     5. Private members
     6. Private static members
-    7. Private const members
-
-# Testing Standards
+    7. Private const members (CRITICAL: These must be at the very bottom of the class)
 - **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action]_Then[Result]()`.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
 
