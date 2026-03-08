@@ -93,25 +93,60 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
     {
         foreach (var member in tds.Members)
         {
+            if (member is EventFieldDeclarationSyntax efds)
+            {
+                foreach (var variable in efds.Declaration.Variables)
+                {
+                    var variableSymbol = semanticModel.GetDeclaredSymbol(variable) as IEventSymbol;
+                    if (variableSymbol is null) continue;
+
+                    ProcessMemberSymbol(variableSymbol, variable, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, typeRec, minAccessibility);
+                }
+                continue;
+            }
+
             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
+            if (memberSymbol is null)
+            {
+                if (member is EventDeclarationSyntax eds)
+                {
+                    memberSymbol = semanticModel.GetDeclaredSymbol(eds);
+                }
+            }
+
             if (memberSymbol is null) continue;
 
-            if (memberSymbol.DeclaredAccessibility < minAccessibility && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
-            {
-                continue;
-            }
+            ProcessMemberSymbol(memberSymbol, member, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, typeRec, minAccessibility);
+        }
+    }
 
-            var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, member);
-            symbolBuffer.Add(memberRec);
+    private void ProcessMemberSymbol(
+        ISymbol memberSymbol,
+        SyntaxNode memberSyntax,
+        SemanticModel semanticModel,
+        string? repoKey,
+        string fileKey,
+        string filePath,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec,
+        Accessibility minAccessibility)
+    {
+        if (memberSymbol.DeclaredAccessibility < minAccessibility
+            && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable
+            && !IsExplicitInterfaceImplementation(memberSymbol))
+        {
+            return;
+        }
 
-            relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
+        var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, memberSymbol, memberSyntax);
+        symbolBuffer.Add(memberRec);
 
-            if (member is not ConstructorDeclarationSyntax cds)
-            {
-                continue;
-            }
+        relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
 
-            foreach (var parameter in cds.ParameterList.Parameters)
+        if (memberSyntax is BaseMethodDeclarationSyntax bmds)
+        {
+            foreach (var parameter in bmds.ParameterList.Parameters)
             {
                 var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
                 if (parameterSymbol is null) continue;
@@ -122,6 +157,55 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
                 var depKey = symbolMapper.BuildStableSymbolKey(repoKey, parameterType);
                 relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
             }
+
+            var baseMethodSymbol = semanticModel.GetDeclaredSymbol(bmds) as IMethodSymbol;
+            if (baseMethodSymbol is { ReturnType: not null and not IErrorTypeSymbol }
+                && baseMethodSymbol.MethodKind != MethodKind.Constructor)
+            {
+                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, baseMethodSymbol.ReturnType);
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+            }
         }
+        else if (memberSymbol is IPropertySymbol propertySymbol)
+        {
+            if (propertySymbol.Type is not (null or IErrorTypeSymbol))
+            {
+                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, propertySymbol.Type);
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+            }
+        }
+        else if (memberSymbol is IEventSymbol eventSymbol)
+        {
+            if (eventSymbol.Type is not null)
+            {
+                var eventType = eventSymbol.Type;
+                if (eventType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.Name == "Nullable")
+                {
+                    eventType = namedType.TypeArguments[0];
+                }
+
+                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, eventType);
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+            }
+        }
+        else if (memberSymbol is IFieldSymbol fieldSymbol)
+        {
+            if (fieldSymbol.Type is not (null or IErrorTypeSymbol))
+            {
+                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, fieldSymbol.Type);
+                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
+            }
+        }
+    }
+
+    private static bool IsExplicitInterfaceImplementation(ISymbol symbol)
+    {
+        return symbol switch
+        {
+            IMethodSymbol method => method.ExplicitInterfaceImplementations.Any(),
+            IPropertySymbol property => property.ExplicitInterfaceImplementations.Any(),
+            IEventSymbol @event => @event.ExplicitInterfaceImplementations.Any(),
+            _ => false
+        };
     }
 }
