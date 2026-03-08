@@ -66,6 +66,15 @@
 - **Chain of Responsibility for CLI Execution**: For complex command-line tool workflows, extracting the `SetHandler` logic into a Chain of Responsibility (CoR) pattern improves modularity and testability. Each step (e.g., confirmation, environment setup, processing) becomes a discrete handler that can be tested in isolation and easily reordered or extended.
 - **Handler Context**: When using a CoR pattern for application startup, use a `HandlerContext` object to pass shared state (like an `IServiceProvider`) between handlers. This avoids polluting the `Options` class with runtime-only dependencies.
 - **Member Order Vigilance**: When refactoring or adding new classes, always double-check the project's member order guidelines (e.g., constructors, then public, then internal, then protected, then private). It's easy to overlook this during complex refactorings.
+## Roslyn and C# Syntax
+- **Event Symbols**: In Roslyn, field-like events (e.g., `public event EventHandler MyEvent;`) are represented by `EventFieldDeclarationSyntax`, which can contain multiple variables. `semanticModel.GetDeclaredSymbol(member)` on the `EventFieldDeclarationSyntax` itself returns `null`. You must iterate over `efds.Declaration.Variables` and call `GetDeclaredSymbol` on each variable to get the `IEventSymbol`.
+- **Event Declaration Syntax**: Events with accessors (e.g., `public event EventHandler MyEvent { add { } remove { } }`) are represented by `EventDeclarationSyntax`. `semanticModel.GetDeclaredSymbol(eds)` correctly returns the `IEventSymbol`.
+- **Member Dependency Extraction**: When extracting dependencies (e.g., `DEPENDS_ON` relationships) for class members, ensure you handle all member types:
+    - Methods/Constructors/Operators: Parameters and Return Type.
+    - Properties: Property Type.
+    - Events: Event/Delegate Type.
+    - Fields: Field Type.
+- **Unit Testing Dependencies**: When writing unit tests for symbol extraction that involve types from other assemblies (like `EventHandler` from `System`), ensure the `AdhocWorkspace` project has the necessary metadata references (e.g., `MetadataReference.CreateFromFile(typeof(EventHandler).Assembly.Location)`). If a type is not found, Roslyn will treat it as an error type, which might cause dependency extraction to skip it.
 ## Option Binding and Simplification
 - When multiple command-line switches represent different ways to set a single application-level setting (e.g., `--log-level`, `--debug`, `--verbose`, and `--quiet`), consolidate them into a single property within the `Options` class.
 - Handle the logic for resolving these mutually exclusive options within the `BinderBase<Options>.GetBoundValue` method. This keeps the rest of the application simple and unaware of the specific CLI flags used.
@@ -83,3 +92,4 @@
 - **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
 - **Unit Test Isolation**: Do not use constructors for global setup in unit tests to prevent state leakage and ensure isolation. Use `TestCaseSource` or local setup within each test.
 - **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
+- **Explicit interface implementations**: Explicit interface implementations in C# (e.g., `void IInterface.Method()`) are treated as `Accessibility.Private` by Roslyn's `ISymbol.DeclaredAccessibility`. If the tool filters by accessibility (e.g., only `Public`), these members will be missed unless explicitly handled. Use `method.ExplicitInterfaceImplementations.Any()` (for methods, properties, or events) to identify them and include them in the ingestion process.

@@ -1,5 +1,5 @@
 ### 1. Plan
-- Load `Agent/INSTRUCTIONS.md` and `Agent/LESSONS.md` into your brain
+- Load `.agent/INSTRUCTIONS.md` and `.agent/LESSONS.md` into your brain
 - If something goes sideways, STOP and re-plan immediately - don't keep pushing
 - Use plan mode for verification steps, not just building
 - Write detailed specs upfront to reduce ambiguity
@@ -14,7 +14,7 @@
 - One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop
-- After ANY correction from the user: update `Agent/LESSONS.md` with the pattern
+- After ANY correction from the user: update `.agent/LESSONS.md` with the pattern
 - Write rules for yourself that prevent the same mistake
 - Ruthlessly iterate on these lessons until mistake rate drops
 - Review lessons at session start for relevant project
@@ -41,8 +41,8 @@
 2. **Verify Plan**: Check in before starting implementation
 3. **Track Progress**: Mark items complete as you go
 4. **Explain Changes**: High-level summary at each step
-5. **Capture Lessons**: Update `Agent/LESSONS.md` after corrections
-6. **Refine Instructions**: Update `Agent/INSTRUCTIONS.md` with any helpful information discovered during execution
+5. **Capture Lessons**: Update `.agent/LESSONS.md` after corrections
+6. **Refine Instructions**: Update `.agent/INSTRUCTIONS.md` with any helpful information discovered during execution
 
 ## Core Principles
 

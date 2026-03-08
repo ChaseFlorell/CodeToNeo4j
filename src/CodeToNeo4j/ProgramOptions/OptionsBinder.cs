@@ -69,6 +69,13 @@ public class OptionsBinder(
             logLevel = LogLevel.None;
         }
 
+        var minAccessibility = bindingContext.ParseResult.GetValueForOption(minAccessibilityOption);
+        if (minAccessibility == Accessibility.Private)
+        {
+            // an undefined accessibility level is the same as private.
+            minAccessibility = Accessibility.NotApplicable;
+        }
+
         var options = new Options(
             bindingContext.ParseResult.GetValueForOption(slnOption)!,
             bindingContext.ParseResult.GetValueForOption(uriOption)!,
@@ -80,7 +87,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(databaseOption)!,
             logLevel,
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
-            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
+            minAccessibility,
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
             bindingContext.ParseResult.GetValueForOption(purgeDataOption)
         );
