@@ -1,6 +1,6 @@
 using CodeToNeo4j.Graph;
 
-namespace CodeToNeo4j.ProgramOptions;
+namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public class EnvironmentSetupHandler(IGraphService graphService) : OptionsHandler
 {

@@ -1,6 +1,6 @@
 using CodeToNeo4j.Solution;
 
-namespace CodeToNeo4j.ProgramOptions;
+namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public class SolutionProcessingHandler(ISolutionProcessor solutionProcessor) : OptionsHandler
 {

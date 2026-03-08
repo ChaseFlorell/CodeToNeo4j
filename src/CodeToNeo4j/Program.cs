@@ -1,12 +1,13 @@
 ﻿using System.CommandLine;
 using CodeToNeo4j.ProgramOptions;
+using CodeToNeo4j.ProgramOptions.Handlers;
 using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeToNeo4j;
 
-public static class Program
+public class Program
 {
     public static async Task<int> Main(string[] args)
     {
@@ -103,10 +104,13 @@ public static class Program
         binder.AddToCommand(root);
         root.SetHandler(async options =>
             {
+                
                 await using var services = new ServiceCollection()
                     .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel)
                     .BuildServiceProvider();
 
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("Options: {Options}", options);
                 var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
                 await handlers.BuildChain().Handle(options);
             },

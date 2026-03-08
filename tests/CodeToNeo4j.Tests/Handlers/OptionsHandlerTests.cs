@@ -1,6 +1,7 @@
 using Xunit;
 using FakeItEasy;
 using CodeToNeo4j.ProgramOptions;
+using CodeToNeo4j.ProgramOptions.Handlers;
 
 namespace CodeToNeo4j.Tests.Handlers;
 
