@@ -33,4 +33,16 @@ public static class OptionsExtensions
         option.SetDefaultValueFactory(() => defaultValue());
         return option;
     }
+
+    public static IOptionsHandler BuildChain(this IEnumerable<IOptionsHandler> handlers)
+    {
+        var optionsHandlers = handlers.ToList();
+        optionsHandlers.Aggregate((current, next) =>
+        {
+            current.SetNext(next);
+            return next;
+        });
+
+        return optionsHandlers[0];
+    }
 }

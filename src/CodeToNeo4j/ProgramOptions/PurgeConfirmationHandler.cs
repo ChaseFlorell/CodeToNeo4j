@@ -2,7 +2,7 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class PurgeConfirmationHandler : OptionsHandler
 {
-    public override async Task Handle(Options options, HandlerContext context)
+    public override async Task Handle(Options options)
     {
         if (options.PurgeData)
         {
@@ -17,6 +17,6 @@ public class PurgeConfirmationHandler : OptionsHandler
             }
         }
 
-        await base.Handle(options, context);
+        await base.Handle(options);
     }
 }

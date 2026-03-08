@@ -5,7 +5,7 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class EnvironmentSetupHandler : OptionsHandler
 {
-    public override async Task Handle(Options options, HandlerContext context)
+    public override async Task Handle(Options options)
     {
         var services = new ServiceCollection()
             .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel);
@@ -15,6 +15,6 @@ public class EnvironmentSetupHandler : OptionsHandler
 
         await graphService.Initialize(options.RepoKey, options.DatabaseName);
 
-        await base.Handle(options, context with { ServiceProvider = serviceProvider });
+        await base.Handle(options);
     }
 }

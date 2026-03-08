@@ -4,7 +4,7 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class MsBuildRegistrationHandler : OptionsHandler
 {
-    public override async Task Handle(Options options, HandlerContext context)
+    public override async Task Handle(Options options)
     {
         if (!MSBuildLocator.IsRegistered)
         {
@@ -15,6 +15,6 @@ public class MsBuildRegistrationHandler : OptionsHandler
             }
         }
 
-        await base.Handle(options, context);
+        await base.Handle(options);
     }
 }

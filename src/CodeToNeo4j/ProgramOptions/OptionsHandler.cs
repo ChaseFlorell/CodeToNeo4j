@@ -1,14 +1,12 @@
 namespace CodeToNeo4j.ProgramOptions;
 
-public record HandlerContext(IServiceProvider? ServiceProvider = null);
-
 public abstract class OptionsHandler : IOptionsHandler
 {
-    public virtual async Task Handle(Options options, HandlerContext context)
+    public virtual async Task Handle(Options options)
     {
         if (Next != null)
         {
-            await Next.Handle(options, context);
+            await Next.Handle(options);
         }
     }
 
