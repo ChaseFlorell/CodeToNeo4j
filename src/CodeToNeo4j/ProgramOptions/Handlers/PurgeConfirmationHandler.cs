@@ -1,4 +1,4 @@
-namespace CodeToNeo4j.ProgramOptions;
+namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public class PurgeConfirmationHandler : OptionsHandler
 {

@@ -8,6 +8,7 @@ using CodeToNeo4j.Graph;
 using CodeToNeo4j.Logging;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.ProgramOptions;
+using CodeToNeo4j.ProgramOptions.Handlers;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;

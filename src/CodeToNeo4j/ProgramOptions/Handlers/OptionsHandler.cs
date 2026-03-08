@@ -1,6 +1,4 @@
-using System.CommandLine.Parsing;
-
-namespace CodeToNeo4j.ProgramOptions;
+namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public abstract class OptionsHandler : IOptionsHandler
 {

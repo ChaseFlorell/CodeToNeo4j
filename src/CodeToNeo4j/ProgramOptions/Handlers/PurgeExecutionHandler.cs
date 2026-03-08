@@ -1,6 +1,6 @@
 using CodeToNeo4j.Graph;
 
-namespace CodeToNeo4j.ProgramOptions;
+namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public class PurgeExecutionHandler(IGraphService graphService) : OptionsHandler
 {
