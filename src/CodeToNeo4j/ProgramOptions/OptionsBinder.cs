@@ -69,7 +69,7 @@ public class OptionsBinder(
             logLevel = LogLevel.None;
         }
 
-        return new(
+        var options = new Options(
             bindingContext.ParseResult.GetValueForOption(slnOption)!,
             bindingContext.ParseResult.GetValueForOption(uriOption)!,
             bindingContext.ParseResult.GetValueForOption(userOption)!,
@@ -84,5 +84,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
             bindingContext.ParseResult.GetValueForOption(purgeDataOption)
         );
+
+        return options;
     }
 }

@@ -14,5 +14,5 @@ public class SolutionProcessingHandler(ISolutionProcessor solutionProcessor) : O
                 options.SkipDependencies,
                 options.MinAccessibility,
                 options.IncludeExtensions)
-            .ContinueWith(t => true);
+            .ContinueWith(_ => true);
 }
