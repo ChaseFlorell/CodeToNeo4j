@@ -2,7 +2,7 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class PurgeConfirmationHandler : OptionsHandler
 {
-    protected override async Task<bool> HandleOptions(Options options)
+    protected override Task<bool> HandleOptions(Options options)
     {
         if (options.PurgeData)
         {
@@ -13,10 +13,10 @@ public class PurgeConfirmationHandler : OptionsHandler
             if (response.Key != ConsoleKey.Y)
             {
                 Console.WriteLine("Purge aborted.");
-                return false;
+                return Task.FromResult(false);
             }
         }
 
-        return true;
+        return Task.FromResult(true);
     }
 }
