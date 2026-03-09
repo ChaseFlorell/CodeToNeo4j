@@ -1,18 +1,14 @@
-name: Build, Package, and Deploy
-
+name: Release
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 permissions:
-  contents: read
-  
+  contents: write
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
     steps:
     - uses: actions/checkout@v4
@@ -43,5 +39,12 @@ jobs:
         path: out/*.nupkg
 
     - name: Push to NuGet.org
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: dotnet nuget push out/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_KEY }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Release v1.0.${{ github.run_number }}
+        generate_release_notes: true
+        files: out/*.nupkg
