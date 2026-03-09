@@ -50,7 +50,9 @@ public class DependencyIngestor(
         // We use GetCompilationAsync but rely on Roslyn's internal caching.
         // Once a project is compiled, subsequent calls for the same project in the same solution 
         // will be much faster.
-        var compilation = await project.GetCompilationAsync(token).ConfigureAwait(false);
+        var compilation = await project.GetCompilationAsync(token)
+            .ConfigureAwait(false);
+
         if (compilation is null)
         {
             return;
