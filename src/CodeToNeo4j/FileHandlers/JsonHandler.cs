@@ -2,10 +2,11 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class JsonHandler(IFileSystem fileSystem, ILogger<JsonHandler> logger) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".json";
 
@@ -26,15 +27,18 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
             using var jsonDoc = JsonDocument.Parse(content);
             ProcessElement(jsonDoc.RootElement, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, "");
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            // Fail gracefully for malformed JSON
+            logger.LogWarning(ex, "Failed to parse JSON file: {FilePath}", filePath);
         }
     }
 
-    private void ProcessElement(JsonElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
+    private static void ProcessElement(JsonElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (Accessibility.Public < minAccessibility)
+        {
+            return;
+        }
 
         switch (element.ValueKind)
         {
@@ -63,6 +67,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 
                     ProcessElement(property.Value, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, propertyPath);
                 }
+
                 break;
             case JsonValueKind.Array:
                 var index = 0;
@@ -72,6 +77,7 @@ public class JsonHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
                     ProcessElement(item, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, itemPath);
                     index++;
                 }
+
                 break;
         }
     }

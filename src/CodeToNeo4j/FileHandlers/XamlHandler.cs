@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xaml";
 
@@ -26,7 +26,7 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root == null) return;
 
-            ProcessElement(xdoc.Root, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            ProcessElement(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
         catch (Exception)
         {
@@ -34,7 +34,7 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         }
     }
 
-    private void ProcessElement(XElement element, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         var name = element.Name.LocalName;
         var keySuffix = "";
@@ -44,10 +44,16 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         var xNameAttr = element.Attribute(XName.Get("Name", xNamespace)) ?? element.Attribute("Name");
         var xKeyAttr = element.Attribute(XName.Get("Key", xNamespace));
 
-        if (xNameAttr != null) keySuffix = $":{xNameAttr.Value}";
-        else if (xKeyAttr != null) keySuffix = $":{xKeyAttr.Value}";
+        if (xNameAttr != null)
+        {
+            keySuffix = $":{xNameAttr.Value}";
+        }
+        else if (xKeyAttr != null)
+        {
+            keySuffix = $":{xKeyAttr.Value}";
+        }
 
-        var lineInfo = (System.Xml.IXmlLineInfo)element;
+        System.Xml.IXmlLineInfo lineInfo = element;
         var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
 
         var symbolKey = $"{fileKey}:{name}{keySuffix}:{startLine}";
@@ -100,17 +106,17 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 
         foreach (var child in element.Elements())
         {
-            ProcessElement(child, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            ProcessElement(child, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 
     private bool IsEventHandler(string attrName)
     {
         // Common event naming patterns in XAML
-        return attrName.EndsWith("Click") || 
-               attrName.EndsWith("Changed") || 
-               attrName.EndsWith("Loaded") || 
-               attrName.EndsWith("Pressed") || 
+        return attrName.EndsWith("Click") ||
+               attrName.EndsWith("Changed") ||
+               attrName.EndsWith("Loaded") ||
+               attrName.EndsWith("Pressed") ||
                attrName.EndsWith("Released") ||
                attrName == "Command";
     }

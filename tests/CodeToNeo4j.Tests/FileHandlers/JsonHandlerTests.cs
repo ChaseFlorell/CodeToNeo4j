@@ -1,7 +1,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 
@@ -14,9 +16,10 @@ public class JsonHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new JsonHandler(fileSystem);
-        var content = @"{ ""foo"": { ""bar"": 123 }, ""baz"": [1, 2] }";
-        var filePath = "test.json";
+        var logger = A.Fake<ILogger<JsonHandler>>();
+        var sut = new JsonHandler(fileSystem, logger);
+        const string content = @"{ ""foo"": { ""bar"": 123 }, ""baz"": [1, 2] }";
+        const string filePath = "test.json";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();

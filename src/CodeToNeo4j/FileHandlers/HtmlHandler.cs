@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".html";
 
@@ -23,16 +23,19 @@ public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
 
         // Extract script references
         ExtractScriptReferences(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
-        
+
         // Extract IDs and Classes
         ExtractIdsAndClasses(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    private void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (Accessibility.Public < minAccessibility)
+        {
+            return;
+        }
 
-        var scriptRegex = new Regex(@"<script\s+.*?src=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        var scriptRegex = ScriptRegex();
         foreach (Match match in scriptRegex.Matches(content))
         {
             var src = match.Groups[1].Value;
@@ -88,4 +91,7 @@ public class HtmlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
         }
     }
+
+    [GeneratedRegex(@"<script\s+.*?src=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-CA")]
+    private static partial Regex ScriptRegex();
 }
