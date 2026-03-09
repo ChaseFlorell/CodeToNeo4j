@@ -2,8 +2,7 @@ namespace CodeToNeo4j.Solution;
 
 public interface ISolutionFileDiscoveryService
 {
-    Task<IEnumerable<ProcessedFile>> GetFilesToProcess(
-        FileInfo sln,
+    IEnumerable<ProcessedFile> GetFilesToProcess(FileInfo sln,
         Microsoft.CodeAnalysis.Solution solution,
         IEnumerable<string> includeExtensions);
 }

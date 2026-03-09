@@ -7,8 +7,7 @@ public class SolutionFileDiscoveryService(
     IFileService fileService,
     IFileSystem fileSystem) : ISolutionFileDiscoveryService
 {
-    public async Task<IEnumerable<ProcessedFile>> GetFilesToProcess(
-        FileInfo sln,
+    public IEnumerable<ProcessedFile> GetFilesToProcess(FileInfo sln,
         Microsoft.CodeAnalysis.Solution solution,
         IEnumerable<string> includeExtensions)
     {
@@ -63,13 +62,11 @@ public class SolutionFileDiscoveryService(
         return solutionFiles.Values;
     }
 
-    private bool IsExcluded(string path)
-    {
-        var parts = path.Split('/');
-        return parts.Any(p => p.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
-                              p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
-                              p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
-                              p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
-                              p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
-    }
+    private static bool IsExcluded(string path) =>
+        path.Split('/')
+            .Any(p => p.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
 }

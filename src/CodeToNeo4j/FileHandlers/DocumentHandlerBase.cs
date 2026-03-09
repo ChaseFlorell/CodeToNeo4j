@@ -35,10 +35,11 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility);
 
-    protected async Task<string> GetContent(TextDocument? document, string filePath) =>
+    protected Task<string> GetContent(TextDocument? document, string filePath) =>
         document is not null
-            ? await document.GetTextAsync().ContinueWith(x => x.Result.ToString()).ConfigureAwait(false)
-            : await fileSystem.File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+            ? document.GetTextAsync()
+                .ContinueWith(x => x.Result.ToString())
+            : fileSystem.File.ReadAllTextAsync(filePath);
 
     private int _numberOfFilesHandled;
 }

@@ -5,7 +5,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class CSharpHandler(
+    ISymbolMapper symbolMapper,
+    IFileSystem fileSystem)
+    : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".cs";
 
@@ -101,10 +104,19 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
             {
                 foreach (var variable in efds.Declaration.Variables)
                 {
-                    var variableSymbol = semanticModel.GetDeclaredSymbol(variable) as IEventSymbol;
-                    if (variableSymbol is null) continue;
-
-                    ProcessMemberSymbol(variableSymbol, variable, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, typeRec, minAccessibility);
+                    if (semanticModel.GetDeclaredSymbol(variable) is IEventSymbol variableSymbol)
+                    {
+                        ProcessMemberSymbol(variableSymbol,
+                            variable,
+                            semanticModel,
+                            repoKey,
+                            fileKey,
+                            filePath,
+                            symbolBuffer,
+                            relBuffer,
+                            typeRec,
+                            minAccessibility);
+                    }
                 }
 
                 continue;
@@ -119,9 +131,19 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
                 }
             }
 
-            if (memberSymbol is null) continue;
-
-            ProcessMemberSymbol(memberSymbol, member, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, typeRec, minAccessibility);
+            if (memberSymbol is not null)
+            {
+                ProcessMemberSymbol(memberSymbol,
+                    member,
+                    semanticModel,
+                    repoKey,
+                    fileKey,
+                    filePath,
+                    symbolBuffer,
+                    relBuffer,
+                    typeRec,
+                    minAccessibility);
+            }
         }
     }
 
@@ -163,7 +185,8 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
                 relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
             }
 
-            if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
+            if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol
+                } baseMethodSymbol
                 && baseMethodSymbol.MethodKind != MethodKind.Constructor)
             {
                 var depKey = symbolMapper.BuildStableSymbolKey(repoKey, baseMethodSymbol.ReturnType);

@@ -104,7 +104,6 @@ public class Program
         binder.AddToCommand(root);
         root.SetHandler(async options =>
             {
-                
                 await using var services = new ServiceCollection()
                     .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel)
                     .BuildServiceProvider();

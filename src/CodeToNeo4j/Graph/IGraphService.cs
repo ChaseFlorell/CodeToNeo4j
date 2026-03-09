@@ -2,7 +2,7 @@ using CodeToNeo4j.VersionControl;
 
 namespace CodeToNeo4j.Graph;
 
-public interface IGraphService : IAsyncDisposable
+public interface IGraphService
 {
     Task Initialize(string? repoKey, string databaseName);
     Task MarkFileAsDeleted(string fileKey, string databaseName);

@@ -6,7 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class JsonHandler(IFileSystem fileSystem, ILogger<JsonHandler> logger) : DocumentHandlerBase(fileSystem)
+public class JsonHandler(
+    IFileSystem fileSystem,
+    ILogger<JsonHandler> logger) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".json";
 
@@ -27,9 +29,9 @@ public class JsonHandler(IFileSystem fileSystem, ILogger<JsonHandler> logger) : 
             using var jsonDoc = JsonDocument.Parse(content);
             ProcessElement(jsonDoc.RootElement, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, "");
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
-            logger.LogWarning(ex, "Failed to parse JSON file: {FilePath}", filePath);
+            logger.LogWarning("Failed to parse JSON file: {FilePath}", filePath);
         }
     }
 

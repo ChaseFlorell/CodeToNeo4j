@@ -10,7 +10,7 @@ namespace CodeToNeo4j.Tests.Solution;
 public class SolutionFileDiscoveryServiceTests
 {
     [Fact]
-    public async Task GivenSolutionWithDocumentsAndFilesOnDisk_WhenGetFilesToProcessCalled_ThenReturnsCombinedList()
+    public void GivenSolutionWithDocumentsAndFilesOnDisk_WhenGetFilesToProcessCalled_ThenReturnsCombinedList()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -33,7 +33,7 @@ public class SolutionFileDiscoveryServiceTests
         var includeExtensions = new[] { ".cs", ".md" };
 
         // Act
-        var result = await sut.GetFilesToProcess(slnFile, solution, includeExtensions);
+        var result = sut.GetFilesToProcess(slnFile, solution, includeExtensions);
 
         // Assert
         var files = result.ToList();
