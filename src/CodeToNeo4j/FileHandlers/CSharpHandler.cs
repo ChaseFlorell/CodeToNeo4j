@@ -22,23 +22,19 @@ public class CSharpHandler(
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        if (document is not Document doc || compilation is null)
+        if (document is Document doc && compilation is not null)
         {
-            return;
-        }
+            var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
+            if (syntaxTree is not null)
+            {
+                var rootNode = await syntaxTree.GetRootAsync().ConfigureAwait(false);
+                var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
 
-        var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
-        if (syntaxTree is null)
-        {
-            return;
-        }
-
-        var rootNode = await syntaxTree.GetRootAsync().ConfigureAwait(false);
-        var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
-
-        foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
-        {
-            ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+                foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+                {
+                    ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+                }
+            }
         }
     }
 
@@ -52,25 +48,26 @@ public class CSharpHandler(
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        if (semanticModel.GetDeclaredSymbol(typeDecl) is not INamedTypeSymbol typeSymbol || (typeSymbol.DeclaredAccessibility < minAccessibility && typeSymbol.DeclaredAccessibility != Accessibility.NotApplicable))
+        if (semanticModel.GetDeclaredSymbol(typeDecl) 
+                is INamedTypeSymbol typeSymbol 
+            && (typeSymbol.DeclaredAccessibility >= minAccessibility 
+                || typeSymbol.DeclaredAccessibility == Accessibility.NotApplicable))
         {
-            return;
-        }
+            var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl);
+            symbolBuffer.Add(typeRec);
 
-        var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, filePath, typeSymbol, typeDecl);
-        symbolBuffer.Add(typeRec);
-
-        switch (typeDecl)
-        {
-            case TypeDeclarationSyntax tds:
+            switch (typeDecl)
             {
-                ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, tds, typeRec, minAccessibility);
-                break;
-            }
-            case EnumDeclarationSyntax eds:
-            {
-                ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, eds, typeRec, minAccessibility);
-                break;
+                case TypeDeclarationSyntax tds:
+                {
+                    ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, tds, typeRec, minAccessibility);
+                    break;
+                }
+                case EnumDeclarationSyntax eds:
+                {
+                    ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, filePath, symbolBuffer, relBuffer, eds, typeRec, minAccessibility);
+                    break;
+                }
             }
         }
     }
@@ -184,7 +181,7 @@ public class CSharpHandler(
         Symbol typeRec,
         Accessibility minAccessibility)
     {
-        if (CSharpHandler.IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
+        if (IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
         {
             return;
         }
@@ -239,9 +236,10 @@ public class CSharpHandler(
         foreach (var parameter in bmds.ParameterList.Parameters)
         {
             var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
-            if (parameterSymbol?.Type is null or IErrorTypeSymbol) continue;
-
-            AddDependsOnRelationship(typeRec.Key, parameterSymbol.Type, repoKey, relBuffer);
+            if (parameterSymbol?.Type is not (null or IErrorTypeSymbol))
+            {
+                AddDependsOnRelationship(typeRec.Key, parameterSymbol.Type, repoKey, relBuffer);
+            }
         }
 
         if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
@@ -257,9 +255,10 @@ public class CSharpHandler(
         ICollection<Relationship> relBuffer,
         Symbol typeRec)
     {
-        if (propertySymbol.Type is null or IErrorTypeSymbol) return;
-
-        AddDependsOnRelationship(typeRec.Key, propertySymbol.Type, repoKey, relBuffer);
+        if (propertySymbol.Type is not (null or IErrorTypeSymbol))
+        {
+            AddDependsOnRelationship(typeRec.Key, propertySymbol.Type, repoKey, relBuffer);
+        }
     }
 
     private void ExtractEventDependencies(
@@ -283,12 +282,10 @@ public class CSharpHandler(
         ICollection<Relationship> relBuffer,
         Symbol typeRec)
     {
-        if (fieldSymbol.Type is null or IErrorTypeSymbol)
+        if (fieldSymbol.Type is not (null or IErrorTypeSymbol))
         {
-            return;
+            AddDependsOnRelationship(typeRec.Key, fieldSymbol.Type, repoKey, relBuffer);
         }
-
-        AddDependsOnRelationship(typeRec.Key, fieldSymbol.Type, repoKey, relBuffer);
     }
 
     private void AddDependsOnRelationship(

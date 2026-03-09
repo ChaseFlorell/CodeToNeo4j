@@ -86,7 +86,7 @@ public class ProgramTests
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "Option '--sln' is required.");
+        result.Errors.ShouldContain(e => e.Message == "--sln is required");
     }
 
     [Theory]
@@ -119,15 +119,15 @@ public class ProgramTests
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "Option '--sln' is required.");
+        result.Errors.ShouldContain(e => e.Message == "--sln is required");
     }
 
     [Fact]
-    public void GivenNoKeyAndPurge_WhenParsing_ThenShouldNotHaveErrors()
+    public void GivenNoSlnAndNoKeyAndPurge_WhenParsing_ThenShouldNotHaveErrors()
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--no-key", "--purge-data", "--password", "pass" };
+        var args = new[] { "--no-key", "--purge-data", "--password", "pass" };
 
         // act
         var result = sut.Parse(args);
@@ -135,5 +135,4 @@ public class ProgramTests
         // assert
         result.Errors.ShouldBeEmpty();
     }
-
 }

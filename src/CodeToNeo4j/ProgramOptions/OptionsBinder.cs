@@ -44,6 +44,8 @@ public class OptionsBinder(
 
         command.AddValidator(result => OptionsBinderValidator.Validate(
             result,
+            slnOption,
+            noKeyOption,
             logLevelOption,
             debugOption,
             verboseOption,

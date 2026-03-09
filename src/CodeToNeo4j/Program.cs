@@ -33,7 +33,6 @@ public class Program
             .WithAlias("-u")
             .WithAlias("--url");
         var slnOption = new Option<FileInfo>("--sln")
-            .IsRequired()
             .WithAlias("-s")
             .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
