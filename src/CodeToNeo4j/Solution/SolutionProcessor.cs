@@ -57,7 +57,7 @@ public class SolutionProcessor(
             await graphService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName).ConfigureAwait(false);
         }
 
-        var discoveredFiles = await discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude).ConfigureAwait(false);
+        var discoveredFiles = discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude);
         var filesToProcess = FilterFiles(discoveredFiles, diffResult?.ModifiedFiles);
 
         await versionControlService.LoadMetadata(solutionRoot, extensionsToInclude).ConfigureAwait(false);
@@ -74,7 +74,7 @@ public class SolutionProcessor(
 
         await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, t) =>
         {
-            var result = await ProcessFile(solution, file, solutionRoot, repoKey, databaseName, minAccessibility).ConfigureAwait(false);
+            var result = await ProcessFile(solution, file, solutionRoot, repoKey, minAccessibility).ConfigureAwait(false);
             await channel.Writer.WriteAsync(result, t).ConfigureAwait(false);
         }).ConfigureAwait(false);
 
@@ -161,6 +161,7 @@ public class SolutionProcessor(
                 {
                     result = [];
                 }
+
                 break;
             }
         }
@@ -184,7 +185,6 @@ public class SolutionProcessor(
         ProcessedFile file,
         string solutionRoot,
         string? repoKey,
-        string databaseName,
         Accessibility minAccessibility)
     {
         var filePath = file.FilePath;
@@ -211,6 +211,7 @@ public class SolutionProcessor(
                 {
                     document = (TextDocument?)project.GetDocument(file.DocumentId) ?? project.GetAdditionalDocument(file.DocumentId);
                 }
+
                 compilation = await project.GetCompilationAsync().ConfigureAwait(false);
             }
         }
@@ -225,5 +226,9 @@ public class SolutionProcessor(
         return new ProcessResult(fileRecord, symbols, relationships, relativePath);
     }
 
-    private record ProcessResult(FileMetaData File, List<Symbol> Symbols, List<Relationship> Relationships, string RelativePath);
+    private record ProcessResult(
+        FileMetaData File,
+        List<Symbol> Symbols,
+        List<Relationship> Relationships,
+        string RelativePath);
 }

@@ -5,7 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.VersionControl;
 
-public class GitService(IFileService fileService, IFileSystem fileSystem, ILogger<GitService> logger) : IVersionControlService
+public class GitService(
+    IFileService fileService,
+    IFileSystem fileSystem,
+    ILogger<GitService> logger) : IVersionControlService
 {
     private readonly Dictionary<string, FileMetadata> _metadataCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -49,14 +52,21 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
                     currentHash = parts[3];
                     currentRefs = string.IsNullOrWhiteSpace(parts[4]) ? null : parts[4];
                 }
+
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(line) || currentAuthor == null) continue;
+            if (string.IsNullOrWhiteSpace(line) || currentAuthor == null)
+            {
+                continue;
+            }
 
             // This is a file name
             var relPath = line.Trim();
-            if (!includedExtensionsSet.Any(ext => relPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+            if (!includedExtensionsSet.Any(ext => relPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
             var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, relPath));
             if (!fileHistory.TryGetValue(fullPath, out var history))
@@ -64,6 +74,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
                 history = [];
                 fileHistory[fullPath] = history;
             }
+
             history.Add((currentAuthor, currentDate, currentHash!, currentRefs));
         }
 
@@ -156,7 +167,9 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
             var rel = parts[1].Trim();
 
             if (!includedExtensionsSet.Any(ext => rel.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            {
                 continue;
+            }
 
             var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, rel));
 
@@ -206,6 +219,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
                             currentCommit = null;
                             changedFiles = [];
                         }
+
                         continue;
                     }
 
@@ -335,7 +349,7 @@ public class GitService(IFileService fileService, IFileSystem fileSystem, ILogge
         return result;
     }
 
-    private async Task<string> GetGitRoot(string workingDirectory)
+    private static async Task<string> GetGitRoot(string workingDirectory)
     {
         var psi = new ProcessStartInfo
         {

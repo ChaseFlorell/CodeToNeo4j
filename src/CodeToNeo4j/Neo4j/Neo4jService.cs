@@ -12,8 +12,41 @@ public class Neo4jService(
     ICypherService cypherService,
     IFileService fileService,
     ILogger<Neo4jService> logger)
-    : IGraphService
+    : IGraphService, IAsyncDisposable, IDisposable
 {
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+
+        Dispose(false);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            driver.Dispose();
+        }
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        logger.LogDebug("Disposing Neo4j driver...");
+        await driver.DisposeAsync().ConfigureAwait(false);
+    }
+
+    ~Neo4jService()
+    {
+        Dispose(false);
+    }
+
     public async Task Initialize(string? repoKey, string databaseName)
     {
         logger.LogInformation("Initializing Neo4j driver...");
@@ -72,7 +105,8 @@ public class Neo4jService(
 
         logger.LogDebug("Upserting {Count} dependencies for {RepositoryKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }).ConfigureAwait(false); }).ConfigureAwait(false);
+        await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }))
+            .ConfigureAwait(false);
     }
 
     public async Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName)
@@ -96,7 +130,10 @@ public class Neo4jService(
             ["repoKey"] = file.RepoKey
         }).ToArray();
 
-        if (fileBatch.Length == 0) return;
+        if (fileBatch.Length == 0)
+        {
+            return;
+        }
 
         logger.LogDebug("Flushing {Count} files to Neo4j (Database: {DatabaseName})...", fileBatch.Length, databaseName);
 
@@ -169,17 +206,13 @@ public class Neo4jService(
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.PurgeData), new { repoKey, extensions }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.PurgeData), new { repoKey, extensions })
+                .ConfigureAwait(false);
         }).ConfigureAwait(false);
 
         logger.LogInformation("Purge complete for {PurgeTarget}.", purgeTarget);
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        logger.LogDebug("Disposing Neo4j driver...");
-        await driver.DisposeAsync().ConfigureAwait(false);
-    }
 
     private async Task VerifyNeo4jVersion()
     {
@@ -222,20 +255,19 @@ public class Neo4jService(
     private async Task EnsureSchema(string databaseName)
     {
         logger.LogDebug("Ensuring schema for database: {DatabaseName}", databaseName);
-        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         var schema = cypherService.GetCypher(Queries.Schema);
         var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        foreach (var cypher in statements)
-        {
-            await session.RunWithRetry(cypher).ConfigureAwait(false);
-        }
+        await Task.WhenAll(statements.Select(cypher => session.RunWithRetry(cypher)))
+            .ContinueWith(async _ => await session.DisposeAsync());
     }
 
     private async Task UpsertProject(string repoKey, string databaseName)
     {
         logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }).ConfigureAwait(false); }).ConfigureAwait(false);
+        await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }))
+            .ConfigureAwait(false);
     }
 }

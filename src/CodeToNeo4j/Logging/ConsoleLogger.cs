@@ -2,7 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Logging;
 
-public class ConsoleLogger(string name, LogLevel minLogLevel) : ILogger
+public class ConsoleLogger(
+    string name,
+    LogLevel minLogLevel) : ILogger
 {
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 

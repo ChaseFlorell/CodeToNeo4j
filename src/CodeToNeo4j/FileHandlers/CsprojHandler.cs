@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Xml;
 using System.Xml.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
@@ -52,7 +53,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 var value = property.Value;
                 if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(value)) continue;
 
-                var lineInfo = (System.Xml.IXmlLineInfo)property;
+                IXmlLineInfo lineInfo = property;
                 var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
                 var key = $"{fileKey}:Property:{name}:{startLine}";
 
@@ -84,7 +85,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 
             if (string.IsNullOrEmpty(include)) continue;
 
-            var lineInfo = (System.Xml.IXmlLineInfo)packageRef;
+            IXmlLineInfo lineInfo = packageRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
             var key = $"{fileKey}:PackageReference:{include}:{startLine}";
 
@@ -107,13 +108,17 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         }
 
         // Extract ProjectReferences
-        var projectRefs = project.Descendants().Where(e => e.Name.LocalName == "ProjectReference");
+        var projectRefs = project.Descendants()
+            .Where(e => e.Name.LocalName == "ProjectReference");
         foreach (var projectRef in projectRefs)
         {
             var include = projectRef.Attribute("Include")?.Value;
-            if (string.IsNullOrEmpty(include)) continue;
+            if (string.IsNullOrEmpty(include))
+            {
+                continue;
+            }
 
-            System.Xml.IXmlLineInfo lineInfo = projectRef;
+            IXmlLineInfo lineInfo = projectRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
             var key = $"{fileKey}:ProjectReference:{include}:{startLine}";
 

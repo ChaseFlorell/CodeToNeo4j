@@ -33,8 +33,7 @@ public class SymbolMapper : ISymbolMapper
     public string BuildStableSymbolKey(string? repoKey, ISymbol symbol)
     {
         var display = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-        var key = $"{repoKey}:{display}";
-        return key;
+        return $"{repoKey}:{display}";
     }
 
     private static (int startLine, int endLine) GetLineSpan(Location loc)
@@ -53,6 +52,8 @@ public class SymbolMapper : ISymbolMapper
             .Select(t => t.ToString().Trim())
             .ToArray();
 
-        return comments.Length > 0 ? string.Join(Environment.NewLine, comments) : null;
+        return comments.Length > 0
+            ? string.Join(Environment.NewLine, comments)
+            : null;
     }
 }

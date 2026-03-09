@@ -42,6 +42,9 @@
 - For performance-critical loops (like processing thousands of files), leverage `Task.WhenAll` or `Parallel.ForEachAsync` to process work in parallel when steps are independent.
 - Use chunked parallelism or limit the degree of parallelism (e.g., `MaxDegreeOfParallelism`) to avoid overwhelming resources (DB connections, memory) while still gaining performance from concurrency.
 - When parallelizing, ensure shared resources are either thread-safe or refactored to be local to the parallel task.
+- For `Parallel.ForEachAsync`, use a thread-safe collection like `ConcurrentBag<T>` or a `Channel<T>` if multiple tasks are adding items simultaneously.
+- When ingesting data from multiple parallel sources (like projects in a solution), de-duplicate and sort (e.g., `.DistinctBy().OrderBy()`) the results before passing them to the database to ensure deterministic behavior and minimize transaction conflicts.
+- Always check `Project.SupportsCompilation` before attempting to get a `Compilation` in Roslyn to avoid unnecessary overhead or potential exceptions for non-compilable projects (like solution folders or some resource-only projects).
 
 ## .NET Global Tool Packaging
 - For .NET global tools, multi-targeting (e.g., `net10.0;net9.0;net8.0`) improves compatibility with older `dotnet` CLI versions that may not yet fully support the latest framework (like `net10.0`) during tool installation.

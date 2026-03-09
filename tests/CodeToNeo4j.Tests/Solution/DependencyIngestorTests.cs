@@ -10,7 +10,7 @@ namespace CodeToNeo4j.Tests.Solution;
 public class DependencyIngestorTests
 {
     [Fact]
-    public async Task GivenSolutionWithReferencedAssemblies_WhenIngestDependenciesCalled_ThenUpsertsUniqueDependencies()
+    public async Task GivenSolutionWithMultipleProjectsAndOverlappingDependencies_WhenIngestDependenciesCalled_ThenUpsertsUniqueDependencies()
     {
         // Arrange
         var graphService = A.Fake<IGraphService>();
@@ -18,15 +18,21 @@ public class DependencyIngestorTests
         var sut = new DependencyIngestor(graphService, logger);
 
         var workspace = new AdhocWorkspace();
-        _ = workspace.AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+        var commonRef = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+        
+        var project1 = workspace.AddProject("Project1", LanguageNames.CSharp);
+        workspace.TryApplyChanges(workspace.CurrentSolution.AddMetadataReference(project1.Id, commonRef));
+        
+        var project2 = workspace.AddProject("Project2", LanguageNames.CSharp);
+        workspace.TryApplyChanges(workspace.CurrentSolution.AddMetadataReference(project2.Id, commonRef));
+            
         var solution = workspace.CurrentSolution;
 
         // Act
         await sut.IngestDependencies(solution, "test-repo", "neo4j");
 
         // Assert
-        A.CallTo(() => graphService.UpsertDependencies("test-repo", A<Dependency[]>.That.IsNotNull(), "neo4j"))
+        A.CallTo(() => graphService.UpsertDependencies("test-repo", A<Dependency[]>.That.Matches(d => d.Length == 1), "neo4j"))
             .MustHaveHappened();
     }
 }

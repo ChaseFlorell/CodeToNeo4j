@@ -22,7 +22,7 @@ public static class OptionsBinderValidator
         var usedVerbose = result.FindResultFor(verboseOption) is not null;
         var usedQuiet = result.FindResultFor(quietOption) is not null;
 
-        int logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
+        var logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
         if (logOptionsCount > 1)
         {
             result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
