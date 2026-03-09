@@ -5,6 +5,8 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -36,6 +38,11 @@ jobs:
     - name: Pack
       run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-build -c Release -o out /p:Version=${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
 
+    - name: Attest build provenance
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: out/*.nupkg
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -57,10 +64,19 @@ jobs:
           ### Installation
           Install from Nuget:
           [![NuGet](https://img.shields.io/badge/nuget-v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}-blue)](https://www.nuget.org/packages/CodeToNeo4j/${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }})
-          
+
           Install from CLI:
           ```bash
           dotnet tool install --global CodeToNeo4j --version ${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
+          ```
+
+          ### Provenance
+          **Commit:** [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          **Build:** [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          Verify package attestation:
+          ```bash
+          gh attestation verify <path-to-nupkg> --repo ${{ github.repository }}
           ```
         generate_release_notes: true
         files: out/*.nupkg
