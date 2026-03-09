@@ -55,7 +55,24 @@ public class OptionsBinder(
             minAccessibilityOption));
     }
 
-    protected override Options GetBoundValue(BindingContext bindingContext)
+    protected override Options GetBoundValue(BindingContext bindingContext) =>
+        new(
+            bindingContext.ParseResult.GetValueForOption(slnOption)!,
+            bindingContext.ParseResult.GetValueForOption(uriOption)!,
+            bindingContext.ParseResult.GetValueForOption(userOption)!,
+            bindingContext.ParseResult.GetValueForOption(passOption)!,
+            bindingContext.ParseResult.GetValueForOption(noKeyOption),
+            bindingContext.ParseResult.GetValueForOption(diffBaseOption),
+            bindingContext.ParseResult.GetValueForOption(batchSizeOption),
+            bindingContext.ParseResult.GetValueForOption(databaseOption)!,
+            ParseLogLevel(bindingContext),
+            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
+            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
+            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
+            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
+        );
+
+    private LogLevel ParseLogLevel(BindingContext bindingContext)
     {
         var logLevel = bindingContext.ParseResult.GetValueForOption(logLevelOption);
         if (bindingContext.ParseResult.GetValueForOption(debugOption))
@@ -71,34 +88,6 @@ public class OptionsBinder(
             logLevel = LogLevel.None;
         }
 
-        var minAccessibility = bindingContext.ParseResult.GetValueForOption(minAccessibilityOption);
-        if (minAccessibility == Accessibility.Private)
-        {
-            // an undefined accessibility level is the same as private.
-            minAccessibility = Accessibility.NotApplicable;
-        }
-
-        var options = new Options(
-            bindingContext.ParseResult.GetValueForOption(slnOption)!,
-            bindingContext.ParseResult.GetValueForOption(uriOption)!,
-            bindingContext.ParseResult.GetValueForOption(userOption)!,
-            bindingContext.ParseResult.GetValueForOption(passOption)!,
-            bindingContext.ParseResult.GetValueForOption(noKeyOption),
-            bindingContext.ParseResult.GetValueForOption(diffBaseOption),
-            bindingContext.ParseResult.GetValueForOption(batchSizeOption),
-            bindingContext.ParseResult.GetValueForOption(databaseOption)!,
-            logLevel,
-            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
-            minAccessibility,
-            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
-        );
-
-        if (logLevel == LogLevel.Trace)
-        {
-            Console.WriteLine($"[VERB] {options}");
-        }
-
-        return options;
+        return logLevel;
     }
 }

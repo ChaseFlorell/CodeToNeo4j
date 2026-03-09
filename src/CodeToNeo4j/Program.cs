@@ -60,7 +60,7 @@ public class Program
             .WithDefaultValueFunc(() => false)
             .WithDescription("Skip NuGet dependency ingestion. Example: --skip-dependencies");
         var minAccessibilityOption = new Option<Accessibility>("--min-accessibility")
-            .WithDefaultValueFunc(() => Accessibility.Private)
+            .WithDefaultValueFunc(() => Accessibility.NotApplicable)
             .WithArgumentHelpName(string.Join('|', Accessibility.Private, Accessibility.Internal, Accessibility.Protected, Accessibility.Public))
             .WithDescription("The minimum accessibility level to index.");
         var includeExtensionsOption = new Option<string[]>("--include")
