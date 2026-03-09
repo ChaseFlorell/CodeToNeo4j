@@ -58,7 +58,6 @@ public class Foo : IBar
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -108,7 +107,6 @@ public class Foo : IBar
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -150,7 +148,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Private);
 
         // Assert
@@ -203,7 +200,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -253,7 +249,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -305,7 +300,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -356,7 +350,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert
@@ -406,7 +399,6 @@ public class Foo
             filePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Public);
 
         // Assert

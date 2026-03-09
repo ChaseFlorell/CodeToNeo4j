@@ -17,7 +17,6 @@ public class XamlHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSyst
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);

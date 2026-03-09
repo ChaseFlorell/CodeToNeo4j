@@ -218,7 +218,7 @@ public class SolutionProcessor(
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.Handle(document, compilation, repoKey, fileKey, filePath, symbols, relationships, databaseName, minAccessibility).ConfigureAwait(false);
+            await handler.Handle(document, compilation, repoKey, fileKey, filePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
         }
 
         var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
