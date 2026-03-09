@@ -13,7 +13,6 @@ public class Program
     {
         try
         {
-            Console.WriteLine("Processor Count: {0}", Environment.ProcessorCount);
             return await Run(args);
         }
         catch (Exception ex)
