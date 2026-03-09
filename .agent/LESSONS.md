@@ -45,6 +45,8 @@
 - For `Parallel.ForEachAsync`, use a thread-safe collection like `ConcurrentBag<T>` or a `Channel<T>` if multiple tasks are adding items simultaneously.
 - When ingesting data from multiple parallel sources (like projects in a solution), de-duplicate and sort (e.g., `.DistinctBy().OrderBy()`) the results before passing them to the database to ensure deterministic behavior and minimize transaction conflicts.
 - Always check `Project.SupportsCompilation` before attempting to get a `Compilation` in Roslyn to avoid unnecessary overhead or potential exceptions for non-compilable projects (like solution folders or some resource-only projects).
+- Be mindful of memory pressure when parallelizing `Project.GetCompilationAsync()`. Using a `MaxDegreeOfParallelism` based on `Environment.ProcessorCount` is generally safer than hardcoded high values like 20, as full compilation is memory-intensive.
+- Roslyn caches `Compilation` objects within the same `Solution` instance. Running `GetCompilationAsync()` during an initial dependency ingestion phase can warm up this cache, speeding up subsequent file-level processing that requires semantic information.
 
 ## .NET Global Tool Packaging
 - For .NET global tools, multi-targeting (e.g., `net10.0;net9.0;net8.0`) improves compatibility with older `dotnet` CLI versions that may not yet fully support the latest framework (like `net10.0`) during tool installation.
