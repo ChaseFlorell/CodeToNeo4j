@@ -4,6 +4,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -44,15 +45,20 @@ jobs:
     - name: Push to NuGet.org
       run: dotnet nuget push out/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_KEY }}
 
+    - name: Push to GitHub Packages
+      run: dotnet nuget push out/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
         name: Release v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
         body: |
-          [![Verify Build and Test](https://github.com/ChaseFlorell/CodeToNeo4j/actions/workflows/verify.yml/badge.svg)](https://github.com/ChaseFlorell/CodeToNeo4j/actions/workflows/verify.yml)[![NuGet](https://img.shields.io/nuget/v/CodeToNeo4j.svg)](https://www.nuget.org/packages/CodeToNeo4j)
-          
           ### Installation
+          Install from Nuget:
+          [![NuGet](https://img.shields.io/badge/nuget-v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}-blue)](https://www.nuget.org/packages/CodeToNeo4j/${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }})
+          
+          Install from CLI:
           ```bash
           dotnet tool install --global CodeToNeo4j --version ${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
           ```
