@@ -30,12 +30,14 @@ public static class OptionsBinderValidator
                 result.ErrorMessage = "--sln is required when using --purge-data without --no-key";
             }
 
-            if (result.GetValueForOption(skipDependenciesOption))
+            var skipResult = result.FindResultFor(skipDependenciesOption);
+            if (skipResult is not null && !skipResult.IsImplicit)
             {
                 result.ErrorMessage = "--skip-dependencies is not allowed when using --purge-data";
             }
 
-            if (result.GetValueForOption(minAccessibilityOption) != Accessibility.Private)
+            var minAccResult = result.FindResultFor(minAccessibilityOption);
+            if (minAccResult is not null && !minAccResult.IsImplicit)
             {
                 result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
             }
