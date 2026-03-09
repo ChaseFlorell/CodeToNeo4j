@@ -25,7 +25,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         ExtractScriptReferences(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
 
         // Extract IDs and Classes
-        ExtractIdsAndClasses(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        HtmlHandler.ExtractIdsAndClasses(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
     private static void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
@@ -61,7 +61,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         }
     }
 
-    private void ExtractIdsAndClasses(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractIdsAndClasses(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 

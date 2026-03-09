@@ -52,10 +52,7 @@ public class CSharpHandler(
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
-        if (typeSymbol is null) return;
-
-        if (typeSymbol.DeclaredAccessibility < minAccessibility && typeSymbol.DeclaredAccessibility != Accessibility.NotApplicable)
+        if (semanticModel.GetDeclaredSymbol(typeDecl) is not INamedTypeSymbol typeSymbol || (typeSymbol.DeclaredAccessibility < minAccessibility && typeSymbol.DeclaredAccessibility != Accessibility.NotApplicable))
         {
             return;
         }
@@ -96,45 +93,73 @@ public class CSharpHandler(
         }
     }
 
-    private void ProcessTypeDeclarationSyntax(SemanticModel semanticModel, string? repoKey, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, TypeDeclarationSyntax tds, Symbol typeRec, Accessibility minAccessibility)
+    private void ProcessTypeDeclarationSyntax(
+        SemanticModel semanticModel,
+        string? repoKey,
+        string fileKey,
+        string filePath,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
+        TypeDeclarationSyntax tds,
+        Symbol typeRec,
+        Accessibility minAccessibility)
     {
         foreach (var member in tds.Members)
         {
             if (member is EventFieldDeclarationSyntax efds)
             {
-                foreach (var variable in efds.Declaration.Variables)
-                {
-                    if (semanticModel.GetDeclaredSymbol(variable) is IEventSymbol variableSymbol)
-                    {
-                        ProcessMemberSymbol(variableSymbol,
-                            variable,
-                            semanticModel,
-                            repoKey,
-                            fileKey,
-                            filePath,
-                            symbolBuffer,
-                            relBuffer,
-                            typeRec,
-                            minAccessibility);
-                    }
-                }
+                ProcessEventFieldDeclaration(efds,
+                    semanticModel,
+                    repoKey,
+                    fileKey,
+                    filePath,
+                    symbolBuffer,
+                    relBuffer,
+                    typeRec,
+                    minAccessibility);
 
                 continue;
             }
 
             var memberSymbol = semanticModel.GetDeclaredSymbol(member);
-            if (memberSymbol is null)
+            if (memberSymbol is null && member is EventDeclarationSyntax eds)
             {
-                if (member is EventDeclarationSyntax eds)
-                {
-                    memberSymbol = semanticModel.GetDeclaredSymbol(eds);
-                }
+                memberSymbol = semanticModel.GetDeclaredSymbol(eds);
             }
 
             if (memberSymbol is not null)
             {
                 ProcessMemberSymbol(memberSymbol,
                     member,
+                    semanticModel,
+                    repoKey,
+                    fileKey,
+                    filePath,
+                    symbolBuffer,
+                    relBuffer,
+                    typeRec,
+                    minAccessibility);
+            }
+        }
+    }
+
+    private void ProcessEventFieldDeclaration(
+        EventFieldDeclarationSyntax efds,
+        SemanticModel semanticModel,
+        string? repoKey,
+        string fileKey,
+        string filePath,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec,
+        Accessibility minAccessibility)
+    {
+        foreach (var variable in efds.Declaration.Variables)
+        {
+            if (semanticModel.GetDeclaredSymbol(variable) is IEventSymbol variableSymbol)
+            {
+                ProcessMemberSymbol(variableSymbol,
+                    variable,
                     semanticModel,
                     repoKey,
                     fileKey,
@@ -159,9 +184,7 @@ public class CSharpHandler(
         Symbol typeRec,
         Accessibility minAccessibility)
     {
-        if (memberSymbol.DeclaredAccessibility < minAccessibility
-            && memberSymbol.DeclaredAccessibility != Accessibility.NotApplicable
-            && !IsExplicitInterfaceImplementation(memberSymbol))
+        if (CSharpHandler.IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
         {
             return;
         }
@@ -171,60 +194,117 @@ public class CSharpHandler(
 
         relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: memberRec.Key, RelType: "CONTAINS"));
 
+        ExtractMemberDependencies(memberSymbol,
+            memberSyntax,
+            semanticModel,
+            repoKey,
+            relBuffer,
+            typeRec);
+    }
+
+    private void ExtractMemberDependencies(
+        ISymbol memberSymbol,
+        SyntaxNode memberSyntax,
+        SemanticModel semanticModel,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec)
+    {
         if (memberSyntax is BaseMethodDeclarationSyntax bmds)
         {
-            foreach (var parameter in bmds.ParameterList.Parameters)
-            {
-                var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
-                if (parameterSymbol is null) continue;
-
-                var parameterType = parameterSymbol.Type;
-                if (parameterType is null or IErrorTypeSymbol) continue;
-
-                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, parameterType);
-                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-            }
-
-            if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol
-                } baseMethodSymbol
-                && baseMethodSymbol.MethodKind != MethodKind.Constructor)
-            {
-                var depKey = symbolMapper.BuildStableSymbolKey(repoKey, baseMethodSymbol.ReturnType);
-                relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-            }
+            ExtractMethodDependencies(bmds, semanticModel, repoKey, relBuffer, typeRec);
         }
-        else
-            switch (memberSymbol)
-            {
-                case IPropertySymbol { Type: not (null or IErrorTypeSymbol) } propertySymbol:
-                {
-                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, propertySymbol.Type);
-                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
 
-                    break;
-                }
-                case IEventSymbol eventSymbol:
-                {
-                    var eventType = eventSymbol.Type;
-                    if (eventType is INamedTypeSymbol { IsGenericType: true, Name: "Nullable" } namedType)
-                    {
-                        eventType = namedType.TypeArguments[0];
-                    }
-
-                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, eventType);
-                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-
-                    break;
-                }
-                case IFieldSymbol { Type: not (null or IErrorTypeSymbol) } fieldSymbol:
-                {
-                    var depKey = symbolMapper.BuildStableSymbolKey(repoKey, fieldSymbol.Type);
-                    relBuffer.Add(new Relationship(FromKey: typeRec.Key, ToKey: depKey, RelType: "DEPENDS_ON"));
-
-                    break;
-                }
-            }
+        switch (memberSymbol)
+        {
+            case IPropertySymbol propertySymbol:
+                ExtractPropertyDependencies(propertySymbol, repoKey, relBuffer, typeRec);
+                break;
+            case IEventSymbol eventSymbol:
+                ExtractEventDependencies(eventSymbol, repoKey, relBuffer, typeRec);
+                break;
+            case IFieldSymbol fieldSymbol:
+                ExtractFieldDependencies(fieldSymbol, repoKey, relBuffer, typeRec);
+                break;
+        }
     }
+
+    private void ExtractMethodDependencies(
+        BaseMethodDeclarationSyntax bmds,
+        SemanticModel semanticModel,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec)
+    {
+        foreach (var parameter in bmds.ParameterList.Parameters)
+        {
+            var parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
+            if (parameterSymbol?.Type is null or IErrorTypeSymbol) continue;
+
+            AddDependsOnRelationship(typeRec.Key, parameterSymbol.Type, repoKey, relBuffer);
+        }
+
+        if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
+            && baseMethodSymbol.MethodKind != MethodKind.Constructor)
+        {
+            AddDependsOnRelationship(typeRec.Key, baseMethodSymbol.ReturnType, repoKey, relBuffer);
+        }
+    }
+
+    private void ExtractPropertyDependencies(
+        IPropertySymbol propertySymbol,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec)
+    {
+        if (propertySymbol.Type is null or IErrorTypeSymbol) return;
+
+        AddDependsOnRelationship(typeRec.Key, propertySymbol.Type, repoKey, relBuffer);
+    }
+
+    private void ExtractEventDependencies(
+        IEventSymbol eventSymbol,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec)
+    {
+        var eventType = eventSymbol.Type;
+        if (eventType is INamedTypeSymbol { IsGenericType: true, Name: "Nullable" } namedType)
+        {
+            eventType = namedType.TypeArguments[0];
+        }
+
+        AddDependsOnRelationship(typeRec.Key, eventType, repoKey, relBuffer);
+    }
+
+    private void ExtractFieldDependencies(
+        IFieldSymbol fieldSymbol,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        Symbol typeRec)
+    {
+        if (fieldSymbol.Type is null or IErrorTypeSymbol)
+        {
+            return;
+        }
+
+        AddDependsOnRelationship(typeRec.Key, fieldSymbol.Type, repoKey, relBuffer);
+    }
+
+    private void AddDependsOnRelationship(
+        string fromKey,
+        ITypeSymbol typeSymbol,
+        string? repoKey,
+        ICollection<Relationship> relBuffer)
+    {
+        var depKey = symbolMapper.BuildStableSymbolKey(repoKey, typeSymbol);
+        relBuffer.Add(new Relationship(FromKey: fromKey, ToKey: depKey, RelType: "DEPENDS_ON"));
+    }
+
+    private static bool IsAccessibilityBelowMinimum(ISymbol symbol, Accessibility minAccessibility) =>
+        symbol.DeclaredAccessibility < minAccessibility
+        && symbol.DeclaredAccessibility != Accessibility.NotApplicable
+        && !IsExplicitInterfaceImplementation(symbol);
 
     private static bool IsExplicitInterfaceImplementation(ISymbol symbol) =>
         symbol switch

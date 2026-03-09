@@ -80,7 +80,7 @@ public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
         // Extract potential event handlers
         foreach (var attr in element.Attributes())
         {
-            if (IsEventHandler(attr.Name.LocalName))
+            if (XamlHandler.IsEventHandler(attr.Name.LocalName))
             {
                 if (Accessibility.Private >= minAccessibility)
                 {
@@ -110,7 +110,7 @@ public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
         }
     }
 
-    private bool IsEventHandler(string attrName)
+    private static bool IsEventHandler(string attrName)
     {
         // Common event naming patterns in XAML
         return attrName.EndsWith("Click") ||
