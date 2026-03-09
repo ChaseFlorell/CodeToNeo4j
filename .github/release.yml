@@ -1,0 +1,26 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+    authors:
+      - renovate-bot
+      - dependabot
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - feature
+        - enhancement
+    - title: "🐛 Bug Fixes"
+      labels:
+        - bug
+        - fix
+    - title: "🧰 Maintenance"
+      labels:
+        - chore
+        - refactor
+        - ci
+        - build
+    - title: "📦 Dependencies"
+      labels:
+        - dependency
+        - dependencies

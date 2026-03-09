@@ -14,9 +14,13 @@
     <File Path=".agent/INSTRUCTIONS.md" />
     <File Path=".agent/LESSONS.md" />
   </Folder>
-  <Folder Name="/.src/.github/" />
+  <Folder Name="/.src/.github/">
+    <File Path=".github\release.yml" />
+  </Folder>
   <Folder Name="/.src/.github/workflows/">
     <File Path=".github/workflows/build.yml" />
+    <File Path=".github\workflows\release.yml" />
+    <File Path=".github\workflows\verify.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
   <Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />
