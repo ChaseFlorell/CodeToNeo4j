@@ -39,7 +39,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         if (Accessibility.Public < minAccessibility) return;
 
         var name = element.Name.LocalName;
-        var lineInfo = (System.Xml.IXmlLineInfo)element;
+        System.Xml.IXmlLineInfo lineInfo = element;
         var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
 
         // Create a key that is somewhat unique

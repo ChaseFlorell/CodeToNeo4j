@@ -34,9 +34,12 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         }
     }
 
-    private void ProcessProject(XElement project, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ProcessProject(XElement project, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (Accessibility.Public < minAccessibility)
+        {
+            return;
+        }
 
         // Extract PropertyGroups
         var propertyGroups = project.Elements().Where(e => e.Name.LocalName == "PropertyGroup");
@@ -110,7 +113,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
             var include = projectRef.Attribute("Include")?.Value;
             if (string.IsNullOrEmpty(include)) continue;
 
-            var lineInfo = (System.Xml.IXmlLineInfo)projectRef;
+            System.Xml.IXmlLineInfo lineInfo = projectRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
             var key = $"{fileKey}:ProjectReference:{include}:{startLine}";
 

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".js";
 
@@ -28,12 +28,15 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
         ExtractImportsExports(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    private void ExtractFunctions(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractFunctions(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (Accessibility.Public < minAccessibility)
+        {
+            return;
+        }
 
         // Regex for: function name(...) or const name = (...) => or name: function(...)
-        var functionRegex = new Regex(@"(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?\(.*?\)\s*=>|([a-zA-Z0-9_$]+)\s*:\s*function)", RegexOptions.Multiline);
+        var functionRegex = FunctionRegex();
         var matches = functionRegex.Matches(content);
 
         foreach (Match match in matches)
@@ -44,7 +47,7 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
 
             if (string.IsNullOrEmpty(name)) continue;
 
-            var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
+            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
             var key = $"{fileKey}:Function:{name}:{startLine}";
 
             var record = new Symbol(
@@ -66,16 +69,16 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
         }
     }
 
-    private void ExtractImportsExports(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractImportsExports(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
         // Extract imports
-        var importRegex = new Regex(@"import\s+.*?\s+from\s+['""](.*?)['""]", RegexOptions.Multiline);
+        var importRegex = ImportRegex();
         foreach (Match match in importRegex.Matches(content))
         {
             var module = match.Groups[1].Value;
-            var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
+            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
             var key = $"{fileKey}:Import:{module}:{startLine}";
 
             var record = new Symbol(
@@ -96,4 +99,9 @@ public class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fi
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
         }
     }
+
+    [GeneratedRegex(@"(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?\(.*?\)\s*=>|([a-zA-Z0-9_$]+)\s*:\s*function)", RegexOptions.Multiline)]
+    private static partial Regex FunctionRegex();
+    [GeneratedRegex(@"import\s+.*?\s+from\s+['""](.*?)['""]", RegexOptions.Multiline)]
+    private static partial Regex ImportRegex();
 }
