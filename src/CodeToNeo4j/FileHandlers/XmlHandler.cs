@@ -26,7 +26,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root == null) return;
 
-            ProcessElement(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            XmlHandler.ProcessElement(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
         catch (Exception)
         {
@@ -34,7 +34,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         }
     }
 
-    private void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -66,7 +66,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         // but here we'll do full recursion like XamlHandler.
         foreach (var child in element.Elements())
         {
-            ProcessElement(child, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            XmlHandler.ProcessElement(child, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 }

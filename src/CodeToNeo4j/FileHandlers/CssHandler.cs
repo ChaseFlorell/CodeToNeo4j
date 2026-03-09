@@ -21,10 +21,10 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
 
-        ExtractSelectors(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        CssHandler.ExtractSelectors(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    private void ExtractSelectors(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractSelectors(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 

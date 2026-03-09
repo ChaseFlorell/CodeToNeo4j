@@ -69,7 +69,7 @@ public class SolutionProcessor(
             SingleReader = true
         });
 
-        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 20 };
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) };
         var consumerTask = RunConsumer(channel.Reader, totalFiles, databaseName, batchSize);
 
         await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, t) =>
