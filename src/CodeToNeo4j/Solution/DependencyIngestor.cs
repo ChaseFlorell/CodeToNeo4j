@@ -12,10 +12,15 @@ public class DependencyIngestor(
     public async Task IngestDependencies(Microsoft.CodeAnalysis.Solution solution, string? repoKey, string databaseName)
     {
         logger.LogInformation("Ingesting NuGet dependencies...");
+
+        // Parallelizing project compilation can be memory intensive.
+        // We'll process projects in batches to avoid overwhelming the system while still being faster than sequential.
         var dependencies = new ConcurrentBag<Dependency>();
         var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 20,
+            // Reduced from 20 to a more balanced number based on processor count to avoid high memory pressure
+            // while still maintaining high throughput.
+            MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount),
             CancellationToken = CancellationToken.None
         };
 
@@ -40,6 +45,11 @@ public class DependencyIngestor(
             return;
         }
 
+        // Project.GetCompilationAsync is expensive because it can trigger a full build.
+        // However, for extracting NuGet dependencies, Roslyn must at least resolve metadata references.
+        // We use GetCompilationAsync but rely on Roslyn's internal caching.
+        // Once a project is compiled, subsequent calls for the same project in the same solution 
+        // will be much faster.
         var compilation = await project.GetCompilationAsync(token).ConfigureAwait(false);
         if (compilation is null)
         {
