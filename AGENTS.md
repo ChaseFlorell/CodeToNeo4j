@@ -1,14 +1,14 @@
 ### 1. Plan
-- Load `.agent/INSTRUCTIONS.md` and `.agent/LESSONS.md` into your brain
-- If something goes sideways, STOP and re-plan immediately - don't keep pushing
+- Load `REQUIREMENTS.md`, `.agent/INSTRUCTIONS.md` and `.agent/LESSONS.md` into your brain
+- If something goes sideways, STOP and re-plan immediately, don't keep pushing
 - Use plan mode for verification steps, not just building
 - Write detailed specs upfront to reduce ambiguity
-- Double check your work before executing any changes
+- Double-check your work before executing any changes
 - Ask questions upfront before executing any changes
 - As best as you can, ask for execution permissions upfront before executing any changes
 
 ### 2. Subagent Strategy
-- Use subagents liberally to keep main context window clean
+- Use subagents liberally to keep the main context window clean
 - Offload research, exploration, and parallel analysis to subagents
 - For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
@@ -16,19 +16,20 @@
 ### 3. Self-Improvement Loop
 - After ANY correction from the user: update `.agent/LESSONS.md` with the pattern
 - Write rules for yourself that prevent the same mistake
-- Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
+- Ruthlessly iterate on these lessons until the mistake rate drops
+- Review lessons at session start for a relevant project
 
 ### 4. Verification Before Done
 - Never mark a task complete without proving it works
-- Diff behavior between main and your changes when relevant
-- Ask yourself: "Would a staff engineer approve this?"
+- Diff behavior between the `main` branch and your changes when relevant
+- Ask yourself: "Would a senior staff engineer approve this?"
 - Run tests, check logs, demonstrate correctness
+- Write new tests for new features and bug fixes
 
 ### 5. Demand Elegance (Balanced)
 - For non-trivial changes: pause and ask "is there a more elegant way?"
 - If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes - don't over-engineer
+- Skip this for simple, obvious fixes, don't overengineer
 - Challenge your own work before presenting it
 
 ### 6. Autonomous Bug Fixing

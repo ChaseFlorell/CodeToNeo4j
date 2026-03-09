@@ -20,6 +20,7 @@
   <Folder Name="/.src/.github/workflows/">
     <File Path=".github/workflows/build.yml" />
     <File Path=".github\workflows\release.yml" />
+    <File Path=".github\workflows\require-label.yml" />
     <File Path=".github\workflows\verify.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
