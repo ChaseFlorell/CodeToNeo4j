@@ -17,7 +17,6 @@ public class RazorHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);

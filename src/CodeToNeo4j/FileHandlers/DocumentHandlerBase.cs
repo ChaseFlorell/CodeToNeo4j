@@ -19,11 +19,10 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility)
     {
         Interlocked.Increment(ref _numberOfFilesHandled);
-        return HandleFile(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, databaseName, minAccessibility);
+        return HandleFile(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
     protected abstract Task HandleFile(
@@ -34,19 +33,12 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility);
 
-    protected async Task<string> GetContent(TextDocument? document, string filePath)
-    {
-        if (document is not null)
-        {
-            var sourceText = await document.GetTextAsync().ConfigureAwait(false);
-            return sourceText.ToString();
-        }
-
-        return await fileSystem.File.ReadAllTextAsync(filePath).ConfigureAwait(false);
-    }
+    protected async Task<string> GetContent(TextDocument? document, string filePath) =>
+        document is not null
+            ? await document.GetTextAsync().ContinueWith(x => x.Result.ToString()).ConfigureAwait(false)
+            : await fileSystem.File.ReadAllTextAsync(filePath).ConfigureAwait(false);
 
     private int _numberOfFilesHandled;
 }

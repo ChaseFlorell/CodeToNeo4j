@@ -17,14 +17,18 @@ public class CSharpHandler(ISymbolMapper symbolMapper, IFileSystem fileSystem) :
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility)
     {
-        var doc = document as Document;
-        if (doc is null || compilation is null) return;
+        if (document is not Document doc || compilation is null)
+        {
+            return;
+        }
 
         var syntaxTree = await doc.GetSyntaxTreeAsync().ConfigureAwait(false);
-        if (syntaxTree is null) return;
+        if (syntaxTree is null)
+        {
+            return;
+        }
 
         var rootNode = await syntaxTree.GetRootAsync().ConfigureAwait(false);
         var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);

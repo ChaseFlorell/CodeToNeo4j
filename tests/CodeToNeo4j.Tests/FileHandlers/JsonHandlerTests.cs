@@ -31,7 +31,6 @@ public class JsonHandlerTests
             filePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
-            databaseName: "neo4j",
             minAccessibility: Accessibility.Private);
 
         // Assert

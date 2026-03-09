@@ -14,7 +14,6 @@ public interface IDocumentHandler
         string filePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
-        string databaseName,
         Accessibility minAccessibility);
 
     int NumberOfFilesHandled { get; }
