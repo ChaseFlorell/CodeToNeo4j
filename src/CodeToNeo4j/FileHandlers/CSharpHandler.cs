@@ -46,6 +46,9 @@ public class CSharpHandler(
                 }
 
                 symbolProcessor.ProcessSyntaxTree(syntaxTree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+                
+                // Re-get the fileKey in case it was updated by ProcessSyntaxTree if we ever decide to do that, 
+                // but actually CSharpHandler computes it.
             }
         }
 

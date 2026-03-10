@@ -34,6 +34,62 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
     {
         var rootNode = syntaxTree.GetRoot();
 
+        // Process using directives for dependencies
+        foreach (var usingDirective in rootNode.DescendantNodes().OfType<UsingDirectiveSyntax>())
+        {
+            if (usingDirective.Name == null) continue;
+            var symbol = semanticModel.GetSymbolInfo(usingDirective.Name).Symbol;
+
+            if (symbol != null)
+            {
+                AddDependsOnIfExternal(symbol, semanticModel.Compilation.Assembly, repoKey, fileKey, relBuffer);
+            }
+            else
+            {
+                // If the symbol is null, it might be because the assembly is not referenced, 
+                // but we still want to capture it if it's a using
+                var depKey = $"{repoKey}:{usingDirective.Name}";
+                relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: depKey, RelType: "DEPENDS_ON"));
+            }
+        }
+
+        // Process global usings from the compilation (for the current file)
+        if (semanticModel.Compilation is CSharpCompilation)
+        {
+            // Usings from the current file are already processed.
+            // We need to find usings that are NOT in the current file but are global usings in the compilation.
+            // Roslyn doesn't make it super easy to find "all global usings that apply to this file but are defined elsewhere" 
+            // through a simple public API without internal access.
+            // However, we can look at all syntax trees in the compilation.
+            foreach (var tree in semanticModel.Compilation.SyntaxTrees)
+            {
+                if (string.Equals(tree.FilePath, syntaxTree.FilePath, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var root = tree.GetRoot();
+                foreach (var u in root.DescendantNodes().OfType<UsingDirectiveSyntax>())
+                {
+                    if (u.GlobalKeyword.IsKind(SyntaxKind.GlobalKeyword) && u.Name != null)
+                    {
+                        var globalSymbol = semanticModel.Compilation.GetSemanticModel(tree).GetSymbolInfo(u.Name).Symbol;
+                        
+                        // Fallback if the symbol is null (assembly not referenced)
+                        if (globalSymbol == null)
+                        {
+                            var depKey = $"{repoKey}:{u.Name}";
+                            if (!relBuffer.Any(r => r.FromKey == fileKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+                            {
+                                relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: depKey, RelType: "DEPENDS_ON"));
+                            }
+                        }
+                        else
+                        {
+                            AddDependsOnIfExternal(globalSymbol, semanticModel.Compilation.Assembly, repoKey, fileKey, relBuffer);
+                        }
+                    }
+                }
+            }
+        }
+
         foreach (var typeDecl in rootNode.DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
         {
             if (string.IsNullOrEmpty(fileNamespace))
@@ -347,6 +403,39 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
         if (fieldSymbol.Type is not (null or IErrorTypeSymbol))
         {
             AddDependsOnRelationship(typeRec.Key, fieldSymbol.Type, repoKey, relBuffer);
+        }
+    }
+
+    private void AddDependsOnIfExternal(
+        ISymbol? symbol,
+        IAssemblySymbol currentAssembly,
+        string? repoKey,
+        string fromKey,
+        ICollection<Relationship> relBuffer)
+    {
+        if (symbol == null) return;
+
+        if (symbol is INamespaceSymbol nsSymbol)
+        {
+            if (nsSymbol.ContainingAssembly != null && !SymbolEqualityComparer.Default.Equals(nsSymbol.ContainingAssembly, currentAssembly))
+            {
+                var depKey = $"{repoKey}:{nsSymbol.ToDisplayString()}";
+                if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+                {
+                    relBuffer.Add(new Relationship(FromKey: fromKey, ToKey: depKey, RelType: "DEPENDS_ON"));
+                }
+            }
+        }
+        else if (symbol is INamedTypeSymbol typeSymbol)
+        {
+            if (typeSymbol.ContainingAssembly != null && !SymbolEqualityComparer.Default.Equals(typeSymbol.ContainingAssembly, currentAssembly))
+            {
+                var depKey = $"{repoKey}:{typeSymbol.ToDisplayString()}";
+                if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+                {
+                    relBuffer.Add(new Relationship(FromKey: fromKey, ToKey: depKey, RelType: "DEPENDS_ON"));
+                }
+            }
         }
     }
 
