@@ -40,7 +40,7 @@ public partial class RazorHandler(
                 var isMappedToThisFile = string.Equals(tree.FilePath, filePath, StringComparison.OrdinalIgnoreCase);
                 if (!isMappedToThisFile)
                 {
-                    var root = tree.GetRoot();
+                    var root = await tree.GetRootAsync();
                     var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
                     if (firstType != null)
                     {

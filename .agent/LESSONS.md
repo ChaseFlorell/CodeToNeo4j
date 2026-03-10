@@ -145,3 +145,8 @@
 - **Syntax Tree Detection**: To find the generated C# code associated with a specific `.razor` or `.xaml` file, iterate through `compilation.SyntaxTrees` and check if any type declaration (`BaseTypeDeclarationSyntax`) in the tree has a `MappedLineSpan` pointing to the original file path.
 - **Shared Processor Logic**: Extracting C# symbol processing logic into a shared service (e.g., `IRoslynSymbolProcessor`) allows it to be reused across different handlers (`CSharpHandler`, `RazorHandler`, `XamlHandler`). This ensures consistent extraction of members, accessibility, and dependencies regardless of the source file type.
 - **Field and Event Field Declarations**: In Roslyn, `FieldDeclarationSyntax` and `EventFieldDeclarationSyntax` do not directly represent a single symbol; they can contain multiple variable declarations. Always iterate over `fds.Declaration.Variables` and call `GetDeclaredSymbol` on each variable to correctly extract all fields and events.
+
+## XAML Namespace Handling
+- XAML files can use various XML namespaces for the `x` prefix (e.g., `http://schemas.microsoft.com/winfx/2006/xaml`, `http://schemas.microsoft.com/winfx/2009/xaml`) and default presentation namespaces (MAUI, Xamarin.Forms, WPF, etc.).
+- When extracting XAML attributes like `x:Class`, `x:Name`, or `x:Key`, check across all known XAML namespaces instead of hardcoding a single one.
+- Attributes without a prefix (e.g., `Name="Foo"`) are in the empty namespace but should still be checked as they are often used as an alternative to `x:Name` in many XAML frameworks.

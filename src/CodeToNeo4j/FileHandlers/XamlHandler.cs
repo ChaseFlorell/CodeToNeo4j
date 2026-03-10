@@ -32,8 +32,7 @@ public class XamlHandler(
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root == null) return null;
 
-            var xNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
-            var xClass = xdoc.Root.Attribute(XName.Get("Class", xNamespace))?.Value;
+            var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
             fileNamespace = xClass != null && xClass.Contains('.') 
                 ? xClass.Substring(0, xClass.LastIndexOf('.')) 
                 : null;
@@ -82,9 +81,8 @@ public class XamlHandler(
         var keySuffix = "";
 
         // Look for x:Key or x:Name
-        var xNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var xNameAttr = element.Attribute(XName.Get("Name", xNamespace)) ?? element.Attribute("Name");
-        var xKeyAttr = element.Attribute(XName.Get("Key", xNamespace));
+        var xNameAttr = GetXamlAttribute(element, "Name");
+        var xKeyAttr = GetXamlAttribute(element, "Key");
 
         if (xNameAttr != null)
         {
@@ -154,6 +152,14 @@ public class XamlHandler(
         }
     }
 
+    private static XAttribute? GetXamlAttribute(XElement element, string localName)
+    {
+        return element.Attributes().FirstOrDefault(a =>
+            a.Name.LocalName == localName &&
+            (a.Name.NamespaceName == string.Empty || XamlNamespaces.Contains(a.Name.NamespaceName))
+        );
+    }
+
     private static bool IsEventHandler(string attrName)
     {
         // Common event naming patterns in XAML
@@ -164,4 +170,15 @@ public class XamlHandler(
                attrName.EndsWith("Released") ||
                attrName == "Command";
     }
+
+    private static readonly string[] XamlNamespaces =
+    [
+        "http://schemas.microsoft.com/winfx/2009/xaml",
+        "http://schemas.microsoft.com/winfx/2006/xaml",
+        "http://schemas.microsoft.com/dotnet/2021/maui",
+        "http://schemas.microsoft.com/winfx/2006/xaml/presentation",
+        "http://xamarin.com/schemas/2014/forms",
+        "http://schemas.microsoft.com/client/2007",
+        "https://github.com/avaloniaui"
+    ];
 }
