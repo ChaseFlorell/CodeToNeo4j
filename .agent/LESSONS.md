@@ -120,6 +120,8 @@
 - If a project (like a test project) targets a framework version (e.g., `net9.0`) that is not installed on the runner, `dotnet test` will fail to launch the test host, even if a newer SDK (e.g., `net10.0`) is present, unless roll-forward is allowed.
 - **Centralizing Frameworks**: Consolidating `TargetFramework` into a root `Directory.Build.props` ensures all projects in the solution target the same version, reducing the risk of "framework not found" errors on specific runners.
 - **Inheritance**: To ensure projects correctly "pick up" settings from `Directory.Build.props`, remove redundant properties (like `<TargetFramework>`, `<ImplicitUsings>`, or `<Nullable>`) from the individual `.csproj` files. This makes the props file the single source of truth.
+- **Dotnet Global Tools on Self-Hosted Runners**: On self-hosted runners, the global dotnet tools directory (`$HOME/.dotnet/tools`) might not be in the `PATH` of the shell session executing the workflow steps. Always explicitly add this directory to the `GITHUB_PATH` after installing or updating a global tool (e.g., `echo "$HOME/.dotnet/tools" >> $GITHUB_PATH`).
+- **Idempotent Tool Installation**: Use `dotnet tool update --global` instead of `dotnet tool install --global` in CI/CD workflows. This ensures the tool is updated to the latest version if already present, preventing errors that occur when attempting to install a tool that is already installed.
 
 ## Coding and Testing Standards
 - **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
@@ -127,7 +129,6 @@
 - **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
 - **Explicit interface implementations**: Explicit interface implementations (covered under "Roslyn and C# Syntax").
 
-## Externalizing GitHub Action Logic
-- For complex GitHub Actions logic (e.g., parsing test results, managing issues), move the JavaScript code into dedicated scripts in `.github/scripts/`.
-- This improves readability of the workflow YAML files and allows for better syntax highlighting, linting, and reuse of the logic.
-- Use `actions/github-script` to invoke these scripts, passing the `github` and `context` objects to maintain access to the GitHub API and workflow context.
+## GitHub Action Logic and Self-Hosted Runners
+- **TRX File Accumulation**: On self-hosted runners, using `clean: false` in `actions/checkout` means that untracked directories like `./TestResults` from previous runs may persist. If `dotnet test` generates unique filenames for TRX files (the default behavior), these files will accumulate. Always clear the `TestResults` directory before running tests to ensure accurate metrics.
+- **Comment Pagination**: When using `github.rest.issues.listComments` to find and update a bot comment, increase `per_page` (e.g., to 100) to ensure the target comment is found even in busy PRs. Using `reverse().find()` is a more robust way to find the most recent bot comment for updates.

@@ -20,7 +20,9 @@ jobs:
           global-json-file: global.json
 
       - name: Install CodeToNeo4j
-        run: dotnet tool install --global CodeToNeo4j
+        run: |
+          dotnet tool update --global CodeToNeo4j
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Run CodeToNeo4j
         run: |

@@ -31,7 +31,9 @@ jobs:
       run: dotnet build --no-restore -c Release
 
     - name: Test
-      run: dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults
+      run: |
+        rm -rf ./TestResults
+        dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults
 
     - name: Test Summary PR Comment
       if: github.event_name == 'pull_request' && always()
