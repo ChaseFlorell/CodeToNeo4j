@@ -21,6 +21,7 @@ UNWIND (CASE WHEN file.authors IS NULL OR size(file.authors) = 0 THEN [null] ELS
 WITH f, author
 WHERE author IS NOT NULL
 MERGE (a:Author {name: author.name})
+SET a.CodeToNeo4j = true
 MERGE (a)-[r:AUTHORED]->(f)
 SET r.firstCommit = datetime(author.firstCommit),
     r.lastCommit = datetime(author.lastCommit),

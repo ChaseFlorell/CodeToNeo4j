@@ -1,6 +1,6 @@
 UNWIND $commits AS commit
 MERGE (c:Commit {hash: commit.hash})
-SET c.date = datetime(commit.date), c.message = commit.message, c.CodeToNeo4j = true
+SET c.date = datetime(commit.date), c.message = commit.message, c.author = commit.authorName, c.CodeToNeo4j = true
 WITH c, commit
 OPTIONAL MATCH (p:Project {key: commit.repoKey})
 WHERE commit.repoKey IS NOT NULL
