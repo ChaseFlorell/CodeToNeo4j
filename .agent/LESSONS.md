@@ -114,6 +114,13 @@
 - Always include `pull_request` triggers in the workflow to ensure that all changes are validated by tests before they can be merged into the main branch.
 - Use `dotnet test --no-build` in the CI pipeline to avoid redundant compilation after the initial `dotnet build` step.
 
+## .NET SDK and Target Framework Consistency on Self-Hosted Runners
+- When using self-hosted runners, the .NET SDK version specified in `global.json` should align with the installed SDKs on the runner.
+- If `global.json` has `rollForward: disable`, the runner MUST have the exact SDK version (or at least the same major/minor if not using `latestFeature`).
+- If a project (like a test project) targets a framework version (e.g., `net9.0`) that is not installed on the runner, `dotnet test` will fail to launch the test host, even if a newer SDK (e.g., `net10.0`) is present, unless roll-forward is allowed.
+- **Centralizing Frameworks**: Consolidating `TargetFramework` into a root `Directory.Build.props` ensures all projects in the solution target the same version, reducing the risk of "framework not found" errors on specific runners.
+- **Inheritance**: To ensure projects correctly "pick up" settings from `Directory.Build.props`, remove redundant properties (like `<TargetFramework>`, `<ImplicitUsings>`, or `<Nullable>`) from the individual `.csproj` files. This makes the props file the single source of truth.
+
 ## Coding and Testing Standards
 - **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).
 - **Unit Test Isolation**: Do not use constructors for global setup in unit tests to prevent state leakage and ensure isolation. Use `TestCaseSource` or local setup within each test.
