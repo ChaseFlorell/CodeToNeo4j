@@ -10,11 +10,44 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 public class RazorHandlerTests
 {
     [Fact]
+    public async Task GivenRazorWithNamespace_WhenHandleCalled_ThenCapturesNamespace()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new RazorHandler(symbolProcessor, fileSystem);
+        var content = @"@namespace MyProject.Pages
+<h1>Hello</h1>";
+        var filePath = "test.razor";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.razor",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.ShouldBe("MyProject.Pages");
+    }
+
+    [Fact]
     public async Task GivenRazorWithDirectives_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new RazorHandler(fileSystem);
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new RazorHandler(symbolProcessor, fileSystem);
         var content = @"
 @using System.Text
 @inject IMyService MyService
@@ -32,8 +65,8 @@ public class RazorHandlerTests
             document: null,
             compilation: null,
             repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath,
+            fileKey: "test.razor",
+            filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);

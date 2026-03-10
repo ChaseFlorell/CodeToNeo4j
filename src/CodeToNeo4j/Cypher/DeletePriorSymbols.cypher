@@ -1,3 +1,3 @@
-UNWIND $fileKeys AS fileKey
-MATCH (f:File {key:fileKey})-[:DECLARES]->(s:Symbol)
+UNWIND $filePaths AS filePath
+MATCH (f:File {path:filePath})-[:DECLARES]->(s:Symbol)
 DETACH DELETE s

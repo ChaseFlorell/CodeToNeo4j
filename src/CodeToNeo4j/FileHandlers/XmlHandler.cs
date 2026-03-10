@@ -9,32 +9,36 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
 {
     public override string FileExtension => ".xml";
 
-    protected override async Task HandleFile(
+    protected override async Task<string?> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = string.Empty;
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return;
+            if (xdoc.Root == null) return fileNamespace;
 
-            XmlHandler.ProcessElement(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            XmlHandler.ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
         catch (Exception)
         {
             // Fail gracefully for malformed XML
         }
+
+        return fileNamespace;
     }
 
-    private static void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -52,11 +56,12 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
             Fqn: name,
             Accessibility: "Public",
             FileKey: fileKey,
-            FilePath: filePath,
+            RelativePath: relativePath,
             StartLine: startLine,
             EndLine: startLine,
             Documentation: null,
-            Comments: null
+            Comments: null,
+            Namespace: fileNamespace
         );
 
         symbolBuffer.Add(record);
@@ -66,7 +71,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         // but here we'll do full recursion like XamlHandler.
         foreach (var child in element.Elements())
         {
-            XmlHandler.ProcessElement(child, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            XmlHandler.ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 }

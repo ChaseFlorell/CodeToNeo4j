@@ -9,22 +9,26 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
 {
     public override string FileExtension => ".css";
 
-    protected override async Task HandleFile(
+    protected override async Task<string?> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = string.Empty;
 
-        CssHandler.ExtractSelectors(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        CssHandler.ExtractSelectors(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+
+        return fileNamespace;
     }
 
-    private static void ExtractSelectors(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -46,11 +50,12 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
                 Fqn: selector,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);

@@ -64,11 +64,11 @@ public class Neo4jService(
         }
     }
 
-    public async Task MarkFileAsDeleted(string fileKey, string databaseName)
+    public async Task MarkFileAsDeleted(string filePath, string databaseName)
     {
-        logger.LogDebug("Marking file and its symbols as deleted for fileKey: {FileKey} in database: {DatabaseName}", fileKey, databaseName);
+        logger.LogDebug("Marking file and its symbols as deleted for filePath: {FilePath} in database: {DatabaseName}", filePath, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { fileKey }).ConfigureAwait(false); }).ConfigureAwait(false);
+        await session.ExecuteWriteAsync(async tx => { await tx.RunWithRetry(cypherService.GetCypher(Queries.MarkFileAsDeleted), new { filePath }).ConfigureAwait(false); }).ConfigureAwait(false);
     }
 
     public async Task UpsertCommits(string? repoKey, string solutionRoot, IEnumerable<CommitMetadata> commits, string databaseName)
@@ -86,7 +86,7 @@ public class Neo4jService(
                 var relativePath = fileService.GetRelativePath(solutionRoot, f);
                 return new Dictionary<string, object?>
                 {
-                    ["key"] = $"{repoKey}:{relativePath}",
+                    ["key"] = Path.GetFileName(f),
                     ["path"] = relativePath
                 };
             }).ToArray()
@@ -122,7 +122,8 @@ public class Neo4jService(
         var fileBatch = files.Select(file => new Dictionary<string, object?>
         {
             ["fileKey"] = file.FileKey,
-            ["path"] = file.FilePath,
+            ["path"] = file.RelativePath,
+            ["namespace"] = file.Namespace,
             ["hash"] = file.FileHash,
             ["created"] = file.Metadata.Created.ToString("O"),
             ["lastModified"] = file.Metadata.LastModified.ToString("O"),
@@ -145,12 +146,12 @@ public class Neo4jService(
 
         logger.LogDebug("Flushing {Count} files to Neo4j (Database: {DatabaseName})...", fileBatch.Length, databaseName);
 
-        var fileKeys = fileBatch.Select(f => f["fileKey"]).ToArray();
+        var filePaths = fileBatch.Select(f => f["path"]).ToArray();
 
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
         await session.ExecuteWriteAsync(async tx =>
         {
-            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { fileKeys }).ConfigureAwait(false);
+            await tx.RunWithRetry(cypherService.GetCypher(Queries.DeletePriorSymbols), new { filePaths }).ConfigureAwait(false);
             await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertFile), new { files = fileBatch }).ConfigureAwait(false);
         }).ConfigureAwait(false);
     }
@@ -165,7 +166,8 @@ public class Neo4jService(
             ["fqn"] = s.Fqn,
             ["accessibility"] = s.Accessibility,
             ["fileKey"] = s.FileKey,
-            ["filePath"] = s.FilePath,
+            ["filePath"] = s.RelativePath,
+            ["namespace"] = s.Namespace,
             ["startLine"] = s.StartLine,
             ["endLine"] = s.EndLine,
             ["documentation"] = s.Documentation,

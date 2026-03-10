@@ -2,39 +2,81 @@ using System.IO.Abstractions;
 using System.Xml.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class XamlHandler(
+    IRoslynSymbolProcessor symbolProcessor,
+    IFileSystem fileSystem)
+    : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xaml";
 
-    protected override async Task HandleFile(
+    protected override async Task<string?> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        string? fileNamespace = null;
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return;
+            if (xdoc.Root == null) return null;
 
-            ProcessElement(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            var xNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+            var xClass = xdoc.Root.Attribute(XName.Get("Class", xNamespace))?.Value;
+            fileNamespace = xClass != null && xClass.Contains('.') 
+                ? xClass.Substring(0, xClass.LastIndexOf('.')) 
+                : null;
+
+            // Extract XML elements via traditional parsing
+            ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
         catch (Exception)
         {
-            // Logging would be good here, but for now we'll just fail gracefully
+            // Ignore XML parse errors
         }
+
+        // Use Roslyn to extract members from generated code
+        if (compilation is not null)
+        {
+            foreach (var tree in compilation.SyntaxTrees)
+            {
+                // XAML generated files (.g.cs) also map back to the .xaml file.
+                // We'll check if any type declared in this tree maps back to our file.
+                var isMappedToThisFile = string.Equals(tree.FilePath, filePath, StringComparison.OrdinalIgnoreCase);
+                if (!isMappedToThisFile)
+                {
+                    var root = tree.GetRoot();
+                    var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+                    if (firstType != null)
+                    {
+                        var mappedSpan = firstType.GetLocation().GetMappedLineSpan();
+                        isMappedToThisFile = mappedSpan.IsValid && string.Equals(mappedSpan.Path, filePath, StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+
+                if (isMappedToThisFile)
+                {
+                    var semanticModel = compilation.GetSemanticModel(tree, ignoreAccessibility: true);
+                    symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+                }
+            }
+        }
+
+        return fileNamespace;
     }
 
-    private void ProcessElement(XElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         var name = element.Name.LocalName;
         var keySuffix = "";
@@ -66,11 +108,12 @@ public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
                 Fqn: $"{name}{keySuffix}",
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);
@@ -92,11 +135,12 @@ public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
                         Fqn: attr.Value,
                         Accessibility: "Private",
                         FileKey: fileKey,
-                        FilePath: filePath,
+                        RelativePath: relativePath,
                         StartLine: startLine,
                         EndLine: startLine,
                         Documentation: null,
-                        Comments: null
+                        Comments: null,
+                        Namespace: fileNamespace
                     );
                     symbolBuffer.Add(handlerRecord);
                     relBuffer.Add(new Relationship(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
@@ -106,7 +150,7 @@ public class XamlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSyste
 
         foreach (var child in element.Elements())
         {
-            ProcessElement(child, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 

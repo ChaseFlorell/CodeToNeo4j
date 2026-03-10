@@ -132,3 +132,16 @@
 ## GitHub Action Logic and Self-Hosted Runners
 - **TRX File Accumulation**: On self-hosted runners, using `clean: false` in `actions/checkout` means that untracked directories like `./TestResults` from previous runs may persist. If `dotnet test` generates unique filenames for TRX files (the default behavior), these files will accumulate. Always clear the `TestResults` directory before running tests to ensure accurate metrics.
 - **Comment Pagination**: When using `github.rest.issues.listComments` to find and update a bot comment, increase `per_page` (e.g., to 100) to ensure the target comment is found even in busy PRs. Using `reverse().find()` is a more robust way to find the most recent bot comment for updates.
+
+## Path Normalization and Relative Path Ingestion
+- When indexing code for a graph database like Neo4j, always use relative paths for file and symbol identifiers (`key` and `path`). Absolute paths (e.g., `/Users/chaseflorell/projects/...`) vary between different CI runners and local machines, leading to duplicated or inconsistent data.
+- Compute relative paths using a stable base like the solution file's directory (`solutionRoot`).
+- Ensure both the base path and the target file path are normalized (e.g., replacing backslashes with forward slashes) before computing the relative path.
+- In `SolutionProcessor.cs`, explicitly compute and pass the `relativePath` to all handlers and mapper services to prevent accidental use of absolute paths.
+- Renaming properties from `FilePath` to `RelativePath` in data records (like `Symbol` and `FileMetaData`) makes the intent clear and helps catch accidental usage of absolute paths through compilation errors in constructor calls using named parameters.
+
+## Roslyn Extraction for Mapped Files (Razor/Xaml)
+- **Mapped Line Spans**: When using Roslyn to analyze generated C# code (e.g., from `.razor` or `.xaml` files), use `GetMappedLineSpan()` instead of `GetLineSpan()` on `Location` objects. This allows mapping the generated C# symbols back to their original source locations in the `.razor` or `.xaml` files.
+- **Syntax Tree Detection**: To find the generated C# code associated with a specific `.razor` or `.xaml` file, iterate through `compilation.SyntaxTrees` and check if any type declaration (`BaseTypeDeclarationSyntax`) in the tree has a `MappedLineSpan` pointing to the original file path.
+- **Shared Processor Logic**: Extracting C# symbol processing logic into a shared service (e.g., `IRoslynSymbolProcessor`) allows it to be reused across different handlers (`CSharpHandler`, `RazorHandler`, `XamlHandler`). This ensures consistent extraction of members, accessibility, and dependencies regardless of the source file type.
+- **Field and Event Field Declarations**: In Roslyn, `FieldDeclarationSyntax` and `EventFieldDeclarationSyntax` do not directly represent a single symbol; they can contain multiple variable declarations. Always iterate over `fds.Declaration.Variables` and call `GetDeclaredSymbol` on each variable to correctly extract all fields and events.

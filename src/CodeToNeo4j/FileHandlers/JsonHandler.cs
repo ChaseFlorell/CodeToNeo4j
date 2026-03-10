@@ -12,30 +12,34 @@ public class JsonHandler(
 {
     public override string FileExtension => ".json";
 
-    protected override async Task HandleFile(
+    protected override async Task<string?> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = string.Empty;
 
         try
         {
             using var jsonDoc = JsonDocument.Parse(content);
-            ProcessElement(jsonDoc.RootElement, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, "");
+            ProcessElement(jsonDoc.RootElement, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, "");
         }
         catch (JsonException)
         {
             logger.LogWarning("Failed to parse JSON file: {FilePath}", filePath);
         }
+
+        return fileNamespace;
     }
 
-    private static void ProcessElement(JsonElement element, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
+    private static void ProcessElement(JsonElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -57,17 +61,18 @@ public class JsonHandler(
                         Fqn: propertyPath,
                         Accessibility: "Public",
                         FileKey: fileKey,
-                        FilePath: filePath,
+                        RelativePath: relativePath,
                         StartLine: -1, // System.Text.Json.JsonDocument does not provide line numbers easily
                         EndLine: -1,
                         Documentation: null,
-                        Comments: null
+                        Comments: null,
+                        Namespace: fileNamespace
                     );
 
                     symbolBuffer.Add(record);
                     relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
 
-                    ProcessElement(property.Value, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, propertyPath);
+                    ProcessElement(property.Value, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, propertyPath);
                 }
 
                 break;
@@ -76,7 +81,7 @@ public class JsonHandler(
                 foreach (var item in element.EnumerateArray())
                 {
                     var itemPath = $"{path}[{index}]";
-                    ProcessElement(item, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility, itemPath);
+                    ProcessElement(item, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, itemPath);
                     index++;
                 }
 

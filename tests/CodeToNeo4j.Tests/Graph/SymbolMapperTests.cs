@@ -21,7 +21,7 @@ public class SymbolMapperTests
         var symbol = semanticModel.GetDeclaredSymbol(node);
 
         // Act
-        var result = sut.ToSymbolRecord("repo", "file", "path.cs", symbol!, node);
+        var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node);
 
         // Assert
         result.Name.ShouldBe("MyClass");
@@ -29,6 +29,8 @@ public class SymbolMapperTests
         result.Fqn.ShouldContain("MyNamespace.MyClass");
         result.Key.ShouldBe("repo:MyNamespace.MyClass");
         result.Accessibility.ShouldBe("Public");
+        result.RelativePath.ShouldBe("path.cs");
+        result.Namespace.ShouldBe("MyNamespace");
     }
 
     [Fact]

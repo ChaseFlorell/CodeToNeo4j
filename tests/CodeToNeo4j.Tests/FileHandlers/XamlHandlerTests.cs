@@ -14,7 +14,9 @@ public class XamlHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new XamlHandler(fileSystem);
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new XamlHandler(symbolProcessor, fileSystem);
         var content = @"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
@@ -35,7 +37,7 @@ public class XamlHandlerTests
             compilation: null,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: filePath,
+            filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);

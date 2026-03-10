@@ -9,26 +9,30 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
 {
     public override string FileExtension => ".js";
 
-    protected override async Task HandleFile(
+    protected override async Task<string?> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         // Extract function definitions (basic)
-        ExtractFunctions(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        ExtractFunctions(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         
         // Extract imports/exports (basic)
-        ExtractImportsExports(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        ExtractImportsExports(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+
+        return fileNamespace;
     }
 
-    private static void ExtractFunctions(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -57,11 +61,12 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 Fqn: name,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);
@@ -69,7 +74,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
         }
     }
 
-    private static void ExtractImportsExports(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -88,11 +93,12 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 Fqn: module,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);

@@ -1,6 +1,6 @@
 UNWIND $files AS file
-MERGE (f:File {key:file.fileKey})
-SET f.path=file.path, f.hash=file.hash, f.updatedAt=datetime(), f.created=datetime(file.created), f.lastModified=datetime(file.lastModified), f.deleted=null, f.deletedAt=null, f.commits=file.commits, f.tags=file.tags, f.CodeToNeo4j=true
+MERGE (f:File {path:file.path})
+SET f.key=file.fileKey, f.namespace=file.namespace, f.hash=file.hash, f.updatedAt=datetime(), f.created=datetime(file.created), f.lastModified=datetime(file.lastModified), f.deleted=null, f.deletedAt=null, f.commits=file.commits, f.tags=file.tags, f.CodeToNeo4j=true
 WITH f, file
 OPTIONAL MATCH (p:Project {key:file.repoKey})
 WHERE file.repoKey IS NOT NULL

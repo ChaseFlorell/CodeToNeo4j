@@ -25,7 +25,7 @@ public class SolutionProcessor(
     public async Task ProcessSolution(FileInfo sln, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var solutionRoot = sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory();
+        var solutionRoot = fileService.NormalizePath(sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
         using var workspace = MSBuildWorkspace.Create();
         workspace.RegisterWorkspaceFailedHandler(e => logger.LogWarning("Workspace warning: {Message}", e.Diagnostic.Message));
@@ -46,8 +46,8 @@ public class SolutionProcessor(
             logger.LogInformation("Marking {Count} files as deleted that were removed in git...", diffResult.DeletedFiles.Count);
             foreach (var deletedFile in diffResult.DeletedFiles)
             {
-                var fileKey = $"{repoKey}:{fileService.GetRelativePath(solutionRoot, deletedFile)}";
-                await graphService.MarkFileAsDeleted(fileKey, databaseName).ConfigureAwait(false);
+                var relativePath = fileService.GetRelativePath(solutionRoot, deletedFile);
+                await graphService.MarkFileAsDeleted(relativePath, databaseName).ConfigureAwait(false);
             }
         }
 
@@ -201,11 +201,9 @@ public class SolutionProcessor(
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var relativePath = fileService.GetRelativePath(solutionRoot, filePath);
-        var fileKey = $"{repoKey}:{relativePath}";
+        var fileKey = Path.GetFileName(filePath);
         var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
-
-        var fileRecord = new FileMetaData(fileKey, filePath, fileHash, metadata, repoKey);
 
         var symbols = new List<Symbol>();
         var relationships = new List<Relationship>();
@@ -227,11 +225,14 @@ public class SolutionProcessor(
             }
         }
 
+        string? fileNamespace = null;
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
         if (handler != null)
         {
-            await handler.Handle(document, compilation, repoKey, fileKey, filePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
+            fileNamespace = await handler.Handle(document, compilation, repoKey, fileKey, filePath, relativePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
         }
+
+        var fileRecord = new FileMetaData(fileKey, relativePath, fileHash, metadata, repoKey, fileNamespace);
 
         return new ProcessResult(fileRecord, symbols, relationships, relativePath);
     }
