@@ -60,8 +60,11 @@ public class DependencyIngestor(
 
         foreach (var reference in compilation.ReferencedAssemblyNames)
         {
-            var key = $"pkg:{reference.Name}:{reference.Version}";
-            dependencies.Add(new Dependency(key, reference.Name, reference.Version.ToString()));
+            var name = reference.Name;
+            // Ensure we use the simple name for the key to avoid including version or culture info.
+            var simpleName = name.Split(',')[0].Split(':')[0].Trim();
+            var key = $"pkg:{simpleName}";
+            dependencies.Add(new Dependency(key, simpleName, reference.Version.ToString()));
         }
     }
 }

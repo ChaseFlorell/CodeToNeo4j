@@ -12,5 +12,6 @@ public record Symbol(
     int EndLine,
     string? Documentation,
     string? Comments,
-    string? Namespace
+    string? Namespace,
+    string? Version = null
 );

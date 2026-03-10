@@ -12,7 +12,7 @@ public class JsonHandler(
 {
     public override string FileExtension => ".json";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -24,19 +24,19 @@ public class JsonHandler(
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = string.Empty;
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
             using var jsonDoc = JsonDocument.Parse(content);
-            ProcessElement(jsonDoc.RootElement, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, "");
+            ProcessElement(jsonDoc.RootElement, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility, "");
         }
         catch (JsonException)
         {
             logger.LogWarning("Failed to parse JSON file: {FilePath}", filePath);
         }
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ProcessElement(JsonElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)

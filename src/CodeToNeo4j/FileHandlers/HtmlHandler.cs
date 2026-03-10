@@ -9,7 +9,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
 {
     public override string FileExtension => ".html";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -29,7 +29,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         // Extract IDs and Classes
         HtmlHandler.ExtractIdsAndClasses(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)

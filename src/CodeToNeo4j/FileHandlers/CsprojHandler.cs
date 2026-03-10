@@ -10,7 +10,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 {
     public override string FileExtension => ".csproj";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -22,21 +22,22 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = string.Empty;
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return fileNamespace;
-
-            ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+            if (xdoc.Root != null)
+            {
+                ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+            }
         }
         catch (Exception)
         {
             // Fail gracefully
         }
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
@@ -106,7 +107,8 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 EndLine: startLine,
                 Documentation: version,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: version
             );
 
             symbolBuffer.Add(record);

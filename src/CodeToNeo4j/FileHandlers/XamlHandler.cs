@@ -13,7 +13,7 @@ public class XamlHandler(
 {
     public override string FileExtension => ".xaml";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -30,15 +30,20 @@ public class XamlHandler(
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return null;
+            if (xdoc.Root != null)
+            {
+                var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
+                if (!string.IsNullOrEmpty(xClass))
+                {
+                    fileKey = xClass;
+                    fileNamespace = xClass.Contains('.') 
+                        ? xClass.Substring(0, xClass.LastIndexOf('.')) 
+                        : null;
+                }
 
-            var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
-            fileNamespace = xClass != null && xClass.Contains('.') 
-                ? xClass.Substring(0, xClass.LastIndexOf('.')) 
-                : null;
-
-            // Extract XML elements via traditional parsing
-            ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+                // Extract XML elements via traditional parsing
+                ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+            }
         }
         catch (Exception)
         {
@@ -72,7 +77,7 @@ public class XamlHandler(
             }
         }
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private void ProcessElement(XElement element, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)

@@ -9,7 +9,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
 {
     public override string FileExtension => ".xml";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -21,21 +21,22 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = string.Empty;
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return fileNamespace;
-
-            XmlHandler.ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+            if (xdoc.Root != null)
+            {
+                XmlHandler.ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+            }
         }
         catch (Exception)
         {
             // Fail gracefully for malformed XML
         }
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)

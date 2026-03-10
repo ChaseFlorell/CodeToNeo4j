@@ -10,8 +10,7 @@ public class PurgeExecutionHandler(IGraphService graphService) : OptionsHandler
         {
             var allSupportedExtensions = new[] { ".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj" };
             var includeExtensions = options.IncludeExtensions.SequenceEqual(allSupportedExtensions) ? null : options.IncludeExtensions;
-            await graphService.PurgeData(options.RepoKey, includeExtensions, options.DatabaseName);
-            return false;
+            await graphService.PurgeData(options.RepoKey, includeExtensions, options.DatabaseName, !options.SkipDependencies, options.BatchSize);
         }
 
         return true;

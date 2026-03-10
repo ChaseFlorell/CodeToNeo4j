@@ -9,7 +9,7 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
 {
     public override string FileExtension => ".css";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -21,11 +21,11 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = string.Empty;
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
-        CssHandler.ExtractSelectors(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+        CssHandler.ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)

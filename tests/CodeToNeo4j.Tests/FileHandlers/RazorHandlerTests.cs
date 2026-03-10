@@ -37,7 +37,7 @@ public class RazorHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        result.ShouldBe("MyProject.Pages");
+        result.Namespace.ShouldBe("MyProject.Pages");
     }
 
     [Fact]

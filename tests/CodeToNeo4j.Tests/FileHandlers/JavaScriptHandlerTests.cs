@@ -34,7 +34,7 @@ public class JavaScriptHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        result.ShouldBe("src/utils");
+        result.Namespace.ShouldBe("src/utils");
         symbolBuffer.First().Namespace.ShouldBe("src/utils");
     }
 

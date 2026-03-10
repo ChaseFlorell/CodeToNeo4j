@@ -44,7 +44,7 @@ public class XamlNamespaceTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        resultNamespace.ShouldBe("MyApp");
+        resultNamespace.Namespace.ShouldBe("MyApp");
         var panelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MainPanel");
         panelSymbol.ShouldNotBeNull();
     }
@@ -81,7 +81,7 @@ public class XamlNamespaceTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        resultNamespace.ShouldBe("MauiApp");
+        resultNamespace.Namespace.ShouldBe("MauiApp");
         var labelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "WelcomeLabel");
         labelSymbol.ShouldNotBeNull();
     }
@@ -118,7 +118,7 @@ public class XamlNamespaceTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        resultNamespace.ShouldBe("FormsApp");
+        resultNamespace.Namespace.ShouldBe("FormsApp");
         var buttonSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "ClickMe");
         buttonSymbol.ShouldNotBeNull();
     }

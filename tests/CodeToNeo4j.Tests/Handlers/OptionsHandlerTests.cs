@@ -29,7 +29,7 @@ public class OptionsHandlerTests
     }
 
     [Fact]
-    public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledAndChainTerminates()
+    public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledAndChainContinues()
     {
         // arrange
 
@@ -48,8 +48,8 @@ public class OptionsHandlerTests
         await handler.Handle(options);
 
         // assert
-        A.CallTo(() => graphService.PurgeData(A<string>._, A<IEnumerable<string>>._, A<string>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => nextHandler.Handle(A<Options>._)).MustNotHaveHappened();
+        A.CallTo(() => graphService.PurgeData(A<string>._, A<IEnumerable<string>>._, A<string>._, A<bool>._, A<int>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => nextHandler.Handle(A<Options>._)).MustHaveHappenedOnceExactly();
     }
 
     [Fact]
@@ -101,7 +101,41 @@ public class OptionsHandlerTests
         Assert.Contains("IncludeExtensions = [ .cs, .xml ]", result);
     }
 
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledWithCorrectPurgeDependencies(bool skipDependencies, bool expectedPurgeDependencies)
+    {
+        // arrange
+        var graphService = A.Fake<CodeToNeo4j.Graph.IGraphService>();
+        var handler = new PurgeExecutionHandler(graphService);
+        var options = CreateOptions(purgeData: true, skipDependencies: skipDependencies);
+
+        // act
+        await handler.Handle(options);
+
+        // assert
+        A.CallTo(() => graphService.PurgeData(A<string>._, A<IEnumerable<string>>._, A<string>._, expectedPurgeDependencies, A<int>._)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GivenPurgeDataTrueAndDefaultExtensions_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledWithNullExtensions()
+    {
+        // arrange
+        var graphService = A.Fake<CodeToNeo4j.Graph.IGraphService>();
+        var handler = new PurgeExecutionHandler(graphService);
+        var allSupportedExtensions = new[] { ".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj" };
+        var options = CreateOptions(purgeData: true, includeExtensions: allSupportedExtensions);
+
+        // act
+        await handler.Handle(options);
+
+        // assert
+        A.CallTo(() => graphService.PurgeData(A<string>._, null, A<string>._, A<bool>._, A<int>._)).MustHaveHappenedOnceExactly();
+    }
+
     private static Options CreateOptions(bool purgeData = false,
+        bool skipDependencies = false,
         string[]? includeExtensions = null) => new(
         new FileInfo("test.sln"),
         "bolt://localhost",
@@ -112,7 +146,7 @@ public class OptionsHandlerTests
         100,
         "neo4j",
         Microsoft.Extensions.Logging.LogLevel.Information,
-        false,
+        skipDependencies,
         Microsoft.CodeAnalysis.Accessibility.Private,
         includeExtensions ?? [],
         purgeData);

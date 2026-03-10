@@ -12,7 +12,7 @@ public class CSharpHandler(
 {
     public override string FileExtension => ".cs";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -31,19 +31,24 @@ public class CSharpHandler(
             {
                 var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
                 
-                // Get namespace for the file metadata
+                // Get namespace and FQN for the file metadata
                 var root = await syntaxTree.GetRootAsync().ConfigureAwait(false);
                 var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
                 if (firstType != null)
                 {
                     var symbol = semanticModel.GetDeclaredSymbol(firstType);
                     fileNamespace = symbol?.ContainingNamespace?.ToDisplayString();
+                    var fqn = symbol?.ToDisplayString();
+                    if (!string.IsNullOrEmpty(fqn))
+                    {
+                        fileKey = fqn;
+                    }
                 }
 
                 symbolProcessor.ProcessSyntaxTree(syntaxTree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
             }
         }
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 }

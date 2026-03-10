@@ -53,27 +53,19 @@ public class SolutionProcessor(
 
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) };
 
-        if (diffBase is not null)
-        {
-            var totalCommits = await versionControlService.GetCommitCount(diffBase, solutionRoot).ConfigureAwait(false);
-            if (totalCommits > 0)
-            {
-                logger.LogInformation("Ingesting {Count} commits since {DiffBase} in parallel batches...", totalCommits, diffBase);
-                var skipValues = Enumerable.Range(0, (totalCommits + batchSize - 1) / batchSize).Select(i => i * batchSize).ToArray();
-                await Parallel.ForEachAsync(skipValues, parallelOptions, async (skip, _) =>
-                {
-                    var commits = await versionControlService.GetCommitBatch(diffBase, solutionRoot, batchSize, skip).ConfigureAwait(false);
-                    await graphService.UpsertCommits(repoKey, solutionRoot, commits, databaseName).ConfigureAwait(false);
-                }).ConfigureAwait(false);
-            }
-        }
-
         var discoveredFiles = discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude);
         var filesToProcess = FilterFiles(discoveredFiles, diffResult?.ModifiedFiles);
+        var totalFiles = filesToProcess.Length;
+
+        if (totalFiles == 0)
+        {
+            logger.LogInformation("No files found to process. If this is an incremental run, check your diff-base.");
+            return;
+        }
+
+        logger.LogInformation("Processing {Count} files in solution: {SlnName}...", totalFiles, sln.Name);
 
         await versionControlService.LoadMetadata(solutionRoot, extensionsToInclude).ConfigureAwait(false);
-
-        var totalFiles = filesToProcess.Length;
         var channel = Channel.CreateBounded<ProcessResult>(new BoundedChannelOptions(100)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -91,6 +83,21 @@ public class SolutionProcessor(
         channel.Writer.Complete();
         var (totalSymbols, totalRelationships) = await consumerTask.ConfigureAwait(false);
         progressService.ProgressComplete();
+
+        if (diffBase is not null)
+        {
+            var totalCommits = await versionControlService.GetCommitCount(diffBase, solutionRoot).ConfigureAwait(false);
+            if (totalCommits > 0)
+            {
+                logger.LogInformation("Ingesting {Count} commits since {DiffBase} in parallel batches...", totalCommits, diffBase);
+                var skipValues = Enumerable.Range(0, (totalCommits + batchSize - 1) / batchSize).Select(i => i * batchSize).ToArray();
+                await Parallel.ForEachAsync(skipValues, parallelOptions, async (skip, _) =>
+                {
+                    var commits = await versionControlService.GetCommitBatch(diffBase, solutionRoot, batchSize, skip).ConfigureAwait(false);
+                    await graphService.UpsertCommits(repoKey, solutionRoot, commits, databaseName).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+            }
+        }
 
         logger.LogInformation("Processing complete.");
         logger.LogInformation("Total nodes (symbols) created: {Count}", totalSymbols);
@@ -201,7 +208,10 @@ public class SolutionProcessor(
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
         var relativePath = fileService.GetRelativePath(solutionRoot, filePath);
-        var fileKey = Path.GetFileName(filePath);
+        var (inferredKey, inferredNamespace) = fileService.InferFileMetadata(relativePath);
+        var fileKey = inferredKey;
+        var fileName = Path.GetFileName(filePath);
+        var defaultNamespace = inferredNamespace;
         var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
@@ -225,14 +235,17 @@ public class SolutionProcessor(
             }
         }
 
-        string? fileNamespace = null;
         var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
+        FileResult? fileResult = null;
         if (handler != null)
         {
-            fileNamespace = await handler.Handle(document, compilation, repoKey, fileKey, filePath, relativePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
+            fileResult = await handler.Handle(document, compilation, repoKey, fileKey, filePath, relativePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
         }
 
-        var fileRecord = new FileMetaData(fileKey, relativePath, fileHash, metadata, repoKey, fileNamespace);
+        var finalFileKey = fileResult?.FileKey ?? fileKey;
+        var finalNamespace = fileResult?.Namespace ?? defaultNamespace;
+
+        var fileRecord = new FileMetaData(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
 
         return new ProcessResult(fileRecord, symbols, relationships, relativePath);
     }

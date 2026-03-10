@@ -13,7 +13,7 @@ public partial class RazorHandler(
 {
     public override string FileExtension => ".razor";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -26,9 +26,6 @@ public partial class RazorHandler(
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
         var fileNamespace = ExtractNamespace(content);
-
-        // Extract directives via Regex as a fallback/complement
-        ExtractDirectives(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
         // Use Roslyn to extract members from generated code
         if (compilation is not null)
@@ -52,12 +49,31 @@ public partial class RazorHandler(
                 if (isMappedToThisFile)
                 {
                     var semanticModel = compilation.GetSemanticModel(tree, ignoreAccessibility: true);
+                    var root = await tree.GetRootAsync().ConfigureAwait(false);
+                    var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+                    if (firstType != null)
+                    {
+                        var symbol = semanticModel.GetDeclaredSymbol(firstType);
+                        var fqn = symbol?.ToDisplayString();
+                        if (!string.IsNullOrEmpty(fqn))
+                        {
+                            fileKey = fqn;
+                        }
+                        var ns = symbol?.ContainingNamespace?.ToDisplayString();
+                        if (!string.IsNullOrEmpty(ns))
+                        {
+                            fileNamespace = ns;
+                        }
+                    }
                     symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
                 }
             }
         }
 
-        return fileNamespace;
+        // Extract directives via Regex as a fallback/complement
+        ExtractDirectives(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static string? ExtractNamespace(string content)

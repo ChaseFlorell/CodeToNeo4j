@@ -6,7 +6,7 @@ namespace CodeToNeo4j.FileHandlers;
 public interface IDocumentHandler
 {
     bool CanHandle(string filePath);
-    Task<string?> Handle(
+    Task<FileResult> Handle(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,

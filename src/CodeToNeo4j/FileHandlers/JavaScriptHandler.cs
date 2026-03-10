@@ -9,7 +9,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
 {
     public override string FileExtension => ".js";
 
-    protected override async Task<string?> HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -29,7 +29,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
         // Extract imports/exports (basic)
         ExtractImportsExports(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
-        return fileNamespace;
+        return new FileResult(fileNamespace, fileKey);
     }
 
     private static void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)

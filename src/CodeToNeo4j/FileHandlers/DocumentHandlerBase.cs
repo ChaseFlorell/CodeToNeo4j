@@ -11,7 +11,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 
     public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
-    public Task<string?> Handle(
+    public Task<FileResult> Handle(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
@@ -26,7 +26,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         return HandleFile(document, compilation, repoKey, fileKey, filePath, relativePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    protected abstract Task<string?> HandleFile(
+    protected abstract Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
