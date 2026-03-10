@@ -169,3 +169,9 @@
 - When deleting prior symbols for a file, use the `fileKey` to ensure all symbols associated with that logical file (including all parts of a partial class) are cleared before re-ingestion.
 - For non-Roslyn files, use the relative path as the `FileKey` to maintain a one-to-one mapping between physical files and `:File` nodes.
 - Always include a `fileName` property (name + extension) on `:File` nodes for easier querying and display, separate from the `key` or `path`.
+
+
+## Thread-Safe and Context-Aware Logging
+- When including thread-specific metadata in logs (e.g., `[MAIN-1]`, `[TASK-N]`), use `Environment.CurrentManagedThreadId` for reliable thread identification.
+- Capture the "Main" thread ID during application startup (e.g., via a static field in the logger class initialized on first use, or explicitly set during dependency registration) to distinguish it from background tasks or pool threads.
+- Differentiate between thread types using properties like `Thread.CurrentThread.IsThreadPoolThread`. This helps provide clearer diagnostic information by categorizing threads (e.g., MAIN vs TASK vs FINALIZER).
