@@ -25,7 +25,8 @@ public class CSharpHandlerTests
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 public interface IBar
@@ -55,7 +56,7 @@ public class Foo : IBar
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -77,7 +78,8 @@ public class Foo : IBar
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 public interface IBar
@@ -104,7 +106,7 @@ public class Foo : IBar
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -120,7 +122,8 @@ public class Foo : IBar
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 public interface IBarService { }
@@ -145,7 +148,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Private);
@@ -172,7 +175,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 public class Foo
@@ -197,7 +201,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -222,7 +226,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 public class Foo
@@ -246,7 +251,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -272,7 +277,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 using System;
@@ -297,7 +303,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -322,7 +328,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 using System;
@@ -347,7 +354,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);
@@ -370,7 +377,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var sut = new CSharpHandler(symbolMapper, fileSystem);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         var code = @"
 using System;
@@ -396,7 +404,7 @@ public class Foo
             compilation,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: "Foo.cs",
+            filePath: "Foo.cs", relativePath: "Foo.cs",
             symbolBuffer,
             relBuffer,
             minAccessibility: Accessibility.Public);

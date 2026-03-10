@@ -9,22 +9,26 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
 {
     public override string FileExtension => ".css";
 
-    protected override async Task HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
-        CssHandler.ExtractSelectors(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        CssHandler.ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+
+        return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ExtractSelectors(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -46,11 +50,12 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
                 Fqn: selector,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);

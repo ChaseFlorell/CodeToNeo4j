@@ -12,5 +12,5 @@ MERGE (a)-[:COMMITTED]->(c)
 WITH c, commit
 UNWIND commit.changedFiles AS fileInfo
 MERGE (f:File {key: fileInfo.key})
-ON CREATE SET f.path = fileInfo.path, f.deleted = true, f.CodeToNeo4j = true
+SET f.path = fileInfo.path, f.namespace = fileInfo.namespace, f.deleted = fileInfo.deleted, f.CodeToNeo4j = true
 MERGE (c)-[:MODIFIED_FILE]->(f)

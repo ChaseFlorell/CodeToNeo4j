@@ -38,7 +38,7 @@ public class CsprojHandlerTests
             compilation: null,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: filePath,
+            filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);
@@ -55,6 +55,7 @@ public class CsprojHandlerTests
         packageSymbol.ShouldNotBeNull();
         packageSymbol.Kind.ShouldBe("PackageReference");
         packageSymbol.Documentation.ShouldBe("13.0.1");
+        packageSymbol.Version.ShouldBe("13.0.1");
 
         // Check for ProjectReference
         var projectSymbol = symbolBuffer.FirstOrDefault(s => s.Name == @"..\MyLib\MyLib.csproj");

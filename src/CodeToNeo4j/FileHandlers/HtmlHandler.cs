@@ -9,26 +9,30 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
 {
     public override string FileExtension => ".html";
 
-    protected override async Task HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         // Extract script references
-        ExtractScriptReferences(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        ExtractScriptReferences(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
         // Extract IDs and Classes
-        HtmlHandler.ExtractIdsAndClasses(content, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        HtmlHandler.ExtractIdsAndClasses(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+
+        return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ExtractScriptReferences(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -49,11 +53,12 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 Fqn: src,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);
@@ -61,7 +66,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         }
     }
 
-    private static void ExtractIdsAndClasses(string content, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ExtractIdsAndClasses(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -80,11 +85,12 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 Fqn: id,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);

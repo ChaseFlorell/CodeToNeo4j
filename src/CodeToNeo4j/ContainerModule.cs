@@ -47,6 +47,7 @@ public static class ContainerModule
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
         services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
         services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
+        services.AddSingleton<IRoslynSymbolProcessor, RoslynSymbolProcessor>();
 
         services.AddSingleton<IDocumentHandler, CSharpHandler>();
         services.AddSingleton<IDocumentHandler, RazorHandler>();

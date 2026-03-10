@@ -6,4 +6,6 @@ public record CommitMetadata(
     string AuthorEmail,
     DateTimeOffset Date,
     string Message,
-    IEnumerable<string> ChangedFiles);
+    IEnumerable<FileStatus> ChangedFiles);
+
+public record FileStatus(string Path, bool IsDeleted);

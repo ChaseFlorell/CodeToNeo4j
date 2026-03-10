@@ -5,7 +5,7 @@ namespace CodeToNeo4j.Graph;
 
 public class SymbolMapper : ISymbolMapper
 {
-    public Symbol ToSymbolRecord(string? repoKey, string fileKey, string filePath, ISymbol symbol, SyntaxNode node)
+    public Symbol ToSymbolRecord(string? repoKey, string fileKey, string relativePath, string? fileNamespace, ISymbol symbol, SyntaxNode node)
     {
         var kind = symbol.Kind.ToString();
         var name = symbol.Name;
@@ -15,6 +15,10 @@ public class SymbolMapper : ISymbolMapper
         var documentation = symbol.GetDocumentationCommentXml();
         var comments = ExtractComments(node);
 
+        var @namespace = symbol is INamedTypeSymbol nts 
+            ? nts.ContainingNamespace.ToDisplayString() 
+            : fileNamespace;
+
         return new Symbol(
             Key: key,
             Name: name,
@@ -22,11 +26,12 @@ public class SymbolMapper : ISymbolMapper
             Fqn: fqn,
             Accessibility: symbol.DeclaredAccessibility.ToString(),
             FileKey: fileKey,
-            FilePath: filePath,
+            RelativePath: relativePath,
             StartLine: startLine,
             EndLine: endLine,
             Documentation: string.IsNullOrWhiteSpace(documentation) ? null : documentation,
-            Comments: string.IsNullOrWhiteSpace(comments) ? null : comments
+            Comments: string.IsNullOrWhiteSpace(comments) ? null : comments,
+            Namespace: @namespace
         );
     }
 
@@ -39,7 +44,11 @@ public class SymbolMapper : ISymbolMapper
     private static (int startLine, int endLine) GetLineSpan(Location loc)
     {
         if (!loc.IsInSource) return (-1, -1);
-        var span = loc.GetLineSpan();
+        var span = loc.GetMappedLineSpan();
+        if (!span.IsValid)
+        {
+            span = loc.GetLineSpan();
+        }
         return (span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1);
     }
 

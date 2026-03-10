@@ -21,10 +21,10 @@ public class GitServiceTests
 
         var repoRoot = "/repo";
         var output = @"COMMIT|hash1|#|Author One|#|author1@example.com|#|2026-03-09T14:20:00Z|#|Commit Message One
-file1.cs
-file2.cs
+M	file1.cs
+A	file2.cs
 COMMIT|hash2|#|Author Two|#|author2@example.com|#|2026-03-09T14:21:00Z|#|Commit Message Two
-file3.cs";
+D	file3.cs";
 
         // Mock NormalizePath to just return the input for simplicity
         A.CallTo(() => fileService.NormalizePath(A<string>._)).ReturnsLazily((string s) => s.Replace('\\', '/'));
@@ -39,12 +39,15 @@ file3.cs";
         result[0].AuthorName.ShouldBe("Author One");
         result[0].AuthorEmail.ShouldBe("author1@example.com");
         result[0].Message.ShouldBe("Commit Message One");
-        result[0].ChangedFiles.ShouldBe(new[] { "/repo/file1.cs", "/repo/file2.cs" });
+        result[0].ChangedFiles.Count().ShouldBe(2);
+        result[0].ChangedFiles.ShouldContain(f => f.Path == "/repo/file1.cs" && !f.IsDeleted);
+        result[0].ChangedFiles.ShouldContain(f => f.Path == "/repo/file2.cs" && !f.IsDeleted);
 
         result[1].Hash.ShouldBe("hash2");
         result[1].AuthorName.ShouldBe("Author Two");
         result[1].AuthorEmail.ShouldBe("author2@example.com");
         result[1].Message.ShouldBe("Commit Message Two");
-        result[1].ChangedFiles.ShouldBe(new[] { "/repo/file3.cs" });
+        result[1].ChangedFiles.Count().ShouldBe(1);
+        result[1].ChangedFiles.ShouldContain(f => f.Path == "/repo/file3.cs" && f.IsDeleted);
     }
 }

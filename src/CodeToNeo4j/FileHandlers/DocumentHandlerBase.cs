@@ -11,26 +11,28 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 
     public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
-    public Task Handle(
+    public Task<FileResult> Handle(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         Interlocked.Increment(ref _numberOfFilesHandled);
-        return HandleFile(document, compilation, repoKey, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+        return HandleFile(document, compilation, repoKey, fileKey, filePath, relativePath, symbolBuffer, relBuffer, minAccessibility);
     }
 
-    protected abstract Task HandleFile(
+    protected abstract Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility);

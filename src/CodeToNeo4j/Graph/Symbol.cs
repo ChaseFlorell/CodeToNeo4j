@@ -7,9 +7,11 @@ public record Symbol(
     string Fqn,
     string Accessibility,
     string FileKey,
-    string FilePath,
+    string RelativePath,
     int StartLine,
     int EndLine,
     string? Documentation,
-    string? Comments
+    string? Comments,
+    string? Namespace,
+    string? Version = null
 );

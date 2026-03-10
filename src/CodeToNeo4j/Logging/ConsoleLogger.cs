@@ -6,6 +6,8 @@ public class ConsoleLogger(
     string name,
     LogLevel minLogLevel) : ILogger
 {
+    private static readonly int MainThreadId = Environment.CurrentManagedThreadId;
+
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= minLogLevel;
@@ -19,16 +21,22 @@ public class ConsoleLogger(
 
         var message = formatter(state, exception);
         var isProgress = message.Contains("[Progress");
+        var threadId = Environment.CurrentManagedThreadId;
+        var threadTag = threadId == MainThreadId
+            ? $"[MAIN-{threadId}]"
+            : Thread.CurrentThread.IsThreadPoolThread
+                ? $"[TASK-{threadId}]"
+                : $"[FINL-{threadId}]";
 
         if (!IsRunningOnCI(message))
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             var logLevelString = logLevel.Truncate();
-            message = $"{timestamp} {logLevelString} {name}[{eventId.Id}] {message}";
+            message = $"{timestamp} {logLevelString}{threadTag} {name} {message}";
         }
         else
         {
-            message = $"{name}[{eventId.Id}] {message}";
+            message = $"{name}{threadTag} {message}";
         }
 
 

@@ -10,32 +10,37 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 {
     public override string FileExtension => ".csproj";
 
-    protected override async Task HandleFile(
+    protected override async Task<FileResult> HandleFile(
         TextDocument? document,
         Compilation? compilation,
         string? repoKey,
         string fileKey,
         string filePath,
+        string relativePath,
         ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
+        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
-            if (xdoc.Root == null) return;
-
-            ProcessProject(xdoc.Root, fileKey, filePath, symbolBuffer, relBuffer, minAccessibility);
+            if (xdoc.Root != null)
+            {
+                ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+            }
         }
         catch (Exception)
         {
             // Fail gracefully
         }
+
+        return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ProcessProject(XElement project, string fileKey, string filePath, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private static void ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -64,11 +69,12 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                     Fqn: $"{name}: {value}",
                     Accessibility: "Public",
                     FileKey: fileKey,
-                    FilePath: filePath,
+                    RelativePath: relativePath,
                     StartLine: startLine,
                     EndLine: startLine,
                     Documentation: value,
-                    Comments: null
+                    Comments: null,
+                    Namespace: fileNamespace
                 );
 
                 symbolBuffer.Add(record);
@@ -96,11 +102,13 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 Fqn: $"{include} ({version})",
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: version,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace,
+                Version: version
             );
 
             symbolBuffer.Add(record);
@@ -129,11 +137,12 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 Fqn: include,
                 Accessibility: "Public",
                 FileKey: fileKey,
-                FilePath: filePath,
+                RelativePath: relativePath,
                 StartLine: startLine,
                 EndLine: startLine,
                 Documentation: null,
-                Comments: null
+                Comments: null,
+                Namespace: fileNamespace
             );
 
             symbolBuffer.Add(record);

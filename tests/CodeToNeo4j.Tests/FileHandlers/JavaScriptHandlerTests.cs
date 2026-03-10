@@ -10,6 +10,35 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 public class JavaScriptHandlerTests
 {
     [Fact]
+    public async Task GivenJsInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = "function foo() {}";
+        var filePath = "src/utils/test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.Namespace.ShouldBe("src/utils");
+        symbolBuffer.First().Namespace.ShouldBe("src/utils");
+    }
+
+    [Fact]
     public async Task GivenJsWithFunctionAndImport_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
     {
         // Arrange
@@ -32,8 +61,8 @@ const myArrow = () => {};";
             document: null,
             compilation: null,
             repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath,
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);
@@ -51,7 +80,7 @@ const myArrow = () => {};";
         arrowSymbol.ShouldNotBeNull();
         arrowSymbol.Kind.ShouldBe("JavaScriptFunction");
 
-        relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == importSymbol.Key && r.RelType == "DEPENDS_ON");
-        relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
+        relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == importSymbol.Key && r.RelType == "DEPENDS_ON");
+        relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
     }
 }

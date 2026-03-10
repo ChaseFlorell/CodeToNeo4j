@@ -4,8 +4,10 @@ namespace CodeToNeo4j.Graph;
 
 public record FileMetaData(
     string FileKey,
-    string FilePath,
+    string FileName,
+    string RelativePath,
     string FileHash,
     FileMetadata Metadata,
-    string? RepoKey
+    string? RepoKey,
+    string? Namespace
 );

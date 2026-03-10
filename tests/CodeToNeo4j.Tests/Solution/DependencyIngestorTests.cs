@@ -3,6 +3,7 @@ using CodeToNeo4j.Solution;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Shouldly;
 using Xunit;
 
 namespace CodeToNeo4j.Tests.Solution;
@@ -10,7 +11,7 @@ namespace CodeToNeo4j.Tests.Solution;
 public class DependencyIngestorTests
 {
     [Fact]
-    public async Task GivenSolutionWithMultipleProjectsAndOverlappingDependencies_WhenIngestDependenciesCalled_ThenUpsertsUniqueDependencies()
+    public async Task GivenSolutionWithProject_WhenIngestDependenciesCalled_ThenKeysAreVersionless()
     {
         // Arrange
         var graphService = A.Fake<IGraphService>();
@@ -18,21 +19,29 @@ public class DependencyIngestorTests
         var sut = new DependencyIngestor(graphService, logger);
 
         var workspace = new AdhocWorkspace();
-        var commonRef = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+        // Using a reference that we know has a version
+        var assembly = typeof(Enumerable).Assembly;
+        var reference = MetadataReference.CreateFromFile(assembly.Location);
         
-        var project1 = workspace.AddProject("Project1", LanguageNames.CSharp);
-        workspace.TryApplyChanges(workspace.CurrentSolution.AddMetadataReference(project1.Id, commonRef));
-        
-        var project2 = workspace.AddProject("Project2", LanguageNames.CSharp);
-        workspace.TryApplyChanges(workspace.CurrentSolution.AddMetadataReference(project2.Id, commonRef));
+        var project = workspace.AddProject("Project1", LanguageNames.CSharp);
+        workspace.TryApplyChanges(workspace.CurrentSolution.AddMetadataReference(project.Id, reference));
             
         var solution = workspace.CurrentSolution;
+
+        Dependency[]? capturedDeps = null;
+        A.CallTo(() => graphService.UpsertDependencies(A<string>._, A<Dependency[]>._, A<string>._))
+            .Invokes((string? r, IEnumerable<Dependency> d, string db) => capturedDeps = d.ToArray());
 
         // Act
         await sut.IngestDependencies(solution, "test-repo", "neo4j");
 
         // Assert
-        A.CallTo(() => graphService.UpsertDependencies("test-repo", A<Dependency[]>.That.Matches(d => d.Length == 1), "neo4j"))
-            .MustHaveHappened();
+        capturedDeps.ShouldNotBeNull();
+        foreach (var dep in capturedDeps)
+        {
+            dep.Key.ShouldBe($"pkg:{dep.Name}");
+            // The version should not be in the key
+            dep.Key.ShouldNotContain(dep.Version);
+        }
     }
 }

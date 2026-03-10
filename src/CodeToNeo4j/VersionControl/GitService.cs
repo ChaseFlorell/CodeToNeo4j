@@ -228,7 +228,7 @@ public class GitService(
         var psi = new ProcessStartInfo
         {
             FileName = "git",
-            Arguments = $"log {diffRange} --max-count={batchSize} --skip={skip} --format=\"COMMIT|%H|#|%an|#|%ae|#|%aI|#|%s\" --name-only",
+            Arguments = $"log {diffRange} --max-count={batchSize} --skip={skip} --format=\"COMMIT|%H|#|%an|#|%ae|#|%aI|#|%s\" --name-status",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -249,7 +249,7 @@ public class GitService(
         var commits = new List<CommitMetadata>();
         var lines = output.Split('\n', StringSplitOptions.TrimEntries);
         CommitMetadata? currentCommit = null;
-        var changedFiles = new List<string>();
+        var changedFiles = new List<FileStatus>();
 
         foreach (var line in lines)
         {
@@ -276,7 +276,14 @@ public class GitService(
             {
                 if (currentCommit != null)
                 {
-                    changedFiles.Add(fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, line)));
+                    var fileParts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                    if (fileParts.Length >= 2)
+                    {
+                        var status = fileParts[0];
+                        var relPath = fileParts[1];
+                        var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, relPath));
+                        changedFiles.Add(new FileStatus(fullPath, status.StartsWith('D')));
+                    }
                 }
             }
         }

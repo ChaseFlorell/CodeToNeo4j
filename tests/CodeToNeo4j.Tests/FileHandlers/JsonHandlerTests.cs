@@ -31,7 +31,7 @@ public class JsonHandlerTests
             compilation: null,
             repoKey: "test-repo",
             fileKey: "test-file",
-            filePath: filePath,
+            filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer,
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);
