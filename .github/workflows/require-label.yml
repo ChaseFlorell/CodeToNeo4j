@@ -6,7 +6,7 @@ on:
 
 jobs:
   check-label:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Check for at least one label
         env:

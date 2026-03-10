@@ -81,7 +81,15 @@ public class Neo4jService(
             ["date"] = c.Date.ToString("O"),
             ["message"] = c.Message,
             ["repoKey"] = repoKey,
-            ["changedFiles"] = c.ChangedFiles.Select(f => $"{repoKey}:{fileService.GetRelativePath(solutionRoot, f)}").ToArray()
+            ["changedFiles"] = c.ChangedFiles.Select(f =>
+            {
+                var relativePath = fileService.GetRelativePath(solutionRoot, f);
+                return new Dictionary<string, object?>
+                {
+                    ["key"] = $"{repoKey}:{relativePath}",
+                    ["path"] = relativePath
+                };
+            }).ToArray()
         }).ToArray();
 
         if (commitBatch.Length == 0) return;

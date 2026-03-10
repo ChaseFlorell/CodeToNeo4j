@@ -27,7 +27,11 @@
 - **File Metadata**: Retrieve author information (names, emails), commit counts, and timestamps (creation, last modification) for each file.
 - **Commit History**: (Optional) Ingest commit history since a specified `diffBase`.
   - Link commits to the files they modified and the authors who made them.
+  - Files modified by a commit that are not already indexed are automatically created and marked as `deleted: true`.
+  - **Fidelity**: Capture all commits in the range, including hash, author, date, and message.
+  - **Parallelized Ingestion**: Commits are fetched from git and ingested into Neo4j in parallel batches (controlled by `--batch-size`).
 - **Incremental Indexing**: (Optional) Only process files that have changed since a specified `diffBase` (e.g., `origin/main`).
+  - **Diff Range Support**: Support various git range specifications (e.g., `hash1..hash2`, `hash1...hash2`, `branch-name`).
 - **Deletion Tracking**: Identify and mark files as `deleted: true` in Neo4j if they were removed from the repository.
 - **Data Purging**:
   - Support deletion of data (Projects, Files, Symbols, Commits) associated with the derived repository key.

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     env:
       MAJOR: 1
@@ -61,7 +61,7 @@ jobs:
         tag_name: v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
         name: Release v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
         body: |
-          ### Installation
+          ## Installation
           Install from Nuget:
           [![NuGet](https://img.shields.io/badge/nuget-v${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}-blue)](https://www.nuget.org/packages/CodeToNeo4j/${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }})
 
@@ -69,10 +69,10 @@ jobs:
           ```bash
           dotnet tool install --global CodeToNeo4j --version ${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
           ```
-
-          ### Provenance
-          **Commit:** [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          **Build:** [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ## Provenance
+          | Commit | Build |
+          | -- | -- |
+          | [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) | [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
 
           Verify package attestation:
           ```bash

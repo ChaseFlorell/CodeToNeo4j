@@ -5,6 +5,7 @@ changelog:
     authors:
       - renovate-bot
       - dependabot
+      - junie-agent
   categories:
     - title: "🚀 Features"
       labels:
@@ -13,7 +14,6 @@ changelog:
     - title: "🐛 Bug Fixes"
       labels:
         - bug
-        - fix
     - title: "🧰 Maintenance"
       labels:
         - chore

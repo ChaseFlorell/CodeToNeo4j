@@ -1,5 +1,12 @@
 ## Lessons Learned
 
+## Parallelized Git Commit Ingestion
+- When ingesting large amounts of git history, parallelize the process by batching commits with `--max-count` and `--skip`.
+- Use `git rev-list --count` to determine the total number of commits in a range to calculate the required batches.
+- Improve `git log` parsing reliability by using custom delimiters (e.g., `|#|`) and a header prefix (e.g., `COMMIT|`) in the `--format` string.
+- Decouple commit ingestion from file diffing to allow for more granular control and better performance through parallel execution.
+- Support various git range specifications (e.g., `hash1..hash2`) by checking for `..` in the `diff-base` and adjusting the range accordingly (defaulting to `diffBase...HEAD` if not present).
+
 ## Class Member Order Rules
 - Maintain a strict order for class members from top to bottom:
     1. Constructors
