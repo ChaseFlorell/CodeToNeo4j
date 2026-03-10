@@ -60,9 +60,9 @@ public static class ContainerModule
         services.AddSingleton<IDocumentHandler, CsprojHandler>();
 
         services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
+        services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
         services.AddTransient<IOptionsHandler, MsBuildRegistrationHandler>();
         services.AddTransient<IOptionsHandler, EnvironmentSetupHandler>();
-        services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
         services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
 
         services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));

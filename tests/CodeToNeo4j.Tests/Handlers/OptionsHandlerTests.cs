@@ -29,7 +29,7 @@ public class OptionsHandlerTests
     }
 
     [Fact]
-    public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledAndChainContinues()
+    public async Task GivenPurgeDataTrue_WhenPurgeExecutionHandlerCalled_ThenPurgeDataIsCalledAndChainStops()
     {
         // arrange
 
@@ -49,7 +49,7 @@ public class OptionsHandlerTests
 
         // assert
         A.CallTo(() => graphService.PurgeData(A<string>._, A<IEnumerable<string>>._, A<string>._, A<bool>._, A<int>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => nextHandler.Handle(A<Options>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => nextHandler.Handle(A<Options>._)).MustNotHaveHappened();
     }
 
     [Fact]

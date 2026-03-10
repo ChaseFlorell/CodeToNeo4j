@@ -3,7 +3,11 @@ CALL {
     // 1. Symbols
     MATCH (n:Symbol)
     WHERE n.CodeToNeo4j = true
-      AND ($repoKey IS NULL OR EXISTS { (:Project {key: $repoKey})-[:HAS_FILE]->(:File)-[:DECLARES]->(n) })
+      AND (
+          $repoKey IS NULL 
+          OR EXISTS { (:Project {key: $repoKey})-[:HAS_FILE]->(:File)-[:DECLARES]->(n) }
+          OR NOT EXISTS { (:Project)-[:HAS_FILE]->(:File)-[:DECLARES]->(n) }
+      )
       AND ($extensions IS NULL OR any(ext IN $extensions WHERE n.filePath ENDS WITH ext))
     WITH n LIMIT $batchSize
     DETACH DELETE n
@@ -14,7 +18,11 @@ CALL {
     // 2. Files
     MATCH (n:File)
     WHERE n.CodeToNeo4j = true
-      AND ($repoKey IS NULL OR EXISTS { (:Project {key: $repoKey})-[:HAS_FILE]->(n) } )
+      AND (
+          $repoKey IS NULL 
+          OR EXISTS { (:Project {key: $repoKey})-[:HAS_FILE]->(n) }
+          OR NOT EXISTS { (:Project)-[:HAS_FILE]->(n) }
+      )
       AND ($extensions IS NULL OR any(ext IN $extensions WHERE n.path ENDS WITH ext))
     WITH n LIMIT $batchSize
     DETACH DELETE n
@@ -45,6 +53,7 @@ CALL {
       AND (
           $repoKey IS NULL 
           OR EXISTS { (n)-[:PART_OF_PROJECT]->(:Project {key: $repoKey}) }
+          OR NOT EXISTS { (n)-[:PART_OF_PROJECT]->(:Project) }
       )
     WITH n LIMIT $batchSize
     DETACH DELETE n
@@ -52,7 +61,23 @@ CALL {
     
     UNION ALL
     
-    // 5. Projects
+    // 5. Authors
+    MATCH (n:Author)
+    WHERE n.CodeToNeo4j = true
+      AND $extensions IS NULL
+      AND (
+          $repoKey IS NULL 
+          OR (EXISTS { (n)-[:COMMITTED]->(:Commit)-[:PART_OF_PROJECT]->(:Project {key: $repoKey}) } 
+              AND NOT EXISTS { (n)-[:COMMITTED]->(:Commit)-[:PART_OF_PROJECT]->(otherProject:Project) WHERE otherProject.key <> $repoKey })
+          OR NOT EXISTS { (n)-[:COMMITTED]->(:Commit) }
+      )
+    WITH n LIMIT $batchSize
+    DETACH DELETE n
+    RETURN count(n) AS count
+    
+    UNION ALL
+    
+    // 6. Projects
     MATCH (n:Project)
     WHERE n.CodeToNeo4j = true
       AND $extensions IS NULL

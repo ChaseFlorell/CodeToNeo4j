@@ -48,7 +48,7 @@ public class ProgramTests
     }
 
     [Fact]
-    public void GivenPurgeWithSkipDependencies_WhenParsing_ThenShouldHaveValidationError()
+    public void GivenPurgeWithSkipDependencies_WhenParsing_ThenShouldNotHaveErrors()
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
@@ -58,7 +58,7 @@ public class ProgramTests
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "--skip-dependencies is not allowed when using --purge-data");
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]

@@ -73,7 +73,7 @@ public class OptionsBinderValidatorTests
     }
 
     [Fact]
-    public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldHaveErrorMessage()
+    public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldNotHaveErrorMessage()
     {
         // arrange
         var result = GetCommandResult("--sln", "test.sln", "--purge-data", "--skip-dependencies");
@@ -82,7 +82,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("--skip-dependencies is not allowed when using --purge-data");
+        result.ErrorMessage.ShouldBeNull();
     }
 
     [Fact]
