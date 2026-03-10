@@ -83,13 +83,14 @@ public class Neo4jService(
             ["repoKey"] = repoKey,
             ["changedFiles"] = c.ChangedFiles.Select(f =>
             {
-                var relativePath = fileService.GetRelativePath(solutionRoot, f);
+                var relativePath = fileService.GetRelativePath(solutionRoot, f.Path);
                 var (key, ns) = fileService.InferFileMetadata(relativePath);
                 return new Dictionary<string, object?>
                 {
                     ["key"] = key,
                     ["path"] = relativePath,
-                    ["namespace"] = ns
+                    ["namespace"] = ns,
+                    ["deleted"] = f.IsDeleted
                 };
             }).ToArray()
         }).ToArray();

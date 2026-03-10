@@ -11,6 +11,6 @@ SET a.email = commit.authorEmail, a.CodeToNeo4j = true
 MERGE (a)-[:COMMITTED]->(c)
 WITH c, commit
 UNWIND commit.changedFiles AS fileInfo
-MERGE (f:File {path: fileInfo.path})
-ON CREATE SET f.key = fileInfo.key, f.namespace = fileInfo.namespace, f.deleted = true, f.CodeToNeo4j = true
+MERGE (f:File {key: fileInfo.key})
+SET f.path = fileInfo.path, f.namespace = fileInfo.namespace, f.deleted = fileInfo.deleted, f.CodeToNeo4j = true
 MERGE (c)-[:MODIFIED_FILE]->(f)
