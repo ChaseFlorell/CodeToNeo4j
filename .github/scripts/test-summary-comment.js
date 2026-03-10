@@ -71,9 +71,10 @@ module.exports = async ({ github, context }) => {
     owner: context.repo.owner,
     repo: context.repo.repo,
     issue_number: context.payload.pull_request.number,
+    per_page: 100
   });
 
-  const botComment = comments.find(comment => comment.body.includes(marker));
+  const botComment = comments.slice().reverse().find(comment => comment.body.includes(marker));
 
   if (botComment) {
     await github.rest.issues.updateComment({

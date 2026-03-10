@@ -129,7 +129,6 @@
 - **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
 - **Explicit interface implementations**: Explicit interface implementations (covered under "Roslyn and C# Syntax").
 
-## Externalizing GitHub Action Logic
-- For complex GitHub Actions logic (e.g., parsing test results, managing issues), move the JavaScript code into dedicated scripts in `.github/scripts/`.
-- This improves readability of the workflow YAML files and allows for better syntax highlighting, linting, and reuse of the logic.
-- Use `actions/github-script` to invoke these scripts, passing the `github` and `context` objects to maintain access to the GitHub API and workflow context.
+## GitHub Action Logic and Self-Hosted Runners
+- **TRX File Accumulation**: On self-hosted runners, using `clean: false` in `actions/checkout` means that untracked directories like `./TestResults` from previous runs may persist. If `dotnet test` generates unique filenames for TRX files (the default behavior), these files will accumulate. Always clear the `TestResults` directory before running tests to ensure accurate metrics.
+- **Comment Pagination**: When using `github.rest.issues.listComments` to find and update a bot comment, increase `per_page` (e.g., to 100) to ensure the target comment is found even in busy PRs. Using `reverse().find()` is a more robust way to find the most recent bot comment for updates.
