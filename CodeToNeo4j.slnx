@@ -17,6 +17,9 @@
   <Folder Name="/.src/.github/">
     <File Path=".github\release.yml" />
   </Folder>
+  <Folder Name="/.src/.github/scripts/">
+    <File Path=".github\scripts\test-summary-comment.js" />
+  </Folder>
   <Folder Name="/.src/.github/workflows/">
     <File Path=".github/workflows/build.yml" />
     <File Path=".github\workflows\index-to-neo4j.yml" />
