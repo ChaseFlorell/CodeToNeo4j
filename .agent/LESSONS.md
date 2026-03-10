@@ -1,5 +1,12 @@
 ## Lessons Learned
 
+## Parallelized Git Commit Ingestion
+- When ingesting large amounts of git history, parallelize the process by batching commits with `--max-count` and `--skip`.
+- Use `git rev-list --count` to determine the total number of commits in a range to calculate the required batches.
+- Improve `git log` parsing reliability by using custom delimiters (e.g., `|#|`) and a header prefix (e.g., `COMMIT|`) in the `--format` string.
+- Decouple commit ingestion from file diffing to allow for more granular control and better performance through parallel execution.
+- Support various git range specifications (e.g., `hash1..hash2`) by checking for `..` in the `diff-base` and adjusting the range accordingly (defaulting to `diffBase...HEAD` if not present).
+
 ## Class Member Order Rules
 - Maintain a strict order for class members from top to bottom:
     1. Constructors
@@ -106,6 +113,13 @@
 - For CI/CD environments like GitHub Actions, integrate test execution directly into the workflow file (`.github/workflows/build.yml`) rather than relying solely on MSBuild targets in `Directory.Build.props`. This provides better visibility of test steps and ensures that failures correctly stop the pipeline before deployment steps.
 - Always include `pull_request` triggers in the workflow to ensure that all changes are validated by tests before they can be merged into the main branch.
 - Use `dotnet test --no-build` in the CI pipeline to avoid redundant compilation after the initial `dotnet build` step.
+
+## .NET SDK and Target Framework Consistency on Self-Hosted Runners
+- When using self-hosted runners, the .NET SDK version specified in `global.json` should align with the installed SDKs on the runner.
+- If `global.json` has `rollForward: disable`, the runner MUST have the exact SDK version (or at least the same major/minor if not using `latestFeature`).
+- If a project (like a test project) targets a framework version (e.g., `net9.0`) that is not installed on the runner, `dotnet test` will fail to launch the test host, even if a newer SDK (e.g., `net10.0`) is present, unless roll-forward is allowed.
+- **Centralizing Frameworks**: Consolidating `TargetFramework` into a root `Directory.Build.props` ensures all projects in the solution target the same version, reducing the risk of "framework not found" errors on specific runners.
+- **Inheritance**: To ensure projects correctly "pick up" settings from `Directory.Build.props`, remove redundant properties (like `<TargetFramework>`, `<ImplicitUsings>`, or `<Nullable>`) from the individual `.csproj` files. This makes the props file the single source of truth.
 
 ## Coding and Testing Standards
 - **Class Member Order**: Maintain a strict order for class members from top to bottom: 1. Constructors, 2. Public members, 3. Internal members, 4. Protected members, 5. Private members, 6. Private static members, 7. Private const members. (CRITICAL: Private constants must always be at the very bottom of the class).

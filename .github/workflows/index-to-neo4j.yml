@@ -1,0 +1,32 @@
+name: Index to Neo4j
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  index:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install CodeToNeo4j
+        run: dotnet tool update --global CodeToNeo4j
+
+      - name: Run CodeToNeo4j
+        run: |
+          codetoneo4j \
+            --sln ./CodeToNeo4j.slnx \
+            --uri bolt://192.168.4.135:7689 \
+            --user neo4j \
+            --password ${{ secrets.NEO4J_PASSWORD }} \
+            --diff-base ${{ github.event.before }}

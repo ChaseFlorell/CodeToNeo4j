@@ -132,11 +132,12 @@ public class GitService(
     public async Task<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includedExtensions)
     {
         var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
-        logger.LogDebug("Running git diff against {DiffBase} in {RepoRoot}...", diffBase, repoRoot);
+        var range = GetRange(diffBase);
+        logger.LogDebug("Running git diff against {Range} in {RepoRoot}...", range, repoRoot);
         var psi = new ProcessStartInfo
         {
             FileName = "git",
-            Arguments = $"diff --name-status {diffBase}...HEAD",
+            Arguments = $"diff --name-status {range}",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -185,79 +186,110 @@ public class GitService(
 
         logger.LogDebug("Found {ModifiedCount} modified and {DeletedCount} deleted files.", modifiedSet.Count, deletedSet.Count);
 
-        var commits = new List<CommitMetadata>();
-        if (!string.IsNullOrWhiteSpace(diffBase))
+        return new DiffResult(modifiedSet, deletedSet, []);
+    }
+
+    public async Task<int> GetCommitCount(string range, string workingDirectory)
+    {
+        var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
+        var diffRange = GetRange(range);
+        var psi = new ProcessStartInfo
         {
-            logger.LogDebug("Fetching commit details between {DiffBase} and HEAD...", diffBase);
-            var commitPsi = new ProcessStartInfo
+            FileName = "git",
+            Arguments = $"rev-list --count {diffRange}",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+
+        using var p = Process.Start(psi) ?? throw new Exception("Failed to start git rev-list.");
+        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        await p.WaitForExitAsync().ConfigureAwait(false);
+
+        if (p.ExitCode != 0) return 0;
+        return int.TryParse(output.Trim(), out var count) ? count : 0;
+    }
+
+    public async IAsyncEnumerable<IEnumerable<CommitMetadata>> GetCommitsBatched(string range, string workingDirectory, int batchSize)
+    {
+        var totalCount = await GetCommitCount(range, workingDirectory).ConfigureAwait(false);
+
+        for (int skip = 0; skip < totalCount; skip += batchSize)
+        {
+            yield return await GetCommitBatch(range, workingDirectory, batchSize, skip).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<IEnumerable<CommitMetadata>> GetCommitBatch(string range, string workingDirectory, int batchSize, int skip)
+    {
+        var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
+        var diffRange = GetRange(range);
+        var psi = new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"log {diffRange} --max-count={batchSize} --skip={skip} --format=\"COMMIT|%H|#|%an|#|%ae|#|%aI|#|%s\" --name-only",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+
+        using var p = Process.Start(psi) ?? throw new Exception("Failed to start git log batch.");
+        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        await p.WaitForExitAsync().ConfigureAwait(false);
+
+        if (p.ExitCode != 0) return [];
+
+        return ParseCommits(output, repoRoot);
+    }
+
+    internal IEnumerable<CommitMetadata> ParseCommits(string output, string repoRoot)
+    {
+        var commits = new List<CommitMetadata>();
+        var lines = output.Split('\n', StringSplitOptions.TrimEntries);
+        CommitMetadata? currentCommit = null;
+        var changedFiles = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.StartsWith("COMMIT|"))
             {
-                FileName = "git",
-                Arguments = $"log {diffBase}...HEAD --format=\"%H|%an|%ae|%aI|%s\" --name-only",
-                WorkingDirectory = repoRoot,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-
-            using var cp = Process.Start(commitPsi) ?? throw new Exception("Failed to start git log process.");
-            var commitOutput = await cp.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-            await cp.WaitForExitAsync().ConfigureAwait(false);
-
-            if (cp.ExitCode == 0)
-            {
-                var commitLines = commitOutput.Split('\n', StringSplitOptions.TrimEntries);
-                CommitMetadata? currentCommit = null;
-                var changedFiles = new List<string>();
-
-                foreach (var line in commitLines)
-                {
-                    if (string.IsNullOrWhiteSpace(line))
-                    {
-                        if (currentCommit != null)
-                        {
-                            commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-                            currentCommit = null;
-                            changedFiles = [];
-                        }
-
-                        continue;
-                    }
-
-                    if (line.Contains('|'))
-                    {
-                        var parts = line.Split('|');
-                        if (parts.Length >= 5)
-                        {
-                            if (currentCommit != null)
-                            {
-                                commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-                                changedFiles = [];
-                            }
-
-                            if (DateTimeOffset.TryParse(parts[3], out var date))
-                            {
-                                currentCommit = new CommitMetadata(parts[0], parts[1], parts[2], date, parts[4], []);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (currentCommit != null)
-                        {
-                            changedFiles.Add(fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, line)));
-                        }
-                    }
-                }
-
                 if (currentCommit != null)
                 {
                     commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
+                    changedFiles = [];
+                }
+
+                var headerParts = line["COMMIT|".Length..].Split("|#|", 5, StringSplitOptions.None);
+                if (headerParts.Length >= 5)
+                {
+                    if (DateTimeOffset.TryParse(headerParts[3], out var date))
+                    {
+                        currentCommit = new CommitMetadata(headerParts[0], headerParts[1], headerParts[2], date, headerParts[4], []);
+                    }
+                }
+            }
+            else
+            {
+                if (currentCommit != null)
+                {
+                    changedFiles.Add(fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, line)));
                 }
             }
         }
 
-        return new DiffResult(modifiedSet, deletedSet, commits);
+        if (currentCommit != null)
+        {
+            commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
+        }
+
+        return commits;
     }
+
+    private static string GetRange(string diffBase) => diffBase.Contains("..") ? diffBase : $"{diffBase}...HEAD";
 
     public async Task<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
     {

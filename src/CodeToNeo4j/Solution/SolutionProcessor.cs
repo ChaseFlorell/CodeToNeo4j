@@ -51,10 +51,21 @@ public class SolutionProcessor(
             }
         }
 
-        if (diffResult?.Commits.Any() ?? false)
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) };
+
+        if (diffBase is not null)
         {
-            logger.LogInformation("Ingesting {Count} commits since {DiffBase}...", diffResult.Commits.Count(), diffBase);
-            await graphService.UpsertCommits(repoKey, solutionRoot, diffResult.Commits, databaseName).ConfigureAwait(false);
+            var totalCommits = await versionControlService.GetCommitCount(diffBase, solutionRoot).ConfigureAwait(false);
+            if (totalCommits > 0)
+            {
+                logger.LogInformation("Ingesting {Count} commits since {DiffBase} in parallel batches...", totalCommits, diffBase);
+                var skipValues = Enumerable.Range(0, (totalCommits + batchSize - 1) / batchSize).Select(i => i * batchSize).ToArray();
+                await Parallel.ForEachAsync(skipValues, parallelOptions, async (skip, _) =>
+                {
+                    var commits = await versionControlService.GetCommitBatch(diffBase, solutionRoot, batchSize, skip).ConfigureAwait(false);
+                    await graphService.UpsertCommits(repoKey, solutionRoot, commits, databaseName).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+            }
         }
 
         var discoveredFiles = discoveryService.GetFilesToProcess(sln, solution, extensionsToInclude);
@@ -69,7 +80,6 @@ public class SolutionProcessor(
             SingleReader = true
         });
 
-        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) };
         var consumerTask = RunConsumer(channel.Reader, totalFiles, databaseName, batchSize);
 
         await Parallel.ForEachAsync(filesToProcess, parallelOptions, async (file, t) =>
@@ -190,7 +200,8 @@ public class SolutionProcessor(
         var filePath = file.FilePath;
         logger.LogDebug("Processing file: {FilePath}", filePath);
 
-        var fileKey = $"{repoKey}:{filePath}";
+        var relativePath = fileService.GetRelativePath(solutionRoot, filePath);
+        var fileKey = $"{repoKey}:{relativePath}";
         var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
         var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
@@ -222,7 +233,6 @@ public class SolutionProcessor(
             await handler.Handle(document, compilation, repoKey, fileKey, filePath, symbols, relationships, minAccessibility).ConfigureAwait(false);
         }
 
-        var relativePath = fileSystem.Path.GetRelativePath(solutionRoot, file.FilePath).Replace('\\', '/');
         return new ProcessResult(fileRecord, symbols, relationships, relativePath);
     }
 

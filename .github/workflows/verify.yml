@@ -8,15 +8,16 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
   
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 1
+        clean: false
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -30,4 +31,13 @@ jobs:
       run: dotnet build --no-restore -c Release
 
     - name: Test
-      run: dotnet test --no-build -c Release --verbosity normal
+      run: dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults
+
+    - name: Test Summary PR Comment
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const script = require('./.github/scripts/test-summary-comment.js')
+          await script({github, context})
