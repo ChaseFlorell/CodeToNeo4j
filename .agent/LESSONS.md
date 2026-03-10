@@ -126,3 +126,8 @@
 - **Unit Test Isolation**: Do not use constructors for global setup in unit tests to prevent state leakage and ensure isolation. Use `TestCaseSource` or local setup within each test.
 - **Unit Test Naming**: Use the structured naming convention `Given[Scenario]_When[Action]_Then[Result]()` for all unit tests to clearly communicate intent and behavior.
 - **Explicit interface implementations**: Explicit interface implementations (covered under "Roslyn and C# Syntax").
+
+## Externalizing GitHub Action Logic
+- For complex GitHub Actions logic (e.g., parsing test results, managing issues), move the JavaScript code into dedicated scripts in `.github/scripts/`.
+- This improves readability of the workflow YAML files and allows for better syntax highlighting, linting, and reuse of the logic.
+- Use `actions/github-script` to invoke these scripts, passing the `github` and `context` objects to maintain access to the GitHub API and workflow context.

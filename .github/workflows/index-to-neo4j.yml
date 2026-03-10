@@ -20,7 +20,7 @@ jobs:
           global-json-file: global.json
 
       - name: Install CodeToNeo4j
-        run: dotnet tool update --global CodeToNeo4j
+        run: dotnet tool install --global CodeToNeo4j
 
       - name: Run CodeToNeo4j
         run: |
@@ -28,5 +28,6 @@ jobs:
             --sln ./CodeToNeo4j.slnx \
             --uri bolt://192.168.4.135:7689 \
             --user neo4j \
+            --database CodeToNeo4j \
             --password ${{ secrets.NEO4J_PASSWORD }} \
             --diff-base ${{ github.event.before }}
