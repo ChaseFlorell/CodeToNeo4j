@@ -44,6 +44,22 @@ public class ConsoleLoggerTests
         var logOutput = output.ToString();
         logOutput.ShouldContain("TestLogger");
         // Check for exact formatting: [INFO][TAG-N]
-        logOutput.ShouldMatch(@".*\[INFO\]\[(MAIN|TASK|FINL)-\d+\] TestLogger Test message.*");
+        logOutput.ShouldMatch(@".*\[INFO\]\[(MAIN|TASK|FINL)-\d{3}\] TestLogger Test message.*");
+    }
+
+    [Fact]
+    public void GivenConsoleLogger_WhenLogCalled_ThenThreadIdIsZeroPaddedToThreeDigits()
+    {
+        // Arrange
+        var output = new StringWriter();
+        Console.SetOut(output);
+        var sut = new ConsoleLogger("Test", LogLevel.Information);
+
+        // Act
+        sut.Log(LogLevel.Information, new EventId(0), "msg", null, (s, e) => s);
+
+        // Assert — thread tag must contain exactly 3 digits after the prefix
+        var logOutput = output.ToString();
+        logOutput.ShouldMatch(@"\[(MAIN|TASK|FINL)-\d{3}\]");
     }
 }
