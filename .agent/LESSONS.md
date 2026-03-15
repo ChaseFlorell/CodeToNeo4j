@@ -187,3 +187,10 @@
 
 ## GitHub Tooling
 - **GitHub CLI (gh)**: The `gh` CLI is available and authenticated for use. It can be used for repository management tasks, PR creation, and workflow status checks.
+
+## Pull Request Requirements
+- All PRs must follow the template in `.github/pull_request_template.md`: `## Summary`, `## Issue` (containing `Resolves #<number>`), and `## Checklist`.
+- The `pr-requirements.yml` workflow enforces two hard rules: (1) at least one label must be present, and (2) the body must contain a line matching `^Resolves #[0-9]+` exactly.
+- Always apply the same label(s) to a PR as the issue it resolves.
+- The checklist item `- [ ] This PR resolves the linked issue` must be checked (`- [x]`) when the PR does in fact resolve the linked issue.
+- When creating a PR with `gh pr create`, pass the full template-conforming body and include `--label` matching the issue's labels.
