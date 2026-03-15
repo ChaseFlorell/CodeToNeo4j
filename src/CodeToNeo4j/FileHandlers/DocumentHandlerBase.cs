@@ -1,5 +1,4 @@
 using System.IO.Abstractions;
-using System.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 

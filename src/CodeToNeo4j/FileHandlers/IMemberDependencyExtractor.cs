@@ -1,6 +1,5 @@
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
 

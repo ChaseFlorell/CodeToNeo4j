@@ -6,7 +6,6 @@ using CodeToNeo4j.VersionControl;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
-using Shouldly;
 using Xunit;
 
 namespace CodeToNeo4j.Tests.Neo4j;

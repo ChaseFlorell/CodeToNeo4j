@@ -8,13 +8,13 @@ public sealed class ConsoleLoggerProvider(LogLevel minLogLevel) : ILoggerProvide
 
     public void Dispose()
     {
-        ConsoleLoggerProvider.Dispose(true);
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     ~ConsoleLoggerProvider()
     {
-        ConsoleLoggerProvider.Dispose(false);
+        Dispose(false);
     }
 
     private static void Dispose(bool disposing)

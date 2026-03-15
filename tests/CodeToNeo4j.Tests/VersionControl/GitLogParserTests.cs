@@ -1,7 +1,6 @@
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.VersionControl;
 using FakeItEasy;
-using System.IO.Abstractions;
 using Shouldly;
 using Xunit;
 

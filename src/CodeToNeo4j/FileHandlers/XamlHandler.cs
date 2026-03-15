@@ -125,7 +125,7 @@ public class XamlHandler(
         // Extract potential event handlers
         foreach (var attr in element.Attributes())
         {
-            if (XamlHandler.IsEventHandler(attr.Name.LocalName))
+            if (IsEventHandler(attr.Name.LocalName))
             {
                 if (Accessibility.Private >= minAccessibility)
                 {
