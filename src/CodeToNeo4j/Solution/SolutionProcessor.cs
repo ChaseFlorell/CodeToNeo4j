@@ -30,7 +30,15 @@ public class SolutionProcessor(
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = fileService.NormalizePath(sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
-        using var workspace = MSBuildWorkspace.Create();
+        using var workspace = MSBuildWorkspace.Create(new Dictionary<string, string>
+        {
+            // Design-time only: skip targets that validate installed SDKs (e.g. JDK for Android/MAUI)
+            ["DesignTimeBuild"] = "true",
+            ["BuildingInsideVisualStudio"] = "true",
+            ["SkipCompilerExecution"] = "true",
+            // Suppress restore and build targets irrelevant to code analysis
+            ["ResolveAssemblyReferencesSilently"] = "true",
+        });
         workspace.RegisterWorkspaceFailedHandler(e => logger.LogWarning("Workspace warning: {Message}", e.Diagnostic.Message));
 
         logger.LogInformation("Opening solution...");
