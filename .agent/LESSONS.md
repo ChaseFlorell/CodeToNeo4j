@@ -194,3 +194,9 @@
 - Always apply the same label(s) to a PR as the issue it resolves.
 - The checklist item `- [ ] This PR resolves the linked issue` must be checked (`- [x]`) when the PR does in fact resolve the linked issue.
 - When creating a PR with `gh pr create`, pass the full template-conforming body and include `--label` matching the issue's labels.
+
+## Unit Testing and Coverage
+- **Mocking Neo4j Driver**: When mocking `IAsyncSession.ExecuteWriteAsync` or `ExecuteReadAsync` with `FakeItEasy`, you must match the full signature, including the optional `Action<TransactionConfigBuilder>` parameter. Use `A<Action<TransactionConfigBuilder>>._` in the `A.CallTo` setup.
+- **Extension Methods**: Extension methods (like `SingleAsync` or `RunWithRetry`) cannot be mocked directly with `FakeItEasy` because they are static. Mock the underlying interface methods they call (e.g., `FetchAsync`, `Current`, `RunAsync`) instead.
+- **IResultCursor Mocking**: To mock `IResultCursor.SingleAsync()`, you must mock `FetchAsync()` to return `true` once and then `false` (to simulate one record), and mock `Current` to return the desired `IRecord`.
+- **Accessibility Filtering**: Explicit interface implementations are often treated as `Private` by Roslyn. Ensure your `AccessibilityFilter` explicitly checks for them using `ExplicitInterfaceImplementations.Any()` to avoid accidentally filtering out valid members when a `Public` minimum accessibility is requested.

@@ -59,6 +59,7 @@ public class Foo
             r.ToKey.Contains("Microsoft.CodeAnalysis") &&
             r.RelType == "DEPENDS_ON");
     }
+
     [Fact]
     public async Task GivenStaticUsing_WhenHandleCalled_ThenAddsDependsOnRelationshipToDependency()
     {
@@ -156,10 +157,12 @@ public class Foo
             r.ToKey.Contains("Microsoft.CodeAnalysis") &&
             r.RelType == "DEPENDS_ON");
     }
+
     [Fact]
     public async Task GivenGlobalUsingInAnotherFile_WhenHandleCalled_ThenAddsDependsOnRelationshipToDependency()
     {
         // Arrange
+        const string ExpectedFileKey = "test-file";
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
@@ -200,11 +203,8 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        var expectedFileKey = "test-file";
-
-        // This currently FAILS because we only look at using directives in the current syntax tree.
         relBuffer.ShouldContain(r =>
-            r.FromKey == expectedFileKey &&
+            r.FromKey == ExpectedFileKey &&
             r.ToKey.Contains("Microsoft.CodeAnalysis") &&
             r.RelType == "DEPENDS_ON");
     }

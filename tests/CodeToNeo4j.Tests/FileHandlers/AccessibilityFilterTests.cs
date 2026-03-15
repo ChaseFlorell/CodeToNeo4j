@@ -85,4 +85,54 @@ public class AccessibilityFilterTests
         // Assert
         result.ShouldBe(expected);
     }
+
+    [Fact]
+    public void GivenExplicitInterfacePropertyImplementation_WhenIsExplicitInterfaceImplementationCalled_ThenReturnsTrue()
+    {
+        // Arrange
+        var code = @"
+            public interface IFoo { int Prop { get; set; } }
+            public class TestClass : IFoo { int IFoo.Prop { get; set; } }";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+        var classDecl = root.DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().First();
+        var propertyNode = classDecl.Members.First();
+        var symbol = model.GetDeclaredSymbol(propertyNode)!;
+
+        // Act
+        var result = AccessibilityFilter.IsExplicitInterfaceImplementation(symbol);
+
+        // Assert
+        result.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void GivenExplicitInterfaceEventImplementation_WhenIsExplicitInterfaceImplementationCalled_ThenReturnsTrue()
+    {
+        // Arrange
+        var code = @"
+            public interface IFoo { event System.Action OnBar; }
+            public class TestClass : IFoo { event System.Action IFoo.OnBar { add {} remove {} } }";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+        var classDecl = root.DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().First();
+        var eventNode = classDecl.Members.First();
+        var symbol = model.GetDeclaredSymbol(eventNode)!;
+
+        // Act
+        var result = AccessibilityFilter.IsExplicitInterfaceImplementation(symbol);
+
+        // Assert
+        result.ShouldBeTrue();
+    }
 }

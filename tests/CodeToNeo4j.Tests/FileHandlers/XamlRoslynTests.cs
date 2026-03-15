@@ -65,10 +65,10 @@ namespace MyApp
 
         // Assert
         // Should find the class and the generated field
-        var classSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MainWindow" && s.Kind == "NamedType");
+        var classSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "MainWindow", Kind: "NamedType" });
         classSymbol.ShouldNotBeNull();
         
-        var fieldSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "SubmitButton" && s.Kind == "Field");
+        var fieldSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "SubmitButton", Kind: "Field" });
         fieldSymbol.ShouldNotBeNull();
         fieldSymbol.StartLine.ShouldBe(4); // Mapped line
     }

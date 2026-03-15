@@ -74,11 +74,11 @@ public class RazorHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.Any(s => s.Kind == "UsingDirective" && s.Name == "System.Text").ShouldBeTrue();
-        symbolBuffer.Any(s => s.Kind == "InjectDirective" && s.Name == "IMyService MyService").ShouldBeTrue();
-        symbolBuffer.Any(s => s.Kind == "ModelDirective" && s.Name == "MyViewModel").ShouldBeTrue();
-        symbolBuffer.Any(s => s.Kind == "InheritsDirective" && s.Name == "MyBasePage").ShouldBeTrue();
-        
+        symbolBuffer.Any(s => s is { Kind: "UsingDirective", Name: "System.Text" }).ShouldBeTrue();
+        symbolBuffer.Any(s => s is { Kind: "InjectDirective", Name: "IMyService MyService" }).ShouldBeTrue();
+        symbolBuffer.Any(s => s is { Kind: "ModelDirective", Name: "MyViewModel" }).ShouldBeTrue();
+        symbolBuffer.Any(s => s is { Kind: "InheritsDirective", Name: "MyBasePage" }).ShouldBeTrue();
+
         relBuffer.Count.ShouldBe(4);
     }
 }
