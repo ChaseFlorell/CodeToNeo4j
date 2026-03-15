@@ -31,3 +31,29 @@ jobs:
             exit 1
           fi
           echo "Issue reference found."
+
+  check-tests-checkbox:
+    runs-on: self-hosted
+    steps:
+      - name: Check that tests checkbox is checked
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! echo "$BODY" | grep -qF '- [x] Tests have been added or updated'; then
+            echo "::error::The 'Tests have been added or updated' checkbox must be checked before merging."
+            exit 1
+          fi
+          echo "Tests checkbox is checked."
+
+  check-rebased-checkbox:
+    runs-on: self-hosted
+    steps:
+      - name: Check that rebased checkbox is checked
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! echo "$BODY" | grep -qF '- [x] Rebased on top of main'; then
+            echo "::error::The 'Rebased on top of main' checkbox must be checked before merging."
+            exit 1
+          fi
+          echo "Rebased checkbox is checked."

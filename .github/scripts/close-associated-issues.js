@@ -31,9 +31,49 @@ module.exports = async ({github, context}) => {
 
   const isMerged = pr.merged;
   const stateReason = isMerged ? 'completed' : 'not_planned';
-  const closureMessage = isMerged 
+  const closureMessage = isMerged
     ? `Automatically closed because PR #${pr.number} was merged.`
     : `Automatically closed because PR #${pr.number} was closed.`;
+
+  const isBreakingChange = /- \[x\] This is a breaking change/i.test(body);
+
+  if (isMerged && isBreakingChange) {
+    const owner = context.repo.owner;
+    const repo = context.repo.repo;
+    const labelName = 'breaking-change';
+
+    // Ensure the label exists
+    try {
+      await github.rest.issues.getLabel({ owner, repo, name: labelName });
+    } catch (e) {
+      if (e.status === 404) {
+        await github.rest.issues.createLabel({
+          owner,
+          repo,
+          name: labelName,
+          color: 'e11d48',
+          description: 'Introduces a breaking change',
+        });
+        console.log(`Created label '${labelName}'.`);
+      } else {
+        throw e;
+      }
+    }
+
+    for (const issueNumber of issueNumbers) {
+      try {
+        await github.rest.issues.addLabels({
+          owner,
+          repo,
+          issue_number: issueNumber,
+          labels: [labelName],
+        });
+        console.log(`Applied '${labelName}' label to issue #${issueNumber}.`);
+      } catch (error) {
+        console.error(`Error applying label to issue #${issueNumber}: ${error.message}`);
+      }
+    }
+  }
 
   for (const issueNumber of issueNumbers) {
     console.log(`Processing issue #${issueNumber}...`);
