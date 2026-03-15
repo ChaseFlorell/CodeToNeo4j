@@ -75,4 +75,24 @@ public class NamespaceTagParserTests
         var result = NamespaceTagParser.ParseTags("XMLParser");
         result.ShouldBe(["XML_Parser"]);
     }
+
+    [Fact]
+    public void GiveniOSSegment_WhenParseTags_ThenTagPreservedExactly()
+    {
+        var result = NamespaceTagParser.ParseTags("iOS");
+        result.ShouldBe(["iOS"]);
+    }
+
+    [Fact]
+    public void GivenNamespaceContainingiOS_WhenParseTags_ThenOnlyiOSSegmentPreserved()
+    {
+        var result = NamespaceTagParser.ParseTags("MyApp.iOS.Views");
+        result.ShouldBe(["My_App", "iOS", "Views"]);
+    }
+
+    [Fact]
+    public void GivenWhitelist_ThenContainsiOS()
+    {
+        NamespaceTagParser.Whitelist.ShouldContain("iOS");
+    }
 }
