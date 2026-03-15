@@ -314,7 +314,8 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
             semanticModel,
             repoKey,
             relBuffer,
-            typeRec);
+            typeRec,
+            memberRec);
     }
 
     private void ExtractMemberDependencies(
@@ -323,11 +324,13 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
         SemanticModel semanticModel,
         string? repoKey,
         ICollection<Relationship> relBuffer,
-        Symbol typeRec)
+        Symbol typeRec,
+        Symbol memberRec)
     {
         if (memberSyntax is BaseMethodDeclarationSyntax bmds)
         {
             ExtractMethodDependencies(bmds, semanticModel, repoKey, relBuffer, typeRec);
+            ExtractMethodExecutes(bmds, memberRec, semanticModel, repoKey, relBuffer);
         }
 
         switch (memberSymbol)
@@ -341,6 +344,35 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
             case IFieldSymbol fieldSymbol:
                 ExtractFieldDependencies(fieldSymbol, repoKey, relBuffer, typeRec);
                 break;
+        }
+    }
+
+    private void ExtractMethodExecutes(
+        BaseMethodDeclarationSyntax bmds,
+        Symbol callerRec,
+        SemanticModel semanticModel,
+        string? repoKey,
+        ICollection<Relationship> relBuffer)
+    {
+        var body = (SyntaxNode?)bmds.Body ?? bmds.ExpressionBody;
+        if (body == null) return;
+
+        var seenCallees = new HashSet<string>();
+
+        foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (semanticModel.GetSymbolInfo(invocation).Symbol is not IMethodSymbol calleeSymbol) continue;
+            var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
+            if (seenCallees.Add(calleeKey))
+                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
+        }
+
+        foreach (var objectCreation in body.DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>())
+        {
+            if (semanticModel.GetSymbolInfo(objectCreation).Symbol is not IMethodSymbol ctorSymbol) continue;
+            var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, ctorSymbol);
+            if (seenCallees.Add(calleeKey))
+                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
         }
     }
 

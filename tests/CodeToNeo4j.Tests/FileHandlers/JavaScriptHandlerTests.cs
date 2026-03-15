@@ -83,4 +83,140 @@ const myArrow = () => {};";
         relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == importSymbol.Key && r.RelType == "DEPENDS_ON");
         relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
     }
+
+    [Fact]
+    public async Task GivenFunctionThatCallsAnotherFunction_WhenHandleCalled_ThenAddsInvokesRelationship()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = @"
+function validate(order) {
+    return order != null;
+}
+function processOrder(order) {
+    validate(order);
+    save(order);
+}
+function save(order) {}";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        var processOrder = symbolBuffer.FirstOrDefault(s => s.Name == "processOrder");
+        var validate = symbolBuffer.FirstOrDefault(s => s.Name == "validate");
+        var save = symbolBuffer.FirstOrDefault(s => s.Name == "save");
+
+        processOrder.ShouldNotBeNull();
+        validate.ShouldNotBeNull();
+        save.ShouldNotBeNull();
+
+        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == "INVOKES");
+        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == "INVOKES");
+    }
+
+    [Fact]
+    public async Task GivenFunctionWithNoCalls_WhenHandleCalled_ThenNoInvokesRelationship()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = "function add(a, b) { return a + b; }";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+    }
+
+    [Fact]
+    public async Task GivenDuplicateFunctionNames_WhenHandleCalled_ThenDoesNotThrow()
+    {
+        // Arrange — two functions with the same name (e.g. redefinitions common in JS)
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = @"
+function to(value) { return value; }
+function to(value, unit) { return value + unit; }
+function caller() { to(1); }";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — should not throw ArgumentException
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.Where(s => s.Name == "to").ShouldNotBeEmpty();
+        relBuffer.ShouldContain(r => r.RelType == "INVOKES");
+    }
+
+    [Fact]
+    public async Task GivenFunctionThatCallsExternalFunction_WhenHandleCalled_ThenNoInvokesRelationship()
+    {
+        // Arrange — externalFn is not defined in this file
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = @"
+function doWork() {
+    externalFn();
+}";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+    }
 }
