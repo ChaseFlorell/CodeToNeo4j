@@ -422,4 +422,149 @@ public class Foo
             r.ToKey.Contains("EventHandler") &&
             r.ToKey.Contains("MyEventArgs"));
     }
+
+    [Fact]
+    public async Task GivenMethodThatCallsAnotherMethod_WhenHandleCalled_ThenAddsExecutesRelationship()
+    {
+        // Arrange
+        var fileSystem = A.Fake<IFileSystem>();
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
+
+        var code = @"
+public class OrderService
+{
+    public void ProcessOrder()
+    {
+        Validate();
+        Save();
+    }
+
+    private void Validate() { }
+    private void Save() { }
+}";
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+        var document = workspace.AddDocument(project.Id, "OrderService.cs", SourceText.From(code));
+        var compilation = await document.Project.GetCompilationAsync();
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document,
+            compilation,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: "OrderService.cs", relativePath: "OrderService.cs",
+            symbolBuffer,
+            relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        var processOrder = symbolBuffer.FirstOrDefault(s => s.Name == "ProcessOrder");
+        processOrder.ShouldNotBeNull();
+
+        relBuffer.ShouldContain(r =>
+            r.FromKey == processOrder.Key &&
+            r.RelType == "EXECUTES" &&
+            r.ToKey.Contains("Validate"));
+
+        relBuffer.ShouldContain(r =>
+            r.FromKey == processOrder.Key &&
+            r.RelType == "EXECUTES" &&
+            r.ToKey.Contains("Save"));
+    }
+
+    [Fact]
+    public async Task GivenMethodThatUsesNewExpression_WhenHandleCalled_ThenAddsExecutesRelationshipForConstructor()
+    {
+        // Arrange
+        var fileSystem = A.Fake<IFileSystem>();
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
+
+        var code = @"
+public class Widget
+{
+    public Widget() { }
+}
+public class Factory
+{
+    public Widget Create()
+    {
+        return new Widget();
+    }
+}";
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+        var document = workspace.AddDocument(project.Id, "Factory.cs", SourceText.From(code));
+        var compilation = await document.Project.GetCompilationAsync();
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document,
+            compilation,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: "Factory.cs", relativePath: "Factory.cs",
+            symbolBuffer,
+            relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        var createMethod = symbolBuffer.FirstOrDefault(s => s.Name == "Create");
+        createMethod.ShouldNotBeNull();
+
+        relBuffer.ShouldContain(r =>
+            r.FromKey == createMethod.Key &&
+            r.RelType == "EXECUTES" &&
+            r.ToKey.Contains("Widget"));
+    }
+
+    [Fact]
+    public async Task GivenMethodWithNoCallsToLocalMethods_WhenHandleCalled_ThenNoExecutesRelationship()
+    {
+        // Arrange
+        var fileSystem = A.Fake<IFileSystem>();
+        var symbolMapper = new SymbolMapper();
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var sut = new CSharpHandler(symbolProcessor, fileSystem);
+
+        var code = @"
+public class Pure
+{
+    public int Add(int a, int b) => a + b;
+}";
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+        var document = workspace.AddDocument(project.Id, "Pure.cs", SourceText.From(code));
+        var compilation = await document.Project.GetCompilationAsync();
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document,
+            compilation,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: "Pure.cs", relativePath: "Pure.cs",
+            symbolBuffer,
+            relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        relBuffer.ShouldNotContain(r => r.RelType == "EXECUTES");
+    }
 }
