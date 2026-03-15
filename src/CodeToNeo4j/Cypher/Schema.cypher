@@ -46,3 +46,9 @@ FOR (c:Commit) ON (c.date);
 
 CREATE CONSTRAINT tag_name IF NOT EXISTS
 FOR (t:Tag) REQUIRE t.name IS UNIQUE;
+
+CREATE CONSTRAINT url_key IF NOT EXISTS
+FOR (u:Url) REQUIRE u.key IS UNIQUE;
+
+CREATE INDEX url_name IF NOT EXISTS
+FOR (u:Url) ON (u.name);

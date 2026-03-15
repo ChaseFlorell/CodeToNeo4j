@@ -233,6 +233,23 @@ public class Neo4jService(
         }
     }
 
+    public async Task UpsertDependencyUrls(IEnumerable<UrlNode> urlNodes, string databaseName)
+    {
+        var urlBatch = urlNodes.Select(u => new Dictionary<string, object?>
+        {
+            ["depKey"] = u.DepKey,
+            ["urlKey"] = u.UrlKey,
+            ["name"] = u.Name
+        }).ToArray();
+
+        if (urlBatch.Length == 0) return;
+
+        logger.LogDebug("Upserting {Count} dependency URL nodes in database: {DatabaseName}", urlBatch.Length, databaseName);
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch }))
+            .ConfigureAwait(false);
+    }
+
     public async Task PurgeData(string? repoKey, IEnumerable<string>? includeExtensions, string databaseName, bool purgeDependencies, int batchSize)
     {
         var purgeTarget = repoKey is null ? "ALL CodeToNeo4j data" : $"repoKey '{repoKey}'";

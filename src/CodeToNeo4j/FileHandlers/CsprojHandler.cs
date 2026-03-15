@@ -26,13 +26,14 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
         var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var urlNodes = new List<UrlNode>();
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root != null)
             {
-                await ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility).ConfigureAwait(false);
+                await ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, urlNodes, minAccessibility).ConfigureAwait(false);
             }
         }
         catch (Exception)
@@ -40,10 +41,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             // Fail gracefully
         }
 
-        return new FileResult(fileNamespace, fileKey);
+        return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
 
-    private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, List<UrlNode> urlNodes, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -92,7 +93,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             if (string.IsNullOrEmpty(include)) continue;
 
             AddDependency(include, version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
-            await AddNuspecUrls(include, version, symbolBuffer, relBuffer).ConfigureAwait(false);
+            await CollectNuspecUrls(include, version, urlNodes).ConfigureAwait(false);
         }
 
         // Extract ProjectReferences
@@ -126,42 +127,16 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
         }
     }
 
-    private async Task AddNuspecUrls(string name, string? version, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer)
+    private async Task CollectNuspecUrls(string name, string? version, List<UrlNode> urlNodes)
     {
         var (projectUrl, repositoryUrl) = await TryGetNuspecMetadataAsync(name, version).ConfigureAwait(false);
         var depKey = $"pkg:{name}";
 
         if (!string.IsNullOrEmpty(projectUrl))
-        {
-            var urlKey = $"url:{projectUrl}";
-            symbolBuffer.Add(SymbolMapper.CreateSymbol(
-                key: urlKey,
-                name: projectUrl,
-                kind: "Url",
-                @class: "Url",
-                fqn: projectUrl,
-                fileKey: depKey,
-                relativePath: string.Empty,
-                fileNamespace: null,
-                startLine: -1));
-            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_URL"));
-        }
+            urlNodes.Add(new UrlNode(depKey, $"url:{projectUrl}", projectUrl));
 
         if (!string.IsNullOrEmpty(repositoryUrl))
-        {
-            var urlKey = $"url:{repositoryUrl}";
-            symbolBuffer.Add(SymbolMapper.CreateSymbol(
-                key: urlKey,
-                name: repositoryUrl,
-                kind: "Url",
-                @class: "Url",
-                fqn: repositoryUrl,
-                fileKey: depKey,
-                relativePath: string.Empty,
-                fileNamespace: null,
-                startLine: -1));
-            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_URL"));
-        }
+            urlNodes.Add(new UrlNode(depKey, $"url:{repositoryUrl}", repositoryUrl));
     }
 
     private async Task<(string? ProjectUrl, string? RepositoryUrl)> TryGetNuspecMetadataAsync(string name, string? version)

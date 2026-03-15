@@ -14,4 +14,5 @@ public static class Queries
     public const string UpsertDependencies = "UpsertDependencies";
     public const string PurgeData = "PurgeData";
     public const string UpsertTags = "UpsertTags";
+    public const string UpsertDependencyUrls = "UpsertDependencyUrls";
 }

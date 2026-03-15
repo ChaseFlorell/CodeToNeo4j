@@ -44,13 +44,11 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        // Check for Property
         var propertySymbol = symbolBuffer.FirstOrDefault(s => s.Name == "TargetFramework");
         propertySymbol.ShouldNotBeNull();
         propertySymbol.Kind.ShouldBe("ProjectProperty");
         propertySymbol.Documentation.ShouldBe("net8.0");
 
-        // Check for Dependency (package reference unified as Dependency node)
         var packageSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Newtonsoft.Json");
         packageSymbol.ShouldNotBeNull();
         packageSymbol.Key.ShouldBe("pkg:Newtonsoft.Json");
@@ -58,19 +56,17 @@ public class CsprojHandlerTests
         packageSymbol.Documentation.ShouldBe("13.0.1");
         packageSymbol.Version.ShouldBe("13.0.1");
 
-        // Check for ProjectReference
         var projectSymbol = symbolBuffer.FirstOrDefault(s => s.Name == @"..\MyLib\MyLib.csproj");
         projectSymbol.ShouldNotBeNull();
         projectSymbol.Kind.ShouldBe("ProjectReference");
 
-        // Check relationships
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == propertySymbol.Key && r.RelType == "HAS_PROPERTY");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == packageSymbol.Key && r.RelType == "DEPENDS_ON");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == projectSymbol.Key && r.RelType == "DEPENDS_ON");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecHasBothUrls_WhenHandled_ThenCreatesUrlSymbolsAndRelationships()
+    public async Task GivenPackageReference_AndNuspecHasBothUrls_WhenHandled_ThenReturnsUrlNodesInFileResult()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -99,35 +95,34 @@ public class CsprojHandlerTests
         var relBuffer = new List<Relationship>();
 
         // Act
-        await sut.Handle(
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
             symbolBuffer: symbolBuffer, relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);
 
-        // Assert
-        var projectUrlSymbol = symbolBuffer.FirstOrDefault(s => s.Kind == "Url" && s.Name == "https://www.newtonsoft.com/json");
-        projectUrlSymbol.ShouldNotBeNull();
-        projectUrlSymbol.Key.ShouldBe("url:https://www.newtonsoft.com/json");
-        projectUrlSymbol.Class.ShouldBe("Url");
+        // Assert — URL data is in FileResult, not in the symbol/rel buffers
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(2);
 
-        var repoUrlSymbol = symbolBuffer.FirstOrDefault(s => s.Kind == "Url" && s.Name == "https://github.com/JamesNK/Newtonsoft.Json");
-        repoUrlSymbol.ShouldNotBeNull();
-        repoUrlSymbol.Key.ShouldBe("url:https://github.com/JamesNK/Newtonsoft.Json");
+        var projectUrlNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://www.newtonsoft.com/json");
+        projectUrlNode.ShouldNotBeNull();
+        projectUrlNode.DepKey.ShouldBe("pkg:Newtonsoft.Json");
+        projectUrlNode.UrlKey.ShouldBe("url:https://www.newtonsoft.com/json");
 
-        relBuffer.ShouldContain(r =>
-            r.FromKey == "pkg:Newtonsoft.Json" &&
-            r.ToKey == "url:https://www.newtonsoft.com/json" &&
-            r.RelType == "HAS_URL");
-        relBuffer.ShouldContain(r =>
-            r.FromKey == "pkg:Newtonsoft.Json" &&
-            r.ToKey == "url:https://github.com/JamesNK/Newtonsoft.Json" &&
-            r.RelType == "HAS_URL");
+        var repoUrlNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://github.com/JamesNK/Newtonsoft.Json");
+        repoUrlNode.ShouldNotBeNull();
+        repoUrlNode.DepKey.ShouldBe("pkg:Newtonsoft.Json");
+        repoUrlNode.UrlKey.ShouldBe("url:https://github.com/JamesNK/Newtonsoft.Json");
+
+        // URL data must NOT appear in the symbol or relationship buffers
+        symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecHasOnlyProjectUrl_WhenHandled_ThenOnlyOneUrlRelationship()
+    public async Task GivenPackageReference_AndNuspecHasOnlyProjectUrl_WhenHandled_ThenReturnsOneUrlNode()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -155,7 +150,7 @@ public class CsprojHandlerTests
         var relBuffer = new List<Relationship>();
 
         // Act
-        await sut.Handle(
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
@@ -163,13 +158,13 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.Count(s => s.Kind == "Url").ShouldBe(1);
-        relBuffer.Count(r => r.RelType == "HAS_URL").ShouldBe(1);
-        relBuffer.ShouldContain(r => r.ToKey == "url:https://serilog.net" && r.RelType == "HAS_URL");
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().UrlKey.ShouldBe("url:https://serilog.net");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecHasOnlyRepositoryUrl_WhenHandled_ThenOnlyOneUrlRelationship()
+    public async Task GivenPackageReference_AndNuspecHasOnlyRepositoryUrl_WhenHandled_ThenReturnsOneUrlNode()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -197,7 +192,7 @@ public class CsprojHandlerTests
         var relBuffer = new List<Relationship>();
 
         // Act
-        await sut.Handle(
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
@@ -205,13 +200,13 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.Count(s => s.Kind == "Url").ShouldBe(1);
-        relBuffer.Count(r => r.RelType == "HAS_URL").ShouldBe(1);
-        relBuffer.ShouldContain(r => r.ToKey == "url:https://github.com/org/mylib" && r.RelType == "HAS_URL");
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().UrlKey.ShouldBe("url:https://github.com/org/mylib");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecIsMissing_WhenHandled_ThenNoUrlSymbols()
+    public async Task GivenPackageReference_AndNuspecIsMissing_WhenHandled_ThenNoUrlNodes()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -230,7 +225,7 @@ public class CsprojHandlerTests
         var relBuffer = new List<Relationship>();
 
         // Act
-        await sut.Handle(
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
@@ -238,13 +233,11 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+        result.UrlNodes.ShouldBeNull();
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecIsMalformed_WhenHandled_ThenNoUrlSymbolsAndNoException()
+    public async Task GivenPackageReference_AndNuspecIsMalformed_WhenHandled_ThenNoUrlNodesAndNoException()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -262,8 +255,8 @@ public class CsprojHandlerTests
         var symbolBuffer = new List<Symbol>();
         var relBuffer = new List<Relationship>();
 
-        // Act - should not throw
-        await sut.Handle(
+        // Act — should not throw
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
@@ -271,13 +264,11 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+        result.UrlNodes.ShouldBeNull();
     }
 
     [Fact]
-    public async Task GivenPackageReferenceWithNoVersion_WhenHandled_ThenNoUrlSymbols()
+    public async Task GivenPackageReferenceWithNoVersion_WhenHandled_ThenNoUrlNodes()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -295,7 +286,7 @@ public class CsprojHandlerTests
         var relBuffer = new List<Relationship>();
 
         // Act
-        await sut.Handle(
+        var result = await sut.Handle(
             document: null, compilation: null,
             repoKey: "test-repo", fileKey: "test-file",
             filePath: filePath, relativePath: filePath,
@@ -303,7 +294,7 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
+        result.UrlNodes.ShouldBeNull();
     }
 
     private static string NuspecPath(string name, string version)
