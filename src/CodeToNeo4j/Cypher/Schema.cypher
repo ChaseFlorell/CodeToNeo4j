@@ -43,3 +43,6 @@ FOR (c:Commit) REQUIRE c.hash IS UNIQUE;
 
 CREATE INDEX commit_date IF NOT EXISTS
 FOR (c:Commit) ON (c.date);
+
+CREATE CONSTRAINT tag_name IF NOT EXISTS
+FOR (t:Tag) REQUIRE t.name IS UNIQUE;

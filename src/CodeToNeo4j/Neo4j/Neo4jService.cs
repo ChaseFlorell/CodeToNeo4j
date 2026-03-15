@@ -187,6 +187,16 @@ public class Neo4jService(
             ["relType"] = r.RelType
         }).ToArray();
 
+        var tagBatch = symbols
+            .Where(s => !string.IsNullOrWhiteSpace(s.Namespace))
+            .Select(s => new Dictionary<string, object?>
+            {
+                ["symbolKey"] = s.Key,
+                ["tags"] = NamespaceTagParser.ParseTags(s.Namespace).ToArray()
+            })
+            .Where(x => ((string[])x["tags"]!).Length > 0)
+            .ToArray();
+
         if (symbolBatch.Length == 0 && relBatch.Length == 0) return;
 
         logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbolBatch.Length, relBatch.Length, databaseName);
@@ -211,6 +221,16 @@ public class Neo4jService(
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
         }).ConfigureAwait(false);
+
+        if (tagBatch.Length > 0)
+        {
+            logger.LogDebug("Upserting namespace tags for {Count} symbols (Database: {DatabaseName})...", tagBatch.Length, databaseName);
+            await using var tagSession = driver.AsyncSession(o => o.WithDatabase(databaseName));
+            await tagSession.ExecuteWriteAsync(async tx =>
+            {
+                await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertTags), new { symbolTags = tagBatch }).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+        }
     }
 
     public async Task PurgeData(string? repoKey, IEnumerable<string>? includeExtensions, string databaseName, bool purgeDependencies, int batchSize)
