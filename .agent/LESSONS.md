@@ -58,6 +58,7 @@
 ## .NET Global Tool Packaging
 - For .NET global tools, multi-targeting (e.g., `net10.0;net9.0;net8.0`) improves compatibility with older `dotnet` CLI versions that may not yet fully support the latest framework (like `net10.0`) during tool installation.
 - This ensures `DotnetToolSettings.xml` is present in the expected framework-specific folders (e.g., `tools/net8.0/any/`) that older installers can recognize.
+- Failure to multi-target can result in the error: `The settings file in the tool's NuGet package is invalid: Settings file 'DotnetToolSettings.xml' was not found in the package.`
 - Update `PACKAGE_README.md` to reflect the broader framework support when adding new targets.
 
 ## Performance and Architecture Patterns for Large Scale Code Analysis
@@ -182,3 +183,6 @@
 - When including thread-specific metadata in logs (e.g., `[MAIN-1]`, `[TASK-N]`), use `Environment.CurrentManagedThreadId` for reliable thread identification.
 - Capture the "Main" thread ID during application startup (e.g., via a static field in the logger class initialized on first use, or explicitly set during dependency registration) to distinguish it from background tasks or pool threads.
 - Differentiate between thread types using properties like `Thread.CurrentThread.IsThreadPoolThread`. This helps provide clearer diagnostic information by categorizing threads (e.g., MAIN vs TASK vs FINALIZER).
+
+## GitHub Tooling
+- **GitHub CLI (gh)**: The `gh` CLI is available and authenticated for use. It can be used for repository management tasks, PR creation, and workflow status checks.
