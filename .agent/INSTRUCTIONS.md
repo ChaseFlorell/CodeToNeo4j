@@ -36,6 +36,7 @@
     7. Private const members (CRITICAL: These must be at the very bottom of the class)
 - **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action/e]_Then[Result]()`.
 - **Theory vs Fact**: Prefer `[Theory]` with `[InlineData]` over `[Fact]` wherever multiple inputs exercise the same logic. Use `[Fact]` only when a test has complex setup or multiple unrelated assertions that cannot be parameterized.
+- **No Conditional Branching**: Unit tests must never use conditional branching (if/else). Split such tests into separate `[Fact]` or `[Theory]` methods to ensure each test has a single, clear purpose and predictable path.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
 - **Writing Tests**: All new changes must include unit tests to ensure code quality and maintainability.
 
@@ -61,3 +62,7 @@
 - **Checklist**: The PR body must include the `## Checklist` section from the template with checkboxes. Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
 - **Issue Reference**: The `## Issue` section must contain `Resolves #<number>` on its own line.
 - **Labels**: Apply the same label(s) to the PR as the linked issue.
+
+# Artifacts
+- Any artifacts created by running tests, creating plans, or other transient outputs should be placed in the `/artifacts` folder at the repository root.
+- This folder is gitignored and should not be committed.

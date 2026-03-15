@@ -55,4 +55,93 @@ public class JsonHandlerTests
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == fooSymbol.Key && r.RelType == "CONTAINS");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == bazSymbol.Key && r.RelType == "CONTAINS");
     }
+
+    [Fact]
+    public async Task GivenMalformedJson_WhenHandleCalled_ThenLogsWarning()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var logger = A.Fake<ILogger<JsonHandler>>();
+        var sut = new JsonHandler(fileSystem, logger, new TextSymbolMapper());
+        const string content = @"{ ""foo"": }"; // Invalid JSON
+        const string filePath = "test.json";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.ShouldBeEmpty();
+        A.CallTo(logger).Where(call => call.Method.Name == "Log" && (LogLevel)call.Arguments[0]! == LogLevel.Warning).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task GivenMinAccessibilityNotApplicable_WhenHandleCalled_ThenDoesNotAddSymbols()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var logger = A.Fake<ILogger<JsonHandler>>();
+        var sut = new JsonHandler(fileSystem, logger, new TextSymbolMapper());
+        const string content = @"{ ""foo"": 1 }";
+        const string filePath = "test.json";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.NotApplicable);
+
+        // Assert
+        symbolBuffer.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task GivenArrayOfObjects_WhenHandleCalled_ThenProcessesObjects()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var logger = A.Fake<ILogger<JsonHandler>>();
+        var sut = new JsonHandler(fileSystem, logger, new TextSymbolMapper());
+        const string content = @"[ { ""foo"": 1 }, { ""bar"": 2 } ]";
+        const string filePath = "test.json";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.ShouldContain(s => s.Name == "foo" && s.Fqn == "[0].foo");
+        symbolBuffer.ShouldContain(s => s.Name == "bar" && s.Fqn == "[1].bar");
+    }
 }

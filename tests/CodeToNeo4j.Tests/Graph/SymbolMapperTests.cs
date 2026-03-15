@@ -1,4 +1,5 @@
 using CodeToNeo4j.Graph;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Shouldly;
 using Xunit;
@@ -35,11 +36,14 @@ public class SymbolMapperTests
     }
 
     [Fact]
-    public void GivenTypeSymbol_WhenBuildStableSymbolKeyCalled_ThenCorrectKeyReturned()
+    public void GivenSymbolWithComments_WhenToSymbolRecordCalled_ThenCorrectCommentsReturned()
     {
         // Arrange
         var sut = new SymbolMapper();
-        var code = "namespace MyNamespace; public class MyClass { }";
+        var code = @"
+namespace MyNamespace;
+// This is a comment
+public class MyClass { }";
         var syntaxTree = CSharpSyntaxTree.ParseText(code);
         var compilation = CSharpCompilation.Create("Test")
             .AddSyntaxTrees(syntaxTree);
@@ -48,9 +52,80 @@ public class SymbolMapperTests
         var symbol = semanticModel.GetDeclaredSymbol(node);
 
         // Act
-        var result = sut.BuildStableSymbolKey("repo", symbol!);
+        var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node);
 
         // Assert
-        result.ShouldBe("repo:MyNamespace.MyClass");
+        result.Comments.ShouldBe("// This is a comment");
     }
+
+    [Fact]
+    public void GivenSymbolWithMultiLineComments_WhenToSymbolRecordCalled_ThenCorrectCommentsReturned()
+    {
+        // Arrange
+        var sut = new SymbolMapper();
+        var code = @"
+namespace MyNamespace;
+/* Multi-line
+   comment */
+public class MyClass { }";
+        var syntaxTree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test")
+            .AddSyntaxTrees(syntaxTree);
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
+        var node = syntaxTree.GetRoot().DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().First();
+        var symbol = semanticModel.GetDeclaredSymbol(node);
+
+        // Act
+        var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node);
+
+        // Assert
+        result.Comments!.ShouldContain("/* Multi-line");
+        result.Comments!.ShouldContain("comment */");
+    }
+
+    [Fact]
+    public void GivenSymbolWithDocumentation_WhenToSymbolRecordCalled_ThenCorrectDocumentationReturned()
+    {
+        // Arrange
+        var sut = new SymbolMapper();
+        var code = @"
+namespace MyNamespace;
+/// <summary>My docs</summary>
+public class MyClass { }";
+        var syntaxTree = CSharpSyntaxTree.ParseText(code, new CSharpParseOptions(documentationMode: DocumentationMode.Parse));
+        var compilation = CSharpCompilation.Create("Test")
+            .AddSyntaxTrees(syntaxTree)
+            .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
+        var node = syntaxTree.GetRoot().DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().First();
+        var symbol = semanticModel.GetDeclaredSymbol(node);
+
+        // Act
+        var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node);
+
+        // Assert
+        result.Documentation!.ShouldContain("<summary>My docs</summary>");
+    }
+
+    [Fact]
+    public void GivenMethodSymbol_WhenToSymbolRecordCalled_ThenCorrectNamespaceReturned()
+    {
+        // Arrange
+        var sut = new SymbolMapper();
+        var code = "namespace MyNamespace; public class MyClass { public void MyMethod() { } }";
+        var syntaxTree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test")
+            .AddSyntaxTrees(syntaxTree);
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
+        var node = syntaxTree.GetRoot().DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>().First();
+        var symbol = semanticModel.GetDeclaredSymbol(node);
+
+        // Act
+        var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node);
+
+        // Assert
+        result.Namespace.ShouldBe("MyNamespace");
+        result.Name.ShouldBe("MyMethod");
+    }
+
 }

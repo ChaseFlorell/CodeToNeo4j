@@ -47,7 +47,7 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
         => content[..index].Count(c => c == '\n') + 1;
 
     protected static bool IsPublicAccessible(Accessibility minAccessibility)
-        => Accessibility.Public >= minAccessibility;
+        => minAccessibility <= Accessibility.Public && minAccessibility != Accessibility.NotApplicable;
 
     private int _numberOfFilesHandled;
 }

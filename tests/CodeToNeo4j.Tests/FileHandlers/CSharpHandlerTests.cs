@@ -158,11 +158,11 @@ public class Foo
 
         // Assert
         // Find Foo symbol
-        var fooSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Foo" && s.Kind == "NamedType");
+        var fooSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "Foo", Kind: "NamedType" });
         fooSymbol.ShouldNotBeNull();
 
         // Find IBarService symbol
-        var barServiceSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "IBarService" && s.Kind == "NamedType");
+        var barServiceSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "IBarService", Kind: "NamedType" });
         barServiceSymbol.ShouldNotBeNull();
 
         // Check for DEPENDS_ON relationship

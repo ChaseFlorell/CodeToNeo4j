@@ -65,12 +65,12 @@ namespace MyProject.Pages
 
         // Assert
         // Should find the class and the method
-        var classSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Index" && s.Kind == "NamedType");
+        var classSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "Index", Kind: "NamedType" });
         classSymbol.ShouldNotBeNull();
         classSymbol.Namespace.ShouldBe("MyProject.Pages");
         classSymbol.StartLine.ShouldBe(4); // Mapped line
 
-        var methodSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MyMethod" && s.Kind == "Method");
+        var methodSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "MyMethod", Kind: "Method" });
         methodSymbol.ShouldNotBeNull();
         methodSymbol.StartLine.ShouldBe(4); // Mapped line
         

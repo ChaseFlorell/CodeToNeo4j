@@ -53,4 +53,33 @@ public class HtmlHandlerTests
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == scriptSymbol.Key && r.RelType == "DEPENDS_ON");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == idSymbol.Key && r.RelType == "CONTAINS");
     }
+
+    [Fact]
+    public async Task GivenMinAccessibilityNotApplicable_WhenHandleCalled_ThenDoesNotAddSymbols()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new HtmlHandler(fileSystem, new TextSymbolMapper());
+        var content = @"<div id=""myId""></div><script src=""app.js""></script>";
+        var filePath = "test.html";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.NotApplicable);
+
+        // Assert
+        symbolBuffer.ShouldBeEmpty();
+        relBuffer.ShouldBeEmpty();
+    }
 }

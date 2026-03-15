@@ -108,4 +108,11 @@ public class NamespaceTagParserTests
         var result = NamespaceTagParser.ParseTags("DotNet");
         result.ShouldBe(["DotNet"]);
     }
+
+    [Fact]
+    public void GivenEmptySegment_WhenParseTags_ThenSkipsEmptySegment()
+    {
+        var result = NamespaceTagParser.ParseTags("MyApp..Views");
+        result.ShouldBe(["My_App", "Views"]);
+    }
 }

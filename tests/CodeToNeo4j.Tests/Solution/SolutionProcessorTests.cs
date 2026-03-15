@@ -1,11 +1,13 @@
 using System.IO.Abstractions;
 using System.Threading.Channels;
+using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
 using FakeItEasy;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
@@ -179,17 +181,69 @@ public class SolutionProcessorTests
         A.CallTo(() => graphService.UpsertDependencyUrls(A<IEnumerable<UrlNode>>._, "testdb")).MustHaveHappenedOnceExactly();
     }
 
+    [Fact]
+    public async Task GivenProjectAndDocument_WhenProcessFileCalled_ThenHandlesDocument()
+    {
+        // Arrange
+        var fileService = A.Fake<IFileService>();
+        var handler = A.Fake<IDocumentHandler>();
+        A.CallTo(() => handler.FileExtension).Returns(".cs");
+        A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+        var sut = CreateProcessor(fileService: fileService, handlers: [handler]);
+
+        var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp);
+        var document = workspace.AddDocument(project.Id, "test.cs", Microsoft.CodeAnalysis.Text.SourceText.From("content"));
+        var solution = workspace.CurrentSolution;
+
+        var processedFile = new ProcessedFile("test.cs", project.Id, document.Id);
+
+        A.CallTo(() => fileService.GetRelativePath(A<string>._, "test.cs")).Returns("test.cs");
+        A.CallTo(() => fileService.InferFileMetadata("test.cs")).Returns(("key", "ns"));
+
+        // Act
+        var result = await sut.ProcessFile(solution, processedFile, "/root", "repo", Accessibility.Public);
+
+        // Assert
+        result.RelativePath.ShouldBe("test.cs");
+        A.CallTo(() => handler.Handle(A<TextDocument?>._, A<Compilation?>._, "repo", "key", "test.cs", "test.cs", A<List<Symbol>>._, A<List<Relationship>>._, Accessibility.Public))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public void GivenHandlersWithExtensionsAndFilenames_WhenHandlerLookupCreated_ThenIndexesCorrectly()
+    {
+        // Arrange
+        var h1 = A.Fake<IDocumentHandler>();
+        A.CallTo(() => h1.FileExtension).Returns(".cs");
+        A.CallTo(() => h1.CanHandle(A<string>.That.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))).Returns(true);
+
+        var h2 = A.Fake<IDocumentHandler>();
+        A.CallTo(() => h2.FileExtension).Returns("package.json");
+        A.CallTo(() => h2.CanHandle(A<string>.That.EndsWith("package.json", StringComparison.OrdinalIgnoreCase))).Returns(true);
+
+        // Act
+        var lookup = new SolutionProcessor.HandlerLookup([h1, h2]);
+
+        // Assert
+        lookup.GetHandler("foo.cs").ShouldBe(h1);
+        lookup.GetHandler("/path/to/package.json").ShouldBe(h2);
+        lookup.GetHandler("other.json").ShouldBeNull();
+    }
+
     private static SolutionProcessor CreateProcessor(
         IGraphService? graphService = null,
-        IProgressService? progressService = null)
+        IProgressService? progressService = null,
+        IFileService? fileService = null,
+        IEnumerable<IDocumentHandler>? handlers = null)
     {
         return new SolutionProcessor(
             A.Fake<IVersionControlService>(),
             graphService ?? A.Fake<IGraphService>(),
-            A.Fake<IFileService>(),
+            fileService ?? A.Fake<IFileService>(),
             A.Fake<IFileSystem>(),
             progressService ?? A.Fake<IProgressService>(),
-            [],
+            handlers ?? [],
             A.Fake<IDependencyIngestor>(),
             A.Fake<ISolutionFileDiscoveryService>(),
             A.Fake<ICommitIngestionService>(),

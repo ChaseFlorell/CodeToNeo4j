@@ -179,6 +179,7 @@ public class Neo4jServiceTests
         A.CallTo(() => driver.DisposeAsync()).MustHaveHappened();
     }
 
+
     private static Neo4jService CreateService(
         IDriver? driver = null,
         ICypherService? cypherService = null,
