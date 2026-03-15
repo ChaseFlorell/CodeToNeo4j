@@ -15,7 +15,7 @@ public class CsprojHandlerTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
-        
+
         var content = @"
 <Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
@@ -44,13 +44,11 @@ public class CsprojHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        // Check for Property
         var propertySymbol = symbolBuffer.FirstOrDefault(s => s.Name == "TargetFramework");
         propertySymbol.ShouldNotBeNull();
         propertySymbol.Kind.ShouldBe("ProjectProperty");
         propertySymbol.Documentation.ShouldBe("net8.0");
 
-        // Check for Dependency (package reference unified as Dependency node)
         var packageSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Newtonsoft.Json");
         packageSymbol.ShouldNotBeNull();
         packageSymbol.Key.ShouldBe("pkg:Newtonsoft.Json");
@@ -58,14 +56,252 @@ public class CsprojHandlerTests
         packageSymbol.Documentation.ShouldBe("13.0.1");
         packageSymbol.Version.ShouldBe("13.0.1");
 
-        // Check for ProjectReference
         var projectSymbol = symbolBuffer.FirstOrDefault(s => s.Name == @"..\MyLib\MyLib.csproj");
         projectSymbol.ShouldNotBeNull();
         projectSymbol.Kind.ShouldBe("ProjectReference");
 
-        // Check relationships
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == propertySymbol.Key && r.RelType == "HAS_PROPERTY");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == packageSymbol.Key && r.RelType == "DEPENDS_ON");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == projectSymbol.Key && r.RelType == "DEPENDS_ON");
+    }
+
+    [Fact]
+    public async Task GivenPackageReference_AndNuspecHasBothUrls_WhenHandled_ThenReturnsUrlNodesInFileResult()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""Newtonsoft.Json"" Version=""13.0.1"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        const string nuspecContent = """
+            <?xml version="1.0"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <projectUrl>https://www.newtonsoft.com/json</projectUrl>
+                <repository type="git" url="https://github.com/JamesNK/Newtonsoft.Json" />
+              </metadata>
+            </package>
+            """;
+        fileSystem.AddFile(NuspecPath("Newtonsoft.Json", "13.0.1"), new MockFileData(nuspecContent));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert — URL data is in FileResult, not in the symbol/rel buffers
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(2);
+
+        var projectUrlNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://www.newtonsoft.com/json");
+        projectUrlNode.ShouldNotBeNull();
+        projectUrlNode.DepKey.ShouldBe("pkg:Newtonsoft.Json");
+        projectUrlNode.UrlKey.ShouldBe("url:https://www.newtonsoft.com/json");
+
+        var repoUrlNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://github.com/JamesNK/Newtonsoft.Json");
+        repoUrlNode.ShouldNotBeNull();
+        repoUrlNode.DepKey.ShouldBe("pkg:Newtonsoft.Json");
+        repoUrlNode.UrlKey.ShouldBe("url:https://github.com/JamesNK/Newtonsoft.Json");
+
+        // URL data must NOT appear in the symbol or relationship buffers
+        symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+    }
+
+    [Fact]
+    public async Task GivenPackageReference_AndNuspecHasOnlyProjectUrl_WhenHandled_ThenReturnsOneUrlNode()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""Serilog"" Version=""3.0.0"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        const string nuspecContent = """
+            <?xml version="1.0"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <projectUrl>https://serilog.net</projectUrl>
+              </metadata>
+            </package>
+            """;
+        fileSystem.AddFile(NuspecPath("Serilog", "3.0.0"), new MockFileData(nuspecContent));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().UrlKey.ShouldBe("url:https://serilog.net");
+    }
+
+    [Fact]
+    public async Task GivenPackageReference_AndNuspecHasOnlyRepositoryUrl_WhenHandled_ThenReturnsOneUrlNode()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""MyLib"" Version=""1.0.0"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        const string nuspecContent = """
+            <?xml version="1.0"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <repository type="git" url="https://github.com/org/mylib" />
+              </metadata>
+            </package>
+            """;
+        fileSystem.AddFile(NuspecPath("MyLib", "1.0.0"), new MockFileData(nuspecContent));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().UrlKey.ShouldBe("url:https://github.com/org/mylib");
+    }
+
+    [Fact]
+    public async Task GivenPackageReference_AndNuspecIsMissing_WhenHandled_ThenNoUrlNodes()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""SomePackage"" Version=""2.0.0"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+        // No nuspec added to MockFileSystem
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GivenPackageReference_AndNuspecIsMalformed_WhenHandled_ThenNoUrlNodesAndNoException()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""BrokenPkg"" Version=""1.0.0"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+        fileSystem.AddFile(NuspecPath("BrokenPkg", "1.0.0"), new MockFileData("this is not valid xml <<>>"));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — should not throw
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GivenPackageReferenceWithNoVersion_WhenHandled_ThenNoUrlNodes()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+
+        const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""SomePackage"" />
+  </ItemGroup>
+</Project>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+    }
+
+    private static string NuspecPath(string name, string version)
+    {
+        var packagesRoot = Environment.GetEnvironmentVariable("NUGET_PACKAGES")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+        var nameNormalized = name.ToLowerInvariant();
+        return Path.Combine(packagesRoot, nameNormalized, version, $"{nameNormalized}.nuspec");
     }
 }

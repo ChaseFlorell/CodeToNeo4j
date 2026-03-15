@@ -123,6 +123,7 @@ public class SolutionProcessor(
         var fileBuffer = new List<FileMetaData>(batchSize);
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
+        var urlBuffer = new List<UrlNode>(batchSize);
         var currentFileIndex = 0;
         var totalSymbols = 0;
         var totalRelationships = 0;
@@ -132,27 +133,28 @@ public class SolutionProcessor(
             fileBuffer.Add(result.File);
             symbolBuffer.AddRange(result.Symbols);
             relBuffer.AddRange(result.Relationships);
+            urlBuffer.AddRange(result.UrlNodes);
 
             totalSymbols += result.Symbols.Count;
             totalRelationships += result.Relationships.Count;
 
             if (fileBuffer.Count >= batchSize || symbolBuffer.Count >= batchSize)
             {
-                await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
+                await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
             }
 
             progressService.ReportProgress(++currentFileIndex, totalFiles, result.RelativePath);
         }
 
-        if (fileBuffer.Count > 0 || symbolBuffer.Count > 0)
+        if (fileBuffer.Count > 0 || symbolBuffer.Count > 0 || urlBuffer.Count > 0)
         {
-            await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, databaseName).ConfigureAwait(false);
+            await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
         }
 
         return (totalSymbols, totalRelationships);
     }
 
-    private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, string databaseName)
+    private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, List<UrlNode> urlNodes, string databaseName)
     {
         if (files.Count > 0)
         {
@@ -165,6 +167,12 @@ public class SolutionProcessor(
             await graphService.FlushSymbols(symbols, relationships, databaseName).ConfigureAwait(false);
             symbols.Clear();
             relationships.Clear();
+        }
+
+        if (urlNodes.Count > 0)
+        {
+            await graphService.UpsertDependencyUrls(urlNodes, databaseName).ConfigureAwait(false);
+            urlNodes.Clear();
         }
     }
 
@@ -251,15 +259,17 @@ public class SolutionProcessor(
 
         var finalFileKey = fileResult?.FileKey ?? fileKey;
         var finalNamespace = fileResult?.Namespace ?? defaultNamespace;
+        var urlNodes = fileResult?.UrlNodes is { Count: > 0 } urls ? urls.ToList() : [];
 
         var fileRecord = new FileMetaData(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
 
-        return new ProcessResult(fileRecord, symbols, relationships, relativePath);
+        return new ProcessResult(fileRecord, symbols, relationships, urlNodes, relativePath);
     }
 
     private record ProcessResult(
         FileMetaData File,
         List<Symbol> Symbols,
         List<Relationship> Relationships,
+        List<UrlNode> UrlNodes,
         string RelativePath);
 }

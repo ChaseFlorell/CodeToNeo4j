@@ -9,6 +9,8 @@ namespace CodeToNeo4j.FileHandlers;
 public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
     : PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
 {
+    private readonly IFileSystem _fileSystem = fileSystem;
+
     public override string FileExtension => ".csproj";
 
     protected override async Task<FileResult> HandleFile(
@@ -24,13 +26,14 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
         var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var urlNodes = new List<UrlNode>();
 
         try
         {
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root != null)
             {
-                ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+                await ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, urlNodes, minAccessibility).ConfigureAwait(false);
             }
         }
         catch (Exception)
@@ -38,10 +41,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             // Fail gracefully
         }
 
-        return new FileResult(fileNamespace, fileKey);
+        return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
 
-    private void ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, List<UrlNode> urlNodes, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -90,6 +93,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             if (string.IsNullOrEmpty(include)) continue;
 
             AddDependency(include, version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
+            await CollectNuspecUrls(include, version, urlNodes).ConfigureAwait(false);
         }
 
         // Extract ProjectReferences
@@ -120,6 +124,53 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+        }
+    }
+
+    private async Task CollectNuspecUrls(string name, string? version, List<UrlNode> urlNodes)
+    {
+        var (projectUrl, repositoryUrl) = await TryGetNuspecMetadataAsync(name, version).ConfigureAwait(false);
+        var depKey = $"pkg:{name}";
+
+        if (!string.IsNullOrEmpty(projectUrl))
+            urlNodes.Add(new UrlNode(depKey, $"url:{projectUrl}", projectUrl));
+
+        if (!string.IsNullOrEmpty(repositoryUrl))
+            urlNodes.Add(new UrlNode(depKey, $"url:{repositoryUrl}", repositoryUrl));
+    }
+
+    private async Task<(string? ProjectUrl, string? RepositoryUrl)> TryGetNuspecMetadataAsync(string name, string? version)
+    {
+        if (string.IsNullOrEmpty(version)) return (null, null);
+
+        var packagesRoot = Environment.GetEnvironmentVariable("NUGET_PACKAGES")
+            ?? _fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".nuget", "packages");
+
+        var nameNormalized = name.ToLowerInvariant();
+        var nuspecPath = _fileSystem.Path.Combine(packagesRoot, nameNormalized, version, $"{nameNormalized}.nuspec");
+
+        if (!_fileSystem.File.Exists(nuspecPath)) return (null, null);
+
+        try
+        {
+            var nuspecContent = await _fileSystem.File.ReadAllTextAsync(nuspecPath).ConfigureAwait(false);
+            var nuspecDoc = XDocument.Parse(nuspecContent);
+            var ns = nuspecDoc.Root?.Name.Namespace ?? XNamespace.None;
+            var metadata = nuspecDoc.Root?.Element(ns + "metadata");
+
+            var projectUrl = metadata?.Element(ns + "projectUrl")?.Value?.Trim();
+            if (string.IsNullOrEmpty(projectUrl)) projectUrl = null;
+
+            var repositoryUrl = metadata?.Element(ns + "repository")?.Attribute("url")?.Value?.Trim();
+            if (string.IsNullOrEmpty(repositoryUrl)) repositoryUrl = null;
+
+            return (projectUrl, repositoryUrl);
+        }
+        catch (Exception)
+        {
+            return (null, null);
         }
     }
 }
