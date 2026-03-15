@@ -14,7 +14,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem);
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
         
         var content = @"
 <Project Sdk=""Microsoft.NET.Sdk"">

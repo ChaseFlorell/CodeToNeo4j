@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public partial class JavaScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".js";
 
@@ -25,7 +25,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
 
         // Extract function definitions (basic)
         ExtractFunctions(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
-        
+
         // Extract imports/exports (basic)
         ExtractImportsExports(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
@@ -40,7 +40,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
         "return", "new", "delete", "void", "throw", "case", "in", "of", "do", "else"
     };
 
-    private static void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -61,24 +61,18 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
             if (string.IsNullOrEmpty(name)) continue;
 
             var startLine = content[..match.Index].Count(c => c == '\n') + 1;
-            var key = $"{fileKey}:Function:{name}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "Function", name, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: name,
-                Kind: "JavaScriptFunction",
-                Class: "function",
-                Fqn: name,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: name,
+                kind: "JavaScriptFunction",
+                @class: "function",
+                fqn: name,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
@@ -134,7 +128,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
         }
     }
 
-    private static void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -144,24 +138,18 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
         {
             var module = match.Groups[1].Value;
             var startLine = content[..match.Index].Count(c => c == '\n') + 1;
-            var key = $"{fileKey}:Import:{module}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "Import", module, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: module,
-                Kind: "JavaScriptImport",
-                Class: "module",
-                Fqn: module,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: module,
+                kind: "JavaScriptImport",
+                @class: "module",
+                fqn: module,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));

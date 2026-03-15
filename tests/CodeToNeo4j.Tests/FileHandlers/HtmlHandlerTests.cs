@@ -14,7 +14,7 @@ public class HtmlHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new HtmlHandler(fileSystem);
+        var sut = new HtmlHandler(fileSystem, new TextSymbolMapper());
         var content = @"
 <html>
   <head>

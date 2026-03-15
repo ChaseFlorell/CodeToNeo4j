@@ -14,7 +14,7 @@ public class CssHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CssHandler(fileSystem);
+        var sut = new CssHandler(fileSystem, new TextSymbolMapper());
         var content = @"body { color: black; }";
         var filePath = "test.css";
         fileSystem.AddFile(filePath, new MockFileData(content));

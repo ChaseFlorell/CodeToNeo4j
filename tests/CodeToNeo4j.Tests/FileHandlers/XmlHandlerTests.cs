@@ -14,7 +14,7 @@ public class XmlHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new XmlHandler(fileSystem);
+        var sut = new XmlHandler(fileSystem, new TextSymbolMapper());
         var content = @"<root><child>value</child></root>";
         var filePath = "test.xml";
         fileSystem.AddFile(filePath, new MockFileData(content));

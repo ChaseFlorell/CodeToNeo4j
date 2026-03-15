@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xml";
 
@@ -28,7 +28,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
             var xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
             if (xdoc.Root != null)
             {
-                XmlHandler.ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+                ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
             }
         }
         catch (Exception)
@@ -39,7 +39,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -47,34 +47,25 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
         System.Xml.IXmlLineInfo lineInfo = element;
         var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
 
-        // Create a key that is somewhat unique
-        var key = $"{fileKey}:XmlElement:{name}:{startLine}";
+        var key = textSymbolMapper.BuildKey(fileKey, "XmlElement", name, startLine);
 
-        var record = new Symbol(
-            Key: key,
-            Name: name,
-            Kind: "XmlElement",
-            Class: "element",
-            Fqn: name,
-            Accessibility: "Public",
-            FileKey: fileKey,
-            RelativePath: relativePath,
-            StartLine: startLine,
-            EndLine: startLine,
-            Documentation: null,
-            Comments: null,
-            Namespace: fileNamespace,
-            Version: null
-        );
+        var record = textSymbolMapper.CreateSymbol(
+            key: key,
+            name: name,
+            kind: "XmlElement",
+            @class: "element",
+            fqn: name,
+            fileKey: fileKey,
+            relativePath: relativePath,
+            fileNamespace: fileNamespace,
+            startLine: startLine);
 
         symbolBuffer.Add(record);
         relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
 
-        // Only process direct children to avoid excessive depth if needed, 
-        // but here we'll do full recursion like XamlHandler.
         foreach (var child in element.Elements())
         {
-            XmlHandler.ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+            ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
     }
 }

@@ -14,7 +14,7 @@ public class JavaScriptHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = "function foo() {}";
         var filePath = "src/utils/test.js";
         fileSystem.AddFile(filePath, new MockFileData(content));
@@ -43,7 +43,7 @@ public class JavaScriptHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = @"
 import { foo } from './foo.js';
 function myFunction() {
@@ -89,7 +89,7 @@ const myArrow = () => {};";
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = @"
 function validate(order) {
     return order != null;
@@ -134,7 +134,7 @@ function save(order) {}";
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = "function add(a, b) { return a + b; }";
         var filePath = "test.js";
         fileSystem.AddFile(filePath, new MockFileData(content));
@@ -162,7 +162,7 @@ function save(order) {}";
     {
         // Arrange — two functions with the same name (e.g. redefinitions common in JS)
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = @"
 function to(value) { return value; }
 function to(value, unit) { return value + unit; }
@@ -194,7 +194,7 @@ function caller() { to(1); }";
     {
         // Arrange — externalFn is not defined in this file
         var fileSystem = new MockFileSystem();
-        var sut = new JavaScriptHandler(fileSystem);
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
         var content = @"
 function doWork() {
     externalFn();

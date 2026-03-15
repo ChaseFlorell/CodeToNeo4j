@@ -24,7 +24,9 @@
 - Diff behavior between the `main` branch and your changes when relevant
 - Ask yourself: "Would a senior staff engineer approve this?"
 - Run tests, check logs, demonstrate correctness
-- Write new tests for new features and bug fixes
+- Write new tests for new features, bug fixes, and refactors — no exceptions
+- New services and classes must have dedicated unit tests (e.g. `TextSymbolMapper` → `TextSymbolMapperTests`)
+- Tests live in `tests/CodeToNeo4j.Tests/` mirroring the `src/` folder structure
 
 ### 5. Demand Elegance (Balanced)
 - For non-trivial changes: pause and ask "is there a more elegant way?"
