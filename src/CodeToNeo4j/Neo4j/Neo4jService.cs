@@ -28,25 +28,6 @@ public class Neo4jService(
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            driver.Dispose();
-        }
-    }
-
-    protected virtual async ValueTask DisposeAsyncCore()
-    {
-        logger.LogDebug("Disposing Neo4j driver...");
-        await driver.DisposeAsync().ConfigureAwait(false);
-    }
-
-    ~Neo4jService()
-    {
-        Dispose(false);
-    }
-
     public async Task Initialize(string? repoKey, string databaseName)
     {
         logger.LogInformation("Initializing Neo4j driver...");
@@ -277,6 +258,25 @@ public class Neo4jService(
         logger.LogInformation("Purge complete for {PurgeTarget}. Total items deleted: {TotalDeleted}", purgeTarget, totalDeleted);
     }
 
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            driver.Dispose();
+        }
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        logger.LogDebug("Disposing Neo4j driver...");
+        await driver.DisposeAsync().ConfigureAwait(false);
+    }
+
+    ~Neo4jService()
+    {
+        Dispose(false);
+    }
 
     private async Task VerifyNeo4jVersion()
     {

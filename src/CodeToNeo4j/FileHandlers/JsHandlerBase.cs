@@ -51,12 +51,6 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
     private record FunctionDef(string Name, string Key, int BodyStart, int BodyEnd);
 
-    private static readonly HashSet<string> JsKeywords = new(StringComparer.Ordinal)
-    {
-        "if", "for", "while", "switch", "catch", "function", "typeof", "instanceof",
-        "return", "new", "delete", "void", "throw", "case", "in", "of", "do", "else"
-    };
-
     private void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
@@ -97,49 +91,6 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
         }
 
         ExtractFunctionCallRelationships(content, functionDefs, relBuffer);
-    }
-
-    private static (int bodyStart, int bodyEnd) FindFunctionBody(string content, int searchFrom)
-    {
-        var braceIndex = content.IndexOf('{', searchFrom);
-        if (braceIndex < 0) return (-1, -1);
-
-        var depth = 0;
-        for (var i = braceIndex; i < content.Length; i++)
-        {
-            if (content[i] == '{') depth++;
-            else if (content[i] == '}')
-            {
-                depth--;
-                if (depth == 0) return (braceIndex + 1, i);
-            }
-        }
-
-        return (-1, -1);
-    }
-
-    private static void ExtractFunctionCallRelationships(string content, List<FunctionDef> functionDefs, ICollection<Relationship> relBuffer)
-    {
-        if (functionDefs.Count == 0) return;
-
-        var functionLookup = functionDefs
-            .GroupBy(f => f.Name)
-            .ToDictionary(g => g.Key, g => g.First().Key);
-        var callRegex = FunctionCallRegex();
-
-        foreach (var caller in functionDefs)
-        {
-            var body = content[caller.BodyStart..caller.BodyEnd];
-            var seen = new HashSet<string>();
-
-            foreach (Match match in callRegex.Matches(body))
-            {
-                var calledName = match.Groups[1].Value;
-                if (JsKeywords.Contains(calledName)) continue;
-                if (functionLookup.TryGetValue(calledName, out var calleeKey) && seen.Add(calleeKey))
-                    relBuffer.Add(new Relationship(FromKey: caller.Key, ToKey: calleeKey, RelType: "INVOKES"));
-            }
-        }
     }
 
     private void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
@@ -184,6 +135,55 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
         symbolBuffer.Add(record);
         relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+    }
+
+    private static readonly HashSet<string> JsKeywords = new(StringComparer.Ordinal)
+    {
+        "if", "for", "while", "switch", "catch", "function", "typeof", "instanceof",
+        "return", "new", "delete", "void", "throw", "case", "in", "of", "do", "else"
+    };
+
+    private static (int bodyStart, int bodyEnd) FindFunctionBody(string content, int searchFrom)
+    {
+        var braceIndex = content.IndexOf('{', searchFrom);
+        if (braceIndex < 0) return (-1, -1);
+
+        var depth = 0;
+        for (var i = braceIndex; i < content.Length; i++)
+        {
+            if (content[i] == '{') depth++;
+            else if (content[i] == '}')
+            {
+                depth--;
+                if (depth == 0) return (braceIndex + 1, i);
+            }
+        }
+
+        return (-1, -1);
+    }
+
+    private static void ExtractFunctionCallRelationships(string content, List<FunctionDef> functionDefs, ICollection<Relationship> relBuffer)
+    {
+        if (functionDefs.Count == 0) return;
+
+        var functionLookup = functionDefs
+            .GroupBy(f => f.Name)
+            .ToDictionary(g => g.Key, g => g.First().Key);
+        var callRegex = FunctionCallRegex();
+
+        foreach (var caller in functionDefs)
+        {
+            var body = content[caller.BodyStart..caller.BodyEnd];
+            var seen = new HashSet<string>();
+
+            foreach (Match match in callRegex.Matches(body))
+            {
+                var calledName = match.Groups[1].Value;
+                if (JsKeywords.Contains(calledName)) continue;
+                if (functionLookup.TryGetValue(calledName, out var calleeKey) && seen.Add(calleeKey))
+                    relBuffer.Add(new Relationship(FromKey: caller.Key, ToKey: calleeKey, RelType: "INVOKES"));
+            }
+        }
     }
 
     private static bool IsBareModuleSpecifier(string module)

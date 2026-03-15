@@ -6,8 +6,6 @@ public class ConsoleLogger(
     string name,
     LogLevel minLogLevel) : ILogger
 {
-    private static readonly int MainThreadId = Environment.CurrentManagedThreadId;
-
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= minLogLevel;
@@ -53,6 +51,8 @@ public class ConsoleLogger(
             Console.Error.WriteLine(exception.ToString());
         }
     }
+
+    private static readonly int MainThreadId = Environment.CurrentManagedThreadId;
 
     private static bool IsRunningOnCI(string message) =>
         message.StartsWith("::")

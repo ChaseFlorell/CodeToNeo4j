@@ -11,7 +11,11 @@ public abstract class OptionsHandler : IOptionsHandler
         }
     }
 
+    public void SetNext(IOptionsHandler next) => _next = next;
+
     protected abstract Task<bool> HandleOptions(Options options);
+
+    private IOptionsHandler? _next;
 
     private async Task HandleInternal(Options options)
     {
@@ -20,8 +24,4 @@ public abstract class OptionsHandler : IOptionsHandler
             await _next.Handle(options);
         }
     }
-
-    public void SetNext(IOptionsHandler next) => _next = next;
-
-    private IOptionsHandler? _next;
 }
