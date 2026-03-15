@@ -67,7 +67,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
         if (Accessibility.Public < minAccessibility) return;
 
         // Extract IDs
-        var idRegex = new Regex(@"id=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        var idRegex = IdRegex();
         foreach (Match match in idRegex.Matches(content))
         {
             var id = match.Groups[1].Value;
@@ -89,6 +89,9 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
         }
     }
+
+    [GeneratedRegex(@"id=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-CA")]
+    private static partial Regex IdRegex();
 
     [GeneratedRegex(@"<script\s+.*?src=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-CA")]
     private static partial Regex ScriptRegex();

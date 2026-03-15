@@ -155,7 +155,7 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         {
             var pnpmEntryName = name.Replace("/", "+", StringComparison.Ordinal);
             var prefix = $"{pnpmEntryName}@";
-            var match = _fileSystem.Directory.GetDirectories(pnpmStoreDir)
+            var match = _fileSystem.Directory.EnumerateDirectories(pnpmStoreDir)
                 .FirstOrDefault(d => _fileSystem.Path.GetFileName(d).StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
             if (match is not null)

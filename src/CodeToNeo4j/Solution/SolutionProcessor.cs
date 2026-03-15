@@ -22,6 +22,7 @@ public class SolutionProcessor(
     ISolutionFileDiscoveryService discoveryService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
+    private readonly HandlerLookup _handlerLookup = new(handlers);
     public async Task ProcessSolution(FileInfo sln, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -34,6 +35,9 @@ public class SolutionProcessor(
         logger.LogInformation("Opening solution...");
         var solution = await workspace.OpenSolutionAsync(sln.FullName).ConfigureAwait(false);
         logger.LogInformation("Solution opened successfully.");
+
+        // Start git metadata loading in background so it overlaps with dependency ingestion and diff computation
+        var metadataTask = versionControlService.LoadMetadata(solutionRoot, extensionsToInclude);
 
         if (!skipDependencies)
         {
@@ -66,7 +70,8 @@ public class SolutionProcessor(
 
         logger.LogInformation("Processing {Count} files in solution: {SlnName}...", totalFiles, sln.Name);
 
-        await versionControlService.LoadMetadata(solutionRoot, extensionsToInclude).ConfigureAwait(false);
+        // Ensure git metadata is fully loaded before processing files
+        await metadataTask.ConfigureAwait(false);
         var channel = Channel.CreateBounded<ProcessResult>(new BoundedChannelOptions(100)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -250,7 +255,7 @@ public class SolutionProcessor(
             }
         }
 
-        var handler = handlers.FirstOrDefault(h => h.CanHandle(filePath));
+        var handler = _handlerLookup.GetHandler(filePath);
         FileResult? fileResult = null;
         if (handler != null)
         {
@@ -272,4 +277,55 @@ public class SolutionProcessor(
         List<Relationship> Relationships,
         List<UrlNode> UrlNodes,
         string RelativePath);
+
+    internal sealed class HandlerLookup
+    {
+        private readonly Dictionary<string, IDocumentHandler> _byFileName = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IDocumentHandler> _byExtension = new(StringComparer.OrdinalIgnoreCase);
+
+        public HandlerLookup(IEnumerable<IDocumentHandler> handlers)
+        {
+            foreach (var handler in handlers)
+            {
+                var ext = handler.FileExtension;
+
+                // Handlers whose FileExtension is a full filename (e.g. "package.json")
+                // are indexed by filename for O(1) lookup.
+                if (!ext.StartsWith('.'))
+                {
+                    _byFileName.TryAdd(ext, handler);
+                    continue;
+                }
+
+                _byExtension.TryAdd(ext, handler);
+            }
+        }
+
+        public IDocumentHandler? GetHandler(string filePath)
+        {
+            // O(1) filename lookup (e.g. package.json)
+            var fileName = Path.GetFileName(filePath);
+            if (_byFileName.TryGetValue(fileName, out var byName))
+                return byName;
+
+            // O(1) extension lookup (e.g. .cs, .html)
+            var ext = Path.GetExtension(filePath);
+            if (!string.IsNullOrEmpty(ext) && _byExtension.TryGetValue(ext, out var byExt))
+            {
+                // Verify via CanHandle for handlers that match multiple extensions (e.g. .ts/.tsx)
+                if (byExt.CanHandle(filePath))
+                    return byExt;
+            }
+
+            // Linear fallback for files that didn't match by extension or filename
+            // (e.g. .tsx files matched to the .ts handler)
+            foreach (var handler in _byExtension.Values)
+            {
+                if (handler.CanHandle(filePath))
+                    return handler;
+            }
+
+            return null;
+        }
+    }
 }
