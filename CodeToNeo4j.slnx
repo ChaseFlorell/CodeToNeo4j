@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/.src/">
+    <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
     <File Path="Directory.Build.props" />
