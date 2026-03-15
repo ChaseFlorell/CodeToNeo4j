@@ -1,0 +1,49 @@
+name: github-pipelines.renovate
+
+on:
+  schedule:
+    # Every day at 5am UTC
+    - cron: '0 5 * * *'
+  workflow_dispatch: { }
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  # Use the same config file as in Azure pipeline
+  RENOVATE_CONFIG_FILE: renovate-config.js
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+          clean: false
+
+      - name: Setup .NET (use global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Configure git user for Renovate
+        run: |
+          git config --global user.email 'bot@renovateapp.com'
+          git config --global user.name 'Renovate Bot'
+
+      - name: Run Renovate
+        env:
+          # GitHub automatically provides this token; mirror Azure's TOKEN/GITHUB_COM_TOKEN usage
+          TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: npx --yes renovate

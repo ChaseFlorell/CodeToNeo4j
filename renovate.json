@@ -1,0 +1,222 @@
+{
+  "configMigration": true,
+  "extends": [
+    "config:recommended"
+  ],
+  "ignorePresets": [
+    ":disableRateLimiting"
+  ],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "packageRules": [
+    {
+      "description": "Automerge non-major updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoApprove": true,
+      "automerge": true
+    },
+    {
+      "description": "Skip pinned versions",
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchCurrentValue": "/^\\[[^,]+\\]$/",
+      "enabled": false
+    },
+    {
+      "groupName": "Microsoft and System",
+      "matchPackageNames": [
+        "/^Microsoft\\./",
+        "/^System\\./"
+      ]
+    },
+    {
+      "groupName": "Auth0",
+      "matchPackageNames": [
+        "/^Auth0/"
+      ]
+    },
+    {
+      "groupName": "AutomaticInterface",
+      "matchPackageNames": [
+        "/^AutomaticInterface/"
+      ]
+    },
+    {
+      "groupName": "Blazored",
+      "matchPackageNames": [
+        "/^Blazored/"
+      ]
+    },
+    {
+      "groupName": "ClosedXML",
+      "matchPackageNames": [
+        "/^ClosedXML/"
+      ]
+    },
+    {
+      "groupName": "DocumentFormat.OpenXml",
+      "matchPackageNames": [
+        "/^DocumentFormat.OpenXml/"
+      ]
+    },
+    {
+      "groupName": "DryIoc",
+      "matchPackageNames": [
+        "/^DryIoc/"
+      ]
+    },
+    {
+      "groupName": "DynamicData",
+      "matchPackageNames": [
+        "/^DynamicData/"
+      ]
+    },
+    {
+      "groupName": "ExtendedGeoCoordinate",
+      "matchPackageNames": [
+        "/^ExtendedGeoCoordinate/"
+      ]
+    },
+    {
+      "groupName": "FakeItEasy",
+      "matchPackageNames": [
+        "/^FakeItEasy/"
+      ]
+    },
+    {
+      "groupName": "Shouldly",
+      "matchPackageNames": [
+        "/^Shouldly/"
+      ]
+    },
+    {
+      "groupName": "FluentValidation",
+      "matchPackageNames": [
+        "/^FluentValidation/"
+      ]
+    },
+    {
+      "groupName": "MongoDb",
+      "matchPackageNames": [
+        "/^MongoDb/"
+      ]
+    },
+    {
+      "groupName": "morelinq",
+      "matchPackageNames": [
+        "/^morelinq/"
+      ]
+    },
+    {
+      "groupName": "MudBlazor",
+      "matchPackageNames": [
+        "/^MudBlazor/",
+        "/^CodeBeam.MudBlazor/"
+      ]
+    },
+    {
+      "groupName": "Nanoid",
+      "matchPackageNames": [
+        "/^Nanoid/"
+      ]
+    },
+    {
+      "groupName": "Nito.AsyncEx",
+      "matchPackageNames": [
+        "/^Nito.AsyncEx/"
+      ]
+    },
+    {
+      "groupName": "NodaTime",
+      "matchPackageNames": [
+        "/^NodaTime/"
+      ]
+    },
+    {
+      "groupName": "NuGet",
+      "matchPackageNames": [
+        "/^NuGet/"
+      ]
+    },
+    {
+      "groupName": "Nuke",
+      "matchPackageNames": [
+        "/^Nuke/"
+      ]
+    },
+    {
+      "groupName": "Polly",
+      "matchPackageNames": [
+        "/^Polly/"
+      ]
+    },
+    {
+      "groupName": "ReactiveUI",
+      "matchPackageNames": [
+        "/^ReactiveUI/"
+      ]
+    },
+    {
+      "groupName": "Refit",
+      "matchPackageNames": [
+        "/^Refit/"
+      ]
+    },
+    {
+      "groupName": "Riok.Mapperly",
+      "matchPackageNames": [
+        "/^Riok.Mapperly/"
+      ]
+    },
+    {
+      "groupName": "Rocket.Surgery",
+      "matchPackageNames": [
+        "/^Rocket.Surgery/"
+      ]
+    },
+    {
+      "groupName": "Serilog",
+      "matchPackageNames": [
+        "/^Serilog/"
+      ]
+    },
+    {
+      "groupName": "Stateless",
+      "matchPackageNames": [
+        "/^Stateless/"
+      ]
+    },
+    {
+      "groupName": "StyleCop",
+      "matchPackageNames": [
+        "/^StyleCop/"
+      ]
+    },
+    {
+      "groupName": "Swashbuckle",
+      "matchPackageNames": [
+        "/^Swashbuckle/"
+      ]
+    },
+    {
+      "groupName": "Throw",
+      "matchPackageNames": [
+        "/^Throw/"
+      ]
+    },
+    {
+      "groupName": "xunit",
+      "matchPackageNames": [
+        "/^xunit/"
+      ]
+    }
+  ]
+}

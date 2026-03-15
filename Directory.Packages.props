@@ -1,30 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
     <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  <ItemGroup>
+  <!-- Each ItemGroup in this file should be sorted alphabetically based on their Label -->
+  <!-- Each PackageVersion within each ItemGroup should be sorted alphabetically based on their Include-->
+  <ItemGroup Label="Analyzers">
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="FakeItEasy">
+    <PackageVersion Include="FakeItEasy" Version="8.3.0" />
+  </ItemGroup>
+  <ItemGroup Label="Microsoft.Build.Locator">
     <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.31" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" />
+  </ItemGroup>
+  <ItemGroup Label="Microsoft.CodeAnalysis">
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Microsoft.Extensions">
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.2" />
+  </ItemGroup>
+  <ItemGroup Label="Microsoft.NET">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+  </ItemGroup>
+  <ItemGroup Label="Neo4j.Driver">
     <PackageVersion Include="Neo4j.Driver" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Polly">
     <PackageVersion Include="Polly" Version="8.5.2" />
+  </ItemGroup>
+  <ItemGroup Label="Shouldly">
+    <PackageVersion Include="Shouldly" Version="4.2.1" />
+  </ItemGroup>
+  <ItemGroup Label="Spectre.Console">
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
+  </ItemGroup>
+  <ItemGroup Label="System">
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+  <ItemGroup Label="System.IO.Abstractions">
     <PackageVersion Include="System.IO.Abstractions" Version="22.0.10" />
     <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.0.10" />
-    <PackageVersion Include="Shouldly" Version="4.2.1" />
-    <PackageVersion Include="FakeItEasy" Version="8.3.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+  </ItemGroup>
+  <ItemGroup Label="xunit">
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
   </ItemGroup>
 </Project>
