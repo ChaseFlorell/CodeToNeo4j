@@ -47,7 +47,11 @@
       "groupName": "Microsoft and System",
       "matchPackageNames": [
         "/^Microsoft\\./",
-        "/^System\\.(?!IO\\.Abstractions)/"
+        "/^System\\./"
+      ],
+      "excludePackageNames": [
+        "System.IO.Abstractions",
+        "System.IO.Abstractions.TestingHelpers"
       ]
     },
     {
