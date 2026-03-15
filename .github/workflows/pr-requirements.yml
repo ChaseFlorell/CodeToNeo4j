@@ -39,7 +39,7 @@ jobs:
         env:
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          if ! echo "$BODY" | grep -qF '- [x] Tests have been added or updated'; then
+          if ! echo "$BODY" | grep -qF -- '- [x] Tests have been added or updated'; then
             echo "::error::The 'Tests have been added or updated' checkbox must be checked before merging."
             exit 1
           fi
@@ -52,7 +52,7 @@ jobs:
         env:
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          if ! echo "$BODY" | grep -qF '- [x] Rebased on top of main'; then
+          if ! echo "$BODY" | grep -qF -- '- [x] Rebased on top of main'; then
             echo "::error::The 'Rebased on top of main' checkbox must be checked before merging."
             exit 1
           fi
