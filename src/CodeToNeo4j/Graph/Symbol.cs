@@ -4,6 +4,7 @@ public record Symbol(
     string Key,
     string Name,
     string Kind,
+    string Class,
     string Fqn,
     string Accessibility,
     string FileKey,

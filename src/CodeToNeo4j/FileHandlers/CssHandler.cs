@@ -47,6 +47,7 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
                 Key: key,
                 Name: selector,
                 Kind: "CssSelector",
+                Class: "selector",
                 Fqn: selector,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -55,7 +56,8 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);

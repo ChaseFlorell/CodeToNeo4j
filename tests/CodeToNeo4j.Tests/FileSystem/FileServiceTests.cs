@@ -16,14 +16,14 @@ public class FileServiceTests
     }
 
     [Theory]
-    [InlineData("src/CodeToNeo4j/Solution/SolutionProcessor.cs", "CodeToNeo4j.Solution.SolutionProcessor", "CodeToNeo4j.Solution")]
-    [InlineData("source/Project/File.cs", "Project.File", "Project")]
-    [InlineData("Project/File.cs", "Project.File", "Project")]
-    [InlineData("File.cs", "File", "")]
-    [InlineData("src/SolutionProcessor.cs", "SolutionProcessor", "")]
-    [InlineData("src/CodeToNeo4j/Page.razor", "CodeToNeo4j.Page", "CodeToNeo4j")]
-    [InlineData("src/CodeToNeo4j/View.xaml", "CodeToNeo4j.View", "CodeToNeo4j")]
-    public void InferFileMetadata_Roslyn_ShouldReturnFqnAndDotNamespace(string path, string expectedKey, string expectedNamespace)
+    [InlineData("src/CodeToNeo4j/Solution/SolutionProcessor.cs", "src/CodeToNeo4j/Solution/SolutionProcessor.cs", "CodeToNeo4j.Solution")]
+    [InlineData("source/Project/File.cs", "source/Project/File.cs", "Project")]
+    [InlineData("Project/File.cs", "Project/File.cs", "Project")]
+    [InlineData("File.cs", "File.cs", "")]
+    [InlineData("src/SolutionProcessor.cs", "src/SolutionProcessor.cs", "")]
+    [InlineData("src/CodeToNeo4j/Page.razor", "src/CodeToNeo4j/Page.razor", "CodeToNeo4j")]
+    [InlineData("src/CodeToNeo4j/View.xaml", "src/CodeToNeo4j/View.xaml", "CodeToNeo4j")]
+    public void InferFileMetadata_Roslyn_ShouldReturnPathAndDotNamespace(string path, string expectedKey, string expectedNamespace)
     {
         // Act
         var (key, ns) = _fileService.InferFileMetadata(path);

@@ -167,6 +167,7 @@ public class Neo4jService(
             ["key"] = s.Key,
             ["name"] = s.Name,
             ["kind"] = s.Kind,
+            ["class"] = s.Class,
             ["fqn"] = s.Fqn,
             ["accessibility"] = s.Accessibility,
             ["fileKey"] = s.FileKey,

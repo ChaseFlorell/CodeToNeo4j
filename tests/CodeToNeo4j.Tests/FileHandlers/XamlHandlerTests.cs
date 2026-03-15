@@ -56,7 +56,7 @@ public class XamlHandlerTests
         handlerSymbol.ShouldNotBeNull();
         handlerSymbol.Kind.ShouldBe("XamlEventHandler");
 
-        relBuffer.ShouldContain(r => r.FromKey == "MyApp.MainWindow" && r.ToKey == windowSymbol.Key && r.RelType == "CONTAINS");
+        relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == windowSymbol.Key && r.RelType == "CONTAINS");
         relBuffer.ShouldContain(r => r.FromKey == buttonSymbol.Key && r.ToKey == handlerSymbol.Key && r.RelType == "BINDS_TO");
     }
 }

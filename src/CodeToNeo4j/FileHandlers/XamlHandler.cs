@@ -35,7 +35,6 @@ public class XamlHandler(
                 var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
                 if (!string.IsNullOrEmpty(xClass))
                 {
-                    fileKey = xClass;
                     fileNamespace = xClass.Contains('.') 
                         ? xClass.Substring(0, xClass.LastIndexOf('.')) 
                         : null;
@@ -108,6 +107,7 @@ public class XamlHandler(
                 Key: symbolKey,
                 Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
                 Kind: "XamlElement",
+                Class: "element",
                 Fqn: $"{name}{keySuffix}",
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -116,7 +116,8 @@ public class XamlHandler(
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);
@@ -135,6 +136,7 @@ public class XamlHandler(
                         Key: handlerKey,
                         Name: attr.Value,
                         Kind: "XamlEventHandler",
+                        Class: "event-handler",
                         Fqn: attr.Value,
                         Accessibility: "Private",
                         FileKey: fileKey,
@@ -143,7 +145,8 @@ public class XamlHandler(
                         EndLine: startLine,
                         Documentation: null,
                         Comments: null,
-                        Namespace: fileNamespace
+                        Namespace: fileNamespace,
+                        Version: null
                     );
                     symbolBuffer.Add(handlerRecord);
                     relBuffer.Add(new Relationship(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
