@@ -6,7 +6,8 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
+public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
+    : PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
 {
     public override string FileExtension => ".csproj";
 
@@ -60,9 +61,9 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
                 IXmlLineInfo lineInfo = property;
                 var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-                var key = textSymbolMapper.BuildKey(fileKey, "Property", name, startLine);
+                var key = SymbolMapper.BuildKey(fileKey, "Property", name, startLine);
 
-                var record = textSymbolMapper.CreateSymbol(
+                var record = SymbolMapper.CreateSymbol(
                     key: key,
                     name: name,
                     kind: "ProjectProperty",
@@ -88,25 +89,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
             if (string.IsNullOrEmpty(include)) continue;
 
-            IXmlLineInfo lineInfo = packageRef;
-            var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-            var key = textSymbolMapper.BuildKey(fileKey, "PackageReference", include, startLine);
-
-            var record = textSymbolMapper.CreateSymbol(
-                key: key,
-                name: include,
-                kind: "PackageReference",
-                @class: include,
-                fqn: $"{include} ({version})",
-                fileKey: fileKey,
-                relativePath: relativePath,
-                fileNamespace: fileNamespace,
-                startLine: startLine,
-                documentation: version,
-                version: version);
-
-            symbolBuffer.Add(record);
-            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+            AddDependency(include, version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
         }
 
         // Extract ProjectReferences
@@ -122,9 +105,9 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
             IXmlLineInfo lineInfo = projectRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-            var key = textSymbolMapper.BuildKey(fileKey, "ProjectReference", include, startLine);
+            var key = SymbolMapper.BuildKey(fileKey, "ProjectReference", include, startLine);
 
-            var record = textSymbolMapper.CreateSymbol(
+            var record = SymbolMapper.CreateSymbol(
                 key: key,
                 name: include,
                 kind: "ProjectReference",
