@@ -17,7 +17,8 @@ public class XamlNamespaceTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = $@"
 <Window x:Class=""MyApp.MainWindow""
@@ -55,7 +56,8 @@ public class XamlNamespaceTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
@@ -92,7 +94,8 @@ public class XamlNamespaceTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
@@ -129,7 +132,8 @@ public class XamlNamespaceTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">

@@ -1,7 +1,6 @@
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.VersionControl;
 using FakeItEasy;
-using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using Shouldly;
 using Xunit;
@@ -14,10 +13,9 @@ public class GitServiceTests
     public void GivenValidGitLogOutput_WhenParseCommitsCalled_ThenReturnsExpectedCommits()
     {
         // Arrange
-        var logger = A.Fake<ILogger<GitService>>();
         var fileSystem = new System.IO.Abstractions.FileSystem();
         var fileService = A.Fake<IFileService>();
-        var sut = new GitService(fileService, fileSystem, logger);
+        var sut = new GitLogParser(fileService, fileSystem);
 
         var repoRoot = "/repo";
         var output = @"COMMIT|hash1|#|Author One|#|author1@example.com|#|2026-03-09T14:20:00Z|#|Commit Message One
