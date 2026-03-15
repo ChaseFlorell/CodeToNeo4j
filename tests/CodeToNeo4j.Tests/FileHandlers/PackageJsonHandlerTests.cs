@@ -218,4 +218,224 @@ public class PackageJsonHandlerTests
         symbolBuffer.ShouldBeEmpty();
         relBuffer.ShouldBeEmpty();
     }
+
+    // ── URL enrichment tests ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GivenNpmLayout_AndInstalledPackageHasBothUrls_WhenHandled_ThenReturnsUrlNodes()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"lodash":"^4.17.21"}}"""));
+        fileSystem.AddFile("node_modules/lodash/package.json", new MockFileData("""
+            {
+              "name": "lodash",
+              "homepage": "https://lodash.com",
+              "repository": { "type": "git", "url": "git+https://github.com/lodash/lodash.git" }
+            }
+            """));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(2);
+
+        var homepageNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://lodash.com");
+        homepageNode.ShouldNotBeNull();
+        homepageNode.DepKey.ShouldBe("pkg:lodash");
+        homepageNode.UrlKey.ShouldBe("url:https://lodash.com");
+
+        var repoNode = result.UrlNodes.FirstOrDefault(u => u.Name == "https://github.com/lodash/lodash");
+        repoNode.ShouldNotBeNull();
+        repoNode.DepKey.ShouldBe("pkg:lodash");
+        repoNode.UrlKey.ShouldBe("url:https://github.com/lodash/lodash");
+    }
+
+    [Fact]
+    public async Task GivenNpmLayout_AndRepositoryIsPlainString_WhenHandled_ThenNormalizesUrl()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"react":"^18.0.0"}}"""));
+        fileSystem.AddFile("node_modules/react/package.json", new MockFileData("""
+            {
+              "name": "react",
+              "repository": "github:facebook/react"
+            }
+            """));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().Name.ShouldBe("https://github.com/facebook/react");
+    }
+
+    [Fact]
+    public async Task GivenPnpmLayout_AndInstalledPackageHasUrls_WhenHandled_ThenReturnsUrlNodes()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"lodash":"^4.17.21"}}"""));
+        // No npm-style path — only pnpm virtual store
+        fileSystem.AddFile("node_modules/.pnpm/lodash@4.17.21/node_modules/lodash/package.json", new MockFileData("""
+            {
+              "name": "lodash",
+              "homepage": "https://lodash.com",
+              "repository": { "type": "git", "url": "git+https://github.com/lodash/lodash.git" }
+            }
+            """));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(2);
+        result.UrlNodes.ShouldContain(u => u.DepKey == "pkg:lodash" && u.Name == "https://lodash.com");
+        result.UrlNodes.ShouldContain(u => u.DepKey == "pkg:lodash" && u.Name == "https://github.com/lodash/lodash");
+    }
+
+    [Fact]
+    public async Task GivenPnpmLayout_AndScopedPackage_WhenHandled_ThenResolvesCorrectly()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"devDependencies":{"@types/node":"^20.0.0"}}"""));
+        fileSystem.AddFile("node_modules/.pnpm/@types+node@20.0.0/node_modules/@types/node/package.json", new MockFileData("""
+            {
+              "name": "@types/node",
+              "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node"
+            }
+            """));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldNotBeNull();
+        result.UrlNodes.Count.ShouldBe(1);
+        result.UrlNodes.First().DepKey.ShouldBe("pkg:@types/node");
+    }
+
+    [Fact]
+    public async Task GivenNoNodeModules_WhenHandled_ThenNoUrlNodesAndNoException()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"lodash":"^4.17.21"}}"""));
+        // No node_modules at all
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+        symbolBuffer.Count.ShouldBe(1); // dependency symbol still created
+    }
+
+    [Fact]
+    public async Task GivenInstalledPackageHasNoUrlFields_WhenHandled_ThenNoUrlNodes()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"my-pkg":"1.0.0"}}"""));
+        fileSystem.AddFile("node_modules/my-pkg/package.json", new MockFileData("""{"name":"my-pkg","version":"1.0.0"}"""));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GivenInstalledPackageJsonIsMalformed_WhenHandled_ThenNoUrlNodesAndNoException()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = CreateSut(fileSystem);
+
+        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"bad-pkg":"1.0.0"}}"""));
+        fileSystem.AddFile("node_modules/bad-pkg/package.json", new MockFileData("not valid json {{"));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — should not throw
+        var result = await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "package.json",
+            filePath: "package.json", relativePath: "package.json",
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        result.UrlNodes.ShouldBeNull();
+        symbolBuffer.Count.ShouldBe(1); // dependency symbol still created
+    }
 }
