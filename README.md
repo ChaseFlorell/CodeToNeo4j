@@ -91,7 +91,7 @@ If running from the build output:
 | `--batch-size`                | Number of symbols to batch before flushing to Neo4j.                                                                       | `500` |
 | `--skip-dependencies`         | Skip NuGet dependency ingestion.                                                                                           | `false` |
 | `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
-| `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
+| `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
 
 > **Note**: When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
@@ -153,11 +153,12 @@ jobs:
 
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
-- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
+- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
     - **C#**: Full symbol extraction (Classes, Methods, etc.) and semantic mapping.
     - **Razor**: Extracts directives such as `@using`, `@inject`, `@model`, and `@inherits`.
     - **XAML**: Extracts UI elements and event handler bindings (e.g., `Click`, `Command`).
     - **JavaScript**: Extracts function definitions and import statements.
+    - **TypeScript** (`.ts`, `.tsx`): Extracts function definitions, import statements, interfaces, type aliases, and enums.
     - **HTML**: Extracts script references and element IDs.
     - **XML**: Extracts hierarchical element structure.
     - **JSON**: Extracts properties as symbols.

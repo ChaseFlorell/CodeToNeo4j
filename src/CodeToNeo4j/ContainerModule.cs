@@ -54,6 +54,7 @@ public static class ContainerModule
         services.AddSingleton<IDocumentHandler, RazorHandler>();
         services.AddSingleton<IDocumentHandler, XamlHandler>();
         services.AddSingleton<IDocumentHandler, JavaScriptHandler>();
+        services.AddSingleton<IDocumentHandler, TypeScriptHandler>();
         services.AddSingleton<IDocumentHandler, HtmlHandler>();
         services.AddSingleton<IDocumentHandler, XmlHandler>();
         services.AddSingleton<IDocumentHandler, JsonHandler>();
