@@ -8,6 +8,8 @@ namespace CodeToNeo4j.VersionControl;
 public class GitService(
     IFileService fileService,
     IFileSystem fileSystem,
+    IGitLogParser logParser,
+    IGitMetadataCache metadataCache,
     ILogger<GitService> logger) : IVersionControlService
 {
     public async Task LoadMetadata(string workingDirectory, IEnumerable<string> includeExtensions)
@@ -16,7 +18,7 @@ public class GitService(
         var includedExtensionsSet = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         logger.LogInformation("Pre-fetching git metadata for all files in the repository...");
-        _metadataCache.Clear();
+        metadataCache.Clear();
 
         var psi = new ProcessStartInfo
         {
@@ -30,7 +32,6 @@ public class GitService(
 
         using var p = Process.Start(psi) ?? throw new Exception("Failed to start git log for metadata pre-fetch.");
 
-        // Temporary data structure for raw history
         var fileHistory = new Dictionary<string, List<(string Author, DateTimeOffset Date, string Hash, string? Refs)>>(StringComparer.OrdinalIgnoreCase);
 
         string? currentAuthor = null;
@@ -59,7 +60,6 @@ public class GitService(
                 continue;
             }
 
-            // This is a file name
             var relPath = line.Trim();
             if (!includedExtensionsSet.Any(ext => relPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
             {
@@ -80,51 +80,11 @@ public class GitService(
 
         foreach (var kvp in fileHistory)
         {
-            var filePath = kvp.Key;
-            var history = kvp.Value;
-
-            var authorMap = new Dictionary<string, (DateTimeOffset first, DateTimeOffset last, int count)>();
-            var created = DateTimeOffset.MaxValue;
-            var lastModified = DateTimeOffset.MinValue;
-            var hashes = new List<string>();
-            var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var commit in history)
-            {
-                if (commit.Date < created) created = commit.Date;
-                if (commit.Date > lastModified) lastModified = commit.Date;
-
-                if (authorMap.TryGetValue(commit.Author, out var stats))
-                {
-                    var newFirst = commit.Date < stats.first ? commit.Date : stats.first;
-                    var newLast = commit.Date > stats.last ? commit.Date : stats.last;
-                    authorMap[commit.Author] = (newFirst, newLast, stats.count + 1);
-                }
-                else
-                {
-                    authorMap[commit.Author] = (commit.Date, commit.Date, 1);
-                }
-
-                hashes.Add(commit.Hash);
-
-                if (commit.Refs != null)
-                {
-                    var refs = commit.Refs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    foreach (var r in refs)
-                    {
-                        if (r.StartsWith("tag:"))
-                        {
-                            tags.Add(r[4..].Trim());
-                        }
-                    }
-                }
-            }
-
-            var authors = authorMap.Select(m => new AuthorMetadata(m.Key, m.Value.first, m.Value.last, m.Value.count)).ToArray();
-            _metadataCache[filePath] = new FileMetadata(created, lastModified, authors, [.. hashes], [.. tags]);
+            var metadata = logParser.BuildFileMetadata(kvp.Value);
+            metadataCache.Set(kvp.Key, metadata);
         }
 
-        logger.LogInformation("Loaded git metadata for {Count} files.", _metadataCache.Count);
+        logger.LogInformation("Loaded git metadata for {Count} files.", metadataCache.Count);
     }
 
     public async Task<DiffResult> GetChangedFiles(string diffBase, string workingDirectory, IEnumerable<string> includedExtensions)
@@ -239,12 +199,12 @@ public class GitService(
 
         if (p.ExitCode != 0) return [];
 
-        return ParseCommits(output, repoRoot);
+        return logParser.ParseCommits(output, repoRoot);
     }
 
     public async Task<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
     {
-        if (_metadataCache.TryGetValue(filePath, out var cached))
+        if (metadataCache.TryGet(filePath, out var cached))
         {
             return cached;
         }
@@ -273,118 +233,10 @@ public class GitService(
             return new FileMetadata(DateTimeOffset.MinValue, DateTimeOffset.MinValue, [], [], []);
         }
 
-        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (lines.Length == 0)
-        {
-            return new FileMetadata(DateTimeOffset.MinValue, DateTimeOffset.MinValue, [], [], []);
-        }
-
-        var authorMap = new Dictionary<string, (DateTimeOffset first, DateTimeOffset last, int count)>();
-        var created = DateTimeOffset.MaxValue;
-        var lastModified = DateTimeOffset.MinValue;
-        var commits = new List<string>();
-        var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var line in lines)
-        {
-            var parts = line.Split('|');
-            if (parts.Length < 2) continue;
-
-            var authorName = parts[0];
-            if (!DateTimeOffset.TryParse(parts[1], out var commitDate)) continue;
-
-            if (commitDate < created) created = commitDate;
-            if (commitDate > lastModified) lastModified = commitDate;
-
-            if (authorMap.TryGetValue(authorName, out var stats))
-            {
-                var newFirst = commitDate < stats.first ? commitDate : stats.first;
-                var newLast = commitDate > stats.last ? commitDate : stats.last;
-                authorMap[authorName] = (newFirst, newLast, stats.count + 1);
-            }
-            else
-            {
-                authorMap[authorName] = (commitDate, commitDate, 1);
-            }
-
-            if (parts.Length >= 3)
-            {
-                commits.Add(parts[2]);
-            }
-
-            if (parts.Length >= 4 && !string.IsNullOrWhiteSpace(parts[3]))
-            {
-                var refs = parts[3].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                foreach (var r in refs)
-                {
-                    if (r.StartsWith("tag:"))
-                    {
-                        tags.Add(r[4..].Trim());
-                    }
-                }
-            }
-        }
-
-        var authors = authorMap.Select(kvp => new AuthorMetadata(kvp.Key, kvp.Value.first, kvp.Value.last, kvp.Value.count)).ToArray();
-
-        var result = new FileMetadata(created, lastModified, authors, [.. commits], [.. tags]);
-        _metadataCache[filePath] = result;
+        var result = logParser.ParseSingleFileLog(output);
+        metadataCache.Set(filePath, result);
         return result;
     }
-
-    internal IEnumerable<CommitMetadata> ParseCommits(string output, string repoRoot)
-    {
-        var commits = new List<CommitMetadata>();
-        var lines = output.Split('\n', StringSplitOptions.TrimEntries);
-        CommitMetadata? currentCommit = null;
-        var changedFiles = new List<FileStatus>();
-
-        foreach (var line in lines)
-        {
-            if (string.IsNullOrWhiteSpace(line)) continue;
-
-            if (line.StartsWith("COMMIT|"))
-            {
-                if (currentCommit != null)
-                {
-                    commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-                    changedFiles = [];
-                }
-
-                var headerParts = line["COMMIT|".Length..].Split("|#|", 5, StringSplitOptions.None);
-                if (headerParts.Length >= 5)
-                {
-                    if (DateTimeOffset.TryParse(headerParts[3], out var date))
-                    {
-                        currentCommit = new CommitMetadata(headerParts[0], headerParts[1], headerParts[2], date, headerParts[4], []);
-                    }
-                }
-            }
-            else
-            {
-                if (currentCommit != null)
-                {
-                    var fileParts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-                    if (fileParts.Length >= 2)
-                    {
-                        var status = fileParts[0];
-                        var relPath = fileParts[1];
-                        var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, relPath));
-                        changedFiles.Add(new FileStatus(fullPath, status.StartsWith('D')));
-                    }
-                }
-            }
-        }
-
-        if (currentCommit != null)
-        {
-            commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-        }
-
-        return commits;
-    }
-
-    private readonly Dictionary<string, FileMetadata> _metadataCache = new(StringComparer.OrdinalIgnoreCase);
 
     private static string GetRange(string diffBase) => diffBase.Contains("..") ? diffBase : $"{diffBase}...HEAD";
 

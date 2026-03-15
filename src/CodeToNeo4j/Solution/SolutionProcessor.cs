@@ -20,6 +20,7 @@ public class SolutionProcessor(
     IEnumerable<IDocumentHandler> handlers,
     IDependencyIngestor dependencyIngestor,
     ISolutionFileDiscoveryService discoveryService,
+    ICommitIngestionService commitIngestionService,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
     private readonly HandlerLookup _handlerLookup = new(handlers);
@@ -92,17 +93,7 @@ public class SolutionProcessor(
 
         if (diffBase is not null)
         {
-            var totalCommits = await versionControlService.GetCommitCount(diffBase, solutionRoot).ConfigureAwait(false);
-            if (totalCommits > 0)
-            {
-                logger.LogInformation("Ingesting {Count} commits since {DiffBase} in parallel batches...", totalCommits, diffBase);
-                var skipValues = Enumerable.Range(0, (totalCommits + batchSize - 1) / batchSize).Select(i => i * batchSize).ToArray();
-                await Parallel.ForEachAsync(skipValues, parallelOptions, async (skip, _) =>
-                {
-                    var commits = await versionControlService.GetCommitBatch(diffBase, solutionRoot, batchSize, skip).ConfigureAwait(false);
-                    await graphService.UpsertCommits(repoKey, solutionRoot, commits, databaseName).ConfigureAwait(false);
-                }).ConfigureAwait(false);
-            }
+            await commitIngestionService.IngestCommits(diffBase, solutionRoot, repoKey, databaseName, batchSize).ConfigureAwait(false);
         }
 
         logger.LogInformation("Processing complete.");
@@ -181,31 +172,6 @@ public class SolutionProcessor(
         }
     }
 
-    private static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
-    {
-        var result = discoveredFiles.ToArray();
-
-        switch (changedFiles?.Any() ?? false)
-        {
-            case true:
-                result = result
-                    .Where(f => changedFiles.Contains(f.FilePath))
-                    .ToArray();
-                break;
-            default:
-            {
-                if (changedFiles is not null)
-                {
-                    result = [];
-                }
-
-                break;
-            }
-        }
-
-        return result;
-    }
-
     private async Task<DiffResult?> GetChangedFiles(FileInfo sln, string? diffBase, HashSet<string> includeExtensions)
     {
         if (diffBase is null) return null;
@@ -269,6 +235,31 @@ public class SolutionProcessor(
         var fileRecord = new FileMetaData(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
 
         return new ProcessResult(fileRecord, symbols, relationships, urlNodes, relativePath);
+    }
+
+    private static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
+    {
+        var result = discoveredFiles.ToArray();
+
+        switch (changedFiles?.Any() ?? false)
+        {
+            case true:
+                result = result
+                    .Where(f => changedFiles.Contains(f.FilePath))
+                    .ToArray();
+                break;
+            default:
+            {
+                if (changedFiles is not null)
+                {
+                    result = [];
+                }
+
+                break;
+            }
+        }
+
+        return result;
     }
 
     private record ProcessResult(

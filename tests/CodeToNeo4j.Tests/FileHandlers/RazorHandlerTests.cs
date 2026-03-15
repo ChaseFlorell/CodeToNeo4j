@@ -15,7 +15,8 @@ public class RazorHandlerTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"@namespace MyProject.Pages
 <h1>Hello</h1>";
@@ -46,7 +47,8 @@ public class RazorHandlerTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 @using System.Text

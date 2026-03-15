@@ -18,7 +18,8 @@ public class CSharpUsingDependencyTests
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         // We use Microsoft.CodeAnalysis as an external dependency
@@ -65,7 +66,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         // We use Microsoft.CodeAnalysis.CSharp.SyntaxKind as a static using
@@ -113,7 +115,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         // We use Microsoft.CodeAnalysis as a global using
@@ -160,7 +163,8 @@ public class Foo
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
         var symbolMapper = new SymbolMapper();
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
+        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
+        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
         var sut = new CSharpHandler(symbolProcessor, fileSystem);
 
         // File 1 has the global using

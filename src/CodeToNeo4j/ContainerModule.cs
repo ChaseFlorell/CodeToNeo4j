@@ -43,12 +43,16 @@ public static class ContainerModule
         services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
         services.AddSingleton<ICypherService, CypherService>();
         services.AddSingleton<IFileService, FileService>();
+        services.AddSingleton<IGitLogParser, GitLogParser>();
+        services.AddSingleton<IGitMetadataCache, GitMetadataCache>();
         services.AddSingleton<IVersionControlService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
         services.AddSingleton<ITextSymbolMapper, TextSymbolMapper>();
+        services.AddSingleton<IMemberDependencyExtractor, MemberDependencyExtractor>();
         services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
         services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
         services.AddSingleton<IRoslynSymbolProcessor, RoslynSymbolProcessor>();
+        services.AddSingleton<ICommitIngestionService, CommitIngestionService>();
 
         services.AddSingleton<IDocumentHandler, CSharpHandler>();
         services.AddSingleton<IDocumentHandler, RazorHandler>();
@@ -69,6 +73,8 @@ public static class ContainerModule
         services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
 
         services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
+        services.AddSingleton<INeo4jSchemaService, Neo4jSchemaService>();
+        services.AddSingleton<INeo4jFlushService, Neo4jFlushService>();
         services.AddSingleton<IGraphService, Neo4jService>();
 
         services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
