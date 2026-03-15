@@ -6,6 +6,13 @@ module.exports = async ({github, context}) => {
     return;
   }
 
+  // Only close issues when the "resolves linked issue" checkbox is checked
+  const resolveChecked = /- \[x\] This PR resolves the linked issue/i.test(body);
+  if (!resolveChecked) {
+    console.log('Resolve checkbox is unchecked. Skipping issue closure.');
+    return;
+  }
+
   // GitHub standard keywords for closing issues:
   // close, closes, closed, fix, fixes, fixed, resolve, resolves, resolved
   // regex to match "Keyword #123" or "Keyword: #123"

@@ -29,8 +29,8 @@
   <Folder Name="/.src/.github/workflows/">
     <File Path=".github\workflows\close-associated-issues.yml" />
     <File Path=".github\workflows\index-to-neo4j.yml" />
+    <File Path=".github\workflows\pr-requirements.yml" />
     <File Path=".github\workflows\release.yml" />
-    <File Path=".github\workflows\require-label.yml" />
     <File Path=".github\workflows\verify.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
