@@ -12,6 +12,7 @@
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
   <ItemGroup>

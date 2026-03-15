@@ -8,12 +8,8 @@ module.exports = async ({ github, context }) => {
     return;
   }
 
-  const files = fs.readdirSync(resultsDir).filter(f => f.endsWith('.trx'));
-  if (files.length === 0) {
-    console.log('No .trx files found in TestResults.');
-    return;
-  }
-
+  // Parse TRX test results
+  const trxFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('.trx'));
   let total = 0, passed = 0, failed = 0, skipped = 0;
   let startTime, finishTime;
 
@@ -22,7 +18,7 @@ module.exports = async ({ github, context }) => {
     return match ? parseInt(match[1]) : 0;
   };
 
-  for (const file of files) {
+  for (const file of trxFiles) {
     const content = fs.readFileSync(path.join(resultsDir, file), 'utf8');
 
     const countersMatch = content.match(/<Counters [^>]*\/>/);
@@ -47,6 +43,97 @@ module.exports = async ({ github, context }) => {
     durationStr = `${(durationMs / 1000).toFixed(2)}s`;
   }
 
+  // Parse Cobertura coverage reports
+  // Coverage files are in subdirectories: TestResults/<guid>/coverage.cobertura.xml
+  const findCoverageFiles = (dir) => {
+    const results = [];
+    if (!fs.existsSync(dir)) return results;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        results.push(...findCoverageFiles(path.join(dir, entry.name)));
+      } else if (entry.name === 'coverage.cobertura.xml') {
+        results.push(path.join(dir, entry.name));
+      }
+    }
+    return results;
+  };
+
+  const coverageFiles = findCoverageFiles(resultsDir);
+  let coverageSection = '';
+
+  if (coverageFiles.length > 0) {
+    let totalLines = 0, coveredLines = 0;
+    let totalBranches = 0, coveredBranches = 0;
+    const packageStats = [];
+
+    for (const file of coverageFiles) {
+      const content = fs.readFileSync(file, 'utf8');
+
+      // Parse overall coverage from <coverage> element
+      const coverageMatch = content.match(/<coverage[^>]*>/);
+      if (coverageMatch) {
+        const el = coverageMatch[0];
+        const lv = el.match(/lines-valid="(\d+)"/);
+        const lc = el.match(/lines-covered="(\d+)"/);
+        const bv = el.match(/branches-valid="(\d+)"/);
+        const bc = el.match(/branches-covered="(\d+)"/);
+        if (lv) totalLines += parseInt(lv[1]);
+        if (lc) coveredLines += parseInt(lc[1]);
+        if (bv) totalBranches += parseInt(bv[1]);
+        if (bc) coveredBranches += parseInt(bc[1]);
+      }
+
+      // Parse per-package (namespace) coverage
+      const packageRegex = /<package[^>]*name="([^"]*)"[^>]*line-rate="([^"]*)"[^>]*branch-rate="([^"]*)"[^>]*>/g;
+      let pkgMatch;
+      while ((pkgMatch = packageRegex.exec(content)) !== null) {
+        packageStats.push({
+          name: pkgMatch[1],
+          lineRate: parseFloat(pkgMatch[2]),
+          branchRate: parseFloat(pkgMatch[3])
+        });
+      }
+    }
+
+    const lineRate = totalLines > 0 ? (coveredLines / totalLines * 100).toFixed(1) : 'N/A';
+    const branchRate = totalBranches > 0 ? (coveredBranches / totalBranches * 100).toFixed(1) : 'N/A';
+
+    const coverageRows = [
+      '',
+      '### Code Coverage',
+      '',
+      '| Metric | Value |',
+      '| --- | --- |',
+      `| **Line Coverage** | ${lineRate}% (${coveredLines}/${totalLines}) |`,
+      `| **Branch Coverage** | ${branchRate}% (${coveredBranches}/${totalBranches}) |`
+    ];
+
+    if (packageStats.length > 0) {
+      // Sort by name and deduplicate
+      const seen = new Set();
+      const uniquePackages = packageStats.filter(p => {
+        if (seen.has(p.name)) return false;
+        seen.add(p.name);
+        return true;
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      coverageRows.push(
+        '',
+        '<details>',
+        '<summary>Coverage by namespace</summary>',
+        '',
+        '| Namespace | Line % | Branch % |',
+        '| --- | --- | --- |'
+      );
+      for (const pkg of uniquePackages) {
+        coverageRows.push(`| ${pkg.name} | ${(pkg.lineRate * 100).toFixed(1)}% | ${(pkg.branchRate * 100).toFixed(1)}% |`);
+      }
+      coverageRows.push('', '</details>');
+    }
+
+    coverageSection = coverageRows.join('\n');
+  }
+
   const status = failed > 0 ? '❌ Failed' : '✅ Passed';
   const header = '### Test Results Summary';
   const marker = '<!-- test-results-summary -->';
@@ -61,6 +148,7 @@ module.exports = async ({ github, context }) => {
     `| **Failed** | ${failed} |`,
     `| **Skipped** | ${skipped} |`,
     `| **Duration** | ${durationStr} |`,
+    coverageSection,
     '',
     `*Workflow run: [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*`,
     '',
