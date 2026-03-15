@@ -2,6 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
 
@@ -17,7 +18,7 @@ public class XamlHandlerTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         var content = @"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""

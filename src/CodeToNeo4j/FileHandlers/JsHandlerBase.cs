@@ -53,7 +53,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
     private void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility)
+        if (!IsPublicAccessible(minAccessibility))
             return;
 
         var functionRegex = FunctionRegex();
@@ -68,7 +68,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
             if (string.IsNullOrEmpty(name)) continue;
 
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = TextSymbolMapper.BuildKey(fileKey, "Function", name, startLine);
 
             var record = TextSymbolMapper.CreateSymbol(
@@ -95,19 +95,19 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
     private void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (!IsPublicAccessible(minAccessibility)) return;
 
         foreach (Match match in ImportRegex().Matches(content))
         {
             var module = match.Groups[1].Value;
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             AddModuleReference(module, fileKey, relativePath, fileNamespace, startLine, symbolBuffer, relBuffer);
         }
 
         foreach (Match match in RequireRegex().Matches(content))
         {
             var module = match.Groups[1].Value;
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             AddModuleReference(module, fileKey, relativePath, fileNamespace, startLine, symbolBuffer, relBuffer);
         }
     }

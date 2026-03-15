@@ -34,7 +34,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 
     private void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility)
+        if (!IsPublicAccessible(minAccessibility))
         {
             return;
         }
@@ -43,7 +43,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
         foreach (Match match in scriptRegex.Matches(content))
         {
             var src = match.Groups[1].Value;
-            var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = textSymbolMapper.BuildKey(fileKey, "ScriptRef", src, startLine);
 
             var record = textSymbolMapper.CreateSymbol(
@@ -64,14 +64,14 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 
     private void ExtractIdsAndClasses(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (!IsPublicAccessible(minAccessibility)) return;
 
         // Extract IDs
         var idRegex = IdRegex();
         foreach (Match match in idRegex.Matches(content))
         {
             var id = match.Groups[1].Value;
-            var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = textSymbolMapper.BuildKey(fileKey, "ElementId", id, startLine);
 
             var record = textSymbolMapper.CreateSymbol(

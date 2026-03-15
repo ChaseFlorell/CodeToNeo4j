@@ -3,13 +3,15 @@ using System.Xml.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
 public class XamlHandler(
     IRoslynSymbolProcessor symbolProcessor,
     IFileSystem fileSystem,
-    ITextSymbolMapper textSymbolMapper)
+    ITextSymbolMapper textSymbolMapper,
+    ILogger<XamlHandler> logger)
     : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xaml";
@@ -45,9 +47,9 @@ public class XamlHandler(
                 ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignore XML parse errors
+            _logger.LogWarning(ex, "Failed to parse XAML file: {FilePath}", filePath);
         }
 
         // Use Roslyn to extract members from generated code
@@ -171,6 +173,8 @@ public class XamlHandler(
                attrName.EndsWith("Released") ||
                attrName == "Command";
     }
+
+    private readonly ILogger<XamlHandler> _logger = logger;
 
     private static readonly string[] XamlNamespaces =
     [

@@ -3,6 +3,7 @@ using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
@@ -19,7 +20,7 @@ public class XamlRoslynTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         
         var xamlFilePath = "MainWindow.xaml";
         var xamlContent = @"<Window x:Class=""MyApp.MainWindow""

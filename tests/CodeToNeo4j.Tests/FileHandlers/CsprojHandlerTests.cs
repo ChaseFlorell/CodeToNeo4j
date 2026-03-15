@@ -2,6 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
 
@@ -14,7 +15,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         var content = @"
 <Project Sdk=""Microsoft.NET.Sdk"">
@@ -70,7 +71,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -126,7 +127,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -168,7 +169,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -210,7 +211,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -241,7 +242,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -272,7 +273,7 @@ public class CsprojHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper());
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
 
         const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>

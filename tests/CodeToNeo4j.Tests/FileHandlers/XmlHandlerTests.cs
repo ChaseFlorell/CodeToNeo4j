@@ -2,6 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
 
@@ -14,7 +15,7 @@ public class XmlHandlerTests
     {
         // Arrange
         var fileSystem = new MockFileSystem();
-        var sut = new XmlHandler(fileSystem, new TextSymbolMapper());
+        var sut = new XmlHandler(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance);
         var content = @"<root><child>value</child></root>";
         var filePath = "test.xml";
         fileSystem.AddFile(filePath, new MockFileData(content));
