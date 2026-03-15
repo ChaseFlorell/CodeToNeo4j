@@ -1,0 +1,33 @@
+name: PR Requirements
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize, reopened, edited]
+
+jobs:
+  check-label:
+    runs-on: self-hosted
+    steps:
+      - name: Check for at least one label
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels) }}
+        run: |
+          label_count=$(echo "$LABELS" | jq 'length')
+          if [ "$label_count" -eq 0 ]; then
+            echo "::error::This PR requires at least one label before it can be merged."
+            exit 1
+          fi
+          echo "Labels found: $(echo "$LABELS" | jq -r '[.[].name] | join(", ")')"
+
+  check-issue-reference:
+    runs-on: self-hosted
+    steps:
+      - name: Check for issue number in Resolves field
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! echo "$BODY" | grep -qE '^Resolves #[0-9]+'; then
+            echo "::error::PR body must contain 'Resolves #<issue-number>' (e.g. 'Resolves #42')."
+            exit 1
+          fi
+          echo "Issue reference found."
