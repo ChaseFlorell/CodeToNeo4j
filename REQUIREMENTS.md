@@ -109,4 +109,5 @@ Keeping dependencies up to date manually is tedious and error-prone. Renovate au
 - [ ] Install/enable the Renovate GitHub App on the repository (User Action required)
 
 ### 5.4 Grouping Logic
-- **Microsoft and System**: All `Microsoft.*` and `System.*` dependencies are grouped together to ensure they update in sync. This is particularly important for `Microsoft.Extensions.Logging` to stay aligned with other core Microsoft/System packages.
+- **Alignment with Directory.Packages.props**: Renovate groups are configured to match the `ItemGroup` labels within `Directory.Packages.props` exactly.
+- **Microsoft and System**: All core `Microsoft.*` and `System.*` dependencies are grouped together under the "Microsoft and System" label to ensure they update in sync. This is particularly important for `Microsoft.Extensions.Logging` to stay aligned with other core packages.

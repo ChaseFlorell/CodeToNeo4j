@@ -31,58 +31,10 @@
       "enabled": false
     },
     {
-      "groupName": "Microsoft and System",
+      "groupName": "Analyzers",
       "matchPackageNames": [
-        "/^Microsoft\\./",
-        "/^System\\./"
-      ]
-    },
-    {
-      "groupName": "Auth0",
-      "matchPackageNames": [
-        "/^Auth0/"
-      ]
-    },
-    {
-      "groupName": "AutomaticInterface",
-      "matchPackageNames": [
-        "/^AutomaticInterface/"
-      ]
-    },
-    {
-      "groupName": "Blazored",
-      "matchPackageNames": [
-        "/^Blazored/"
-      ]
-    },
-    {
-      "groupName": "ClosedXML",
-      "matchPackageNames": [
-        "/^ClosedXML/"
-      ]
-    },
-    {
-      "groupName": "DocumentFormat.OpenXml",
-      "matchPackageNames": [
-        "/^DocumentFormat.OpenXml/"
-      ]
-    },
-    {
-      "groupName": "DryIoc",
-      "matchPackageNames": [
-        "/^DryIoc/"
-      ]
-    },
-    {
-      "groupName": "DynamicData",
-      "matchPackageNames": [
-        "/^DynamicData/"
-      ]
-    },
-    {
-      "groupName": "ExtendedGeoCoordinate",
-      "matchPackageNames": [
-        "/^ExtendedGeoCoordinate/"
+        "coverlet.collector",
+        "Roslynator.Analyzers"
       ]
     },
     {
@@ -92,64 +44,16 @@
       ]
     },
     {
-      "groupName": "Shouldly",
+      "groupName": "Microsoft and System",
       "matchPackageNames": [
-        "/^Shouldly/"
+        "/^Microsoft\\./",
+        "/^System\\.(?!IO\\.Abstractions)/"
       ]
     },
     {
-      "groupName": "FluentValidation",
+      "groupName": "Neo4j.Driver",
       "matchPackageNames": [
-        "/^FluentValidation/"
-      ]
-    },
-    {
-      "groupName": "MongoDb",
-      "matchPackageNames": [
-        "/^MongoDb/"
-      ]
-    },
-    {
-      "groupName": "morelinq",
-      "matchPackageNames": [
-        "/^morelinq/"
-      ]
-    },
-    {
-      "groupName": "MudBlazor",
-      "matchPackageNames": [
-        "/^MudBlazor/",
-        "/^CodeBeam.MudBlazor/"
-      ]
-    },
-    {
-      "groupName": "Nanoid",
-      "matchPackageNames": [
-        "/^Nanoid/"
-      ]
-    },
-    {
-      "groupName": "Nito.AsyncEx",
-      "matchPackageNames": [
-        "/^Nito.AsyncEx/"
-      ]
-    },
-    {
-      "groupName": "NodaTime",
-      "matchPackageNames": [
-        "/^NodaTime/"
-      ]
-    },
-    {
-      "groupName": "NuGet",
-      "matchPackageNames": [
-        "/^NuGet/"
-      ]
-    },
-    {
-      "groupName": "Nuke",
-      "matchPackageNames": [
-        "/^Nuke/"
+        "/^Neo4j\\.Driver/"
       ]
     },
     {
@@ -159,57 +63,21 @@
       ]
     },
     {
-      "groupName": "ReactiveUI",
+      "groupName": "Shouldly",
       "matchPackageNames": [
-        "/^ReactiveUI/"
+        "/^Shouldly/"
       ]
     },
     {
-      "groupName": "Refit",
+      "groupName": "Spectre.Console",
       "matchPackageNames": [
-        "/^Refit/"
+        "/^Spectre\\.Console/"
       ]
     },
     {
-      "groupName": "Riok.Mapperly",
+      "groupName": "System.IO.Abstractions",
       "matchPackageNames": [
-        "/^Riok.Mapperly/"
-      ]
-    },
-    {
-      "groupName": "Rocket.Surgery",
-      "matchPackageNames": [
-        "/^Rocket.Surgery/"
-      ]
-    },
-    {
-      "groupName": "Serilog",
-      "matchPackageNames": [
-        "/^Serilog/"
-      ]
-    },
-    {
-      "groupName": "Stateless",
-      "matchPackageNames": [
-        "/^Stateless/"
-      ]
-    },
-    {
-      "groupName": "StyleCop",
-      "matchPackageNames": [
-        "/^StyleCop/"
-      ]
-    },
-    {
-      "groupName": "Swashbuckle",
-      "matchPackageNames": [
-        "/^Swashbuckle/"
-      ]
-    },
-    {
-      "groupName": "Throw",
-      "matchPackageNames": [
-        "/^Throw/"
+        "/^System\\.IO\\.Abstractions/"
       ]
     },
     {
