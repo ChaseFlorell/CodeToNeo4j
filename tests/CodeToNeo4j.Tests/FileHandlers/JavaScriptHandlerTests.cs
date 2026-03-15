@@ -158,6 +158,38 @@ function save(order) {}";
     }
 
     [Fact]
+    public async Task GivenDuplicateFunctionNames_WhenHandleCalled_ThenDoesNotThrow()
+    {
+        // Arrange — two functions with the same name (e.g. redefinitions common in JS)
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem);
+        var content = @"
+function to(value) { return value; }
+function to(value, unit) { return value + unit; }
+function caller() { to(1); }";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — should not throw ArgumentException
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.Where(s => s.Name == "to").ShouldNotBeEmpty();
+        relBuffer.ShouldContain(r => r.RelType == "INVOKES");
+    }
+
+    [Fact]
     public async Task GivenFunctionThatCallsExternalFunction_WhenHandleCalled_ThenNoInvokesRelationship()
     {
         // Arrange — externalFn is not defined in this file

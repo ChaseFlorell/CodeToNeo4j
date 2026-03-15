@@ -114,7 +114,9 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
     {
         if (functionDefs.Count == 0) return;
 
-        var functionLookup = functionDefs.ToDictionary(f => f.Name, f => f.Key);
+        var functionLookup = functionDefs
+            .GroupBy(f => f.Name)
+            .ToDictionary(g => g.Key, g => g.First().Key);
         var callRegex = FunctionCallRegex();
 
         foreach (var caller in functionDefs)
