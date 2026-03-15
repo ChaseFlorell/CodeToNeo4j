@@ -36,6 +36,7 @@
     7. Private const members (CRITICAL: These must be at the very bottom of the class)
 - **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action/e]_Then[Result]()`.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
+- **Writing Tests**: All new changes must include unit tests to ensure code quality and maintainability.
 
 # Documentation Standards
 - **README Synchronicity**: Every time `README.md` is updated, `PACKAGE_README.md` MUST also be updated to ensure they remain in sync. 
