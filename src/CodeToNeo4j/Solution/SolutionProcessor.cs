@@ -109,7 +109,13 @@ public class SolutionProcessor(
             logger.LogInformation("{FileExtension} files handled: {Count}", handler.FileExtension, handler.NumberOfFilesHandled);
         }
 
-        logger.LogInformation("Done: {Elapsed}", stopwatch.Elapsed);
+        var elapsed = stopwatch.Elapsed;
+        var duration = elapsed.TotalHours >= 1
+            ? $"{(int)elapsed.TotalHours}h {elapsed.Minutes}m {elapsed.Seconds}s"
+            : elapsed.TotalMinutes >= 1
+                ? $"{elapsed.Minutes}m {elapsed.Seconds}s"
+                : $"{elapsed.Seconds}s";
+        logger.LogInformation("Done: {Duration}", duration);
     }
 
     private async Task<(int TotalSymbols, int TotalRelationships)> RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
