@@ -42,7 +42,7 @@ public class JsonHandler(
 
     private void ProcessElement(JsonElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
     {
-        if (Accessibility.Public < minAccessibility)
+        if (!IsPublicAccessible(minAccessibility))
         {
             return;
         }

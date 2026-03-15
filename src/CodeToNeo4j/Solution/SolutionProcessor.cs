@@ -191,7 +191,7 @@ public class SolutionProcessor(
         return result;
     }
 
-    private async Task<ProcessResult> ProcessFile(
+    internal async Task<ProcessResult> ProcessFile(
         Microsoft.CodeAnalysis.Solution solution,
         ProcessedFile file,
         string solutionRoot,
