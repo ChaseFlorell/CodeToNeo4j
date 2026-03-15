@@ -9,8 +9,6 @@ namespace CodeToNeo4j.FileHandlers;
 public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
     : PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
 {
-    private readonly IFileSystem _fileSystem = fileSystem;
-
     public override string FileExtension => ".csproj";
 
     protected override async Task<FileResult> HandleFile(
@@ -43,6 +41,8 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
         return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 
     private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, List<UrlNode> urlNodes, Accessibility minAccessibility)
     {

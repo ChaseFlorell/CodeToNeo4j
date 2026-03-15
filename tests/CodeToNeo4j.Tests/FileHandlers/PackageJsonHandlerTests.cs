@@ -131,14 +131,16 @@ public class PackageJsonHandlerTests
         symbolBuffer.First().Name.ShouldBe("react");
     }
 
-    [Fact]
-    public async Task GivenPackageJsonInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory()
+    [Theory]
+    [InlineData("src/app/package.json", "src/app")]
+    [InlineData("packages/ui/package.json", "packages/ui")]
+    [InlineData("package.json", "")]
+    public async Task GivenPackageJsonInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory(string filePath, string expectedNamespace)
     {
         // Arrange
         var fileSystem = new MockFileSystem();
         var sut = CreateSut(fileSystem);
         var content = """{"dependencies": {"lodash": "^4.0.0"}}""";
-        var filePath = "src/app/package.json";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();
@@ -149,7 +151,7 @@ public class PackageJsonHandlerTests
             document: null,
             compilation: null,
             repoKey: "test-repo",
-            fileKey: "src/app/package.json",
+            fileKey: filePath,
             filePath: filePath,
             relativePath: filePath,
             symbolBuffer: symbolBuffer,
@@ -157,7 +159,7 @@ public class PackageJsonHandlerTests
             minAccessibility: Accessibility.Private);
 
         // Assert
-        result.Namespace.ShouldBe("src/app");
+        result.Namespace.ShouldBe(expectedNamespace);
     }
 
     [Fact]
@@ -413,15 +415,17 @@ public class PackageJsonHandlerTests
         result.UrlNodes.ShouldBeNull();
     }
 
-    [Fact]
-    public async Task GivenInstalledPackageJsonIsMalformed_WhenHandled_ThenNoUrlNodesAndNoException()
+    [Theory]
+    [InlineData("""{"dependencies":{"bad-pkg":"1.0.0"}}""", "not valid json {{")]
+    [InlineData("""{"dependencies":{"bad-pkg":"1.0.0"}}""", "{ \"broken\": }")]
+    public async Task GivenInstalledPackageJsonIsMalformed_WhenHandled_ThenNoUrlNodesAndNoException(string rootContent, string installedContent)
     {
         // Arrange
         var fileSystem = new MockFileSystem();
         var sut = CreateSut(fileSystem);
 
-        fileSystem.AddFile("package.json", new MockFileData("""{"dependencies":{"bad-pkg":"1.0.0"}}"""));
-        fileSystem.AddFile("node_modules/bad-pkg/package.json", new MockFileData("not valid json {{"));
+        fileSystem.AddFile("package.json", new MockFileData(rootContent));
+        fileSystem.AddFile("node_modules/bad-pkg/package.json", new MockFileData(installedContent));
 
         var symbolBuffer = new List<Symbol>();
         var relBuffer = new List<Relationship>();
@@ -437,5 +441,51 @@ public class PackageJsonHandlerTests
         // Assert
         result.UrlNodes.ShouldBeNull();
         symbolBuffer.Count.ShouldBe(1); // dependency symbol still created
+    }
+
+    // ── NormalizeRepositoryUrl tests ──────────────────────────────────────────
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    // Shorthand notations
+    [InlineData("github:user/repo", "https://github.com/user/repo")]
+    [InlineData("gitlab:user/repo", "https://gitlab.com/user/repo")]
+    [InlineData("bitbucket:user/repo", "https://bitbucket.org/user/repo")]
+    // git+ssh variants
+    [InlineData("git+ssh://git@github.com/user/repo.git", "https://github.com/user/repo")]
+    [InlineData("git+ssh://git@gitlab.com/user/repo.git", "https://gitlab.com/user/repo")]
+    [InlineData("git+ssh://git@bitbucket.org/user/repo.git", "https://bitbucket.org/user/repo")]
+    [InlineData("git+ssh://git@dev.azure.com/org/project/_git/repo.git", "https://dev.azure.com/org/project/_git/repo")]
+    // Plain ssh variants
+    [InlineData("ssh://git@github.com/user/repo.git", "https://github.com/user/repo")]
+    [InlineData("ssh://git@gitlab.com/user/repo.git", "https://gitlab.com/user/repo")]
+    [InlineData("ssh://git@bitbucket.org/user/repo.git", "https://bitbucket.org/user/repo")]
+    [InlineData("ssh://git@dev.azure.com/org/project/_git/repo.git", "https://dev.azure.com/org/project/_git/repo")]
+    // git+ HTTPS/HTTP wrappers
+    [InlineData("git+https://github.com/user/repo.git", "https://github.com/user/repo")]
+    [InlineData("git+http://example.com/repo.git", "http://example.com/repo")]
+    // Bare git:// protocol
+    [InlineData("git://github.com/user/repo.git", "https://github.com/user/repo")]
+    // Already HTTPS — no prefix change, just .git stripped
+    [InlineData("https://github.com/user/repo.git", "https://github.com/user/repo")]
+    // Already clean URL — no change
+    [InlineData("https://github.com/user/repo", "https://github.com/user/repo")]
+    // Leading/trailing whitespace
+    [InlineData("  github:user/repo  ", "https://github.com/user/repo")]
+    // Case-insensitive prefix matching
+    [InlineData("GITHUB:user/repo", "https://github.com/user/repo")]
+    public void GivenRepositoryUrl_WhenNormalizeRepositoryUrlCalled_ThenReturnsExpectedUrl(string? input, string? expected)
+    {
+        PackageJsonHandler.NormalizeRepositoryUrl(input).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("https://user:token@github.com/user/repo", "https://github.com/user/repo")]
+    [InlineData("https://org@dev.azure.com/org/project/_git/repo", "https://dev.azure.com/org/project/_git/repo")]
+    [InlineData("https://user:pass@gitlab.com/user/repo.git", "https://gitlab.com/user/repo")]
+    public void GivenUrlWithEmbeddedCredentials_WhenNormalizeRepositoryUrlCalled_ThenStripsCredentials(string input, string expected)
+    {
+        PackageJsonHandler.NormalizeRepositoryUrl(input).ShouldBe(expected);
     }
 }

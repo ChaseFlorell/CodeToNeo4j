@@ -9,12 +9,37 @@ namespace CodeToNeo4j.FileHandlers;
 public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<PackageJsonHandler> logger)
     : PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
 {
-    private readonly IFileSystem _fileSystem = fileSystem;
-
     public override string FileExtension => "package.json";
 
     public override bool CanHandle(string filePath)
         => Path.GetFileName(filePath).Equals("package.json", StringComparison.OrdinalIgnoreCase);
+
+    internal static string? NormalizeRepositoryUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return null;
+
+        url = url.Trim();
+
+        // Apply the first matching prefix normalisation
+        foreach (var (from, to) in RepositoryPrefixNormalizations)
+        {
+            if (url.StartsWith(from, StringComparison.OrdinalIgnoreCase))
+            {
+                url = to + url[from.Length..];
+                break;
+            }
+        }
+
+        // Strip embedded credentials (e.g. https://org@dev.azure.com/… or https://user:token@host/…)
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.UserInfo))
+            url = url.Replace($"{uri.UserInfo}@", string.Empty, StringComparison.Ordinal);
+
+        // Strip trailing .git
+        if (url.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            url = url[..^4];
+
+        return url;
+    }
 
     protected override async Task<FileResult> HandleFile(
         TextDocument? document,
@@ -51,6 +76,8 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
         return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 
     private async Task ExtractDependencySection(
         JsonElement root,
@@ -141,26 +168,32 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         return null;
     }
 
-    private static string? NormalizeRepositoryUrl(string? url)
-    {
-        if (string.IsNullOrEmpty(url)) return null;
+    // Ordered prefix replacements: first match wins.
+    // SSH and shorthand entries are listed before the generic git+ / git:// fallbacks.
+    private static readonly (string From, string To)[] RepositoryPrefixNormalizations =
+    [
+        // Shorthand notations  (e.g. "github:user/repo")
+        ("github:",    "https://github.com/"),
+        ("gitlab:",    "https://gitlab.com/"),
+        ("bitbucket:", "https://bitbucket.org/"),
 
-        // Strip git+ prefix (e.g. git+https://github.com/user/repo.git)
-        if (url.StartsWith("git+", StringComparison.OrdinalIgnoreCase))
-            url = url[4..];
+        // git+ssh variants  (e.g. "git+ssh://git@github.com/user/repo.git")
+        ("git+ssh://git@github.com/",       "https://github.com/"),
+        ("git+ssh://git@gitlab.com/",       "https://gitlab.com/"),
+        ("git+ssh://git@bitbucket.org/",    "https://bitbucket.org/"),
+        ("git+ssh://git@dev.azure.com/",    "https://dev.azure.com/"),
 
-        // Convert git:// to https://
-        if (url.StartsWith("git://", StringComparison.OrdinalIgnoreCase))
-            url = "https://" + url[6..];
+        // Plain ssh variants  (e.g. "ssh://git@github.com/user/repo.git")
+        ("ssh://git@github.com/",           "https://github.com/"),
+        ("ssh://git@gitlab.com/",           "https://gitlab.com/"),
+        ("ssh://git@bitbucket.org/",        "https://bitbucket.org/"),
+        ("ssh://git@dev.azure.com/",        "https://dev.azure.com/"),
 
-        // Expand github: shorthand (e.g. github:user/repo)
-        if (url.StartsWith("github:", StringComparison.OrdinalIgnoreCase))
-            url = "https://github.com/" + url[7..];
+        // git+ wrapper over HTTPS / HTTP  (e.g. "git+https://github.com/…" or Azure DevOps tokens)
+        ("git+https://", "https://"),
+        ("git+http://",  "http://"),
 
-        // Strip trailing .git
-        if (url.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
-            url = url[..^4];
-
-        return url.Trim();
-    }
+        // Bare git:// protocol  (e.g. "git://github.com/user/repo.git")
+        ("git://", "https://"),
+    ];
 }

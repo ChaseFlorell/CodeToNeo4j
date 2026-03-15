@@ -10,8 +10,6 @@ public class GitService(
     IFileSystem fileSystem,
     ILogger<GitService> logger) : IVersionControlService
 {
-    private readonly Dictionary<string, FileMetadata> _metadataCache = new(StringComparer.OrdinalIgnoreCase);
-
     public async Task LoadMetadata(string workingDirectory, IEnumerable<string> includeExtensions)
     {
         var repoRoot = await GetGitRoot(workingDirectory).ConfigureAwait(false);
@@ -244,60 +242,6 @@ public class GitService(
         return ParseCommits(output, repoRoot);
     }
 
-    internal IEnumerable<CommitMetadata> ParseCommits(string output, string repoRoot)
-    {
-        var commits = new List<CommitMetadata>();
-        var lines = output.Split('\n', StringSplitOptions.TrimEntries);
-        CommitMetadata? currentCommit = null;
-        var changedFiles = new List<FileStatus>();
-
-        foreach (var line in lines)
-        {
-            if (string.IsNullOrWhiteSpace(line)) continue;
-
-            if (line.StartsWith("COMMIT|"))
-            {
-                if (currentCommit != null)
-                {
-                    commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-                    changedFiles = [];
-                }
-
-                var headerParts = line["COMMIT|".Length..].Split("|#|", 5, StringSplitOptions.None);
-                if (headerParts.Length >= 5)
-                {
-                    if (DateTimeOffset.TryParse(headerParts[3], out var date))
-                    {
-                        currentCommit = new CommitMetadata(headerParts[0], headerParts[1], headerParts[2], date, headerParts[4], []);
-                    }
-                }
-            }
-            else
-            {
-                if (currentCommit != null)
-                {
-                    var fileParts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-                    if (fileParts.Length >= 2)
-                    {
-                        var status = fileParts[0];
-                        var relPath = fileParts[1];
-                        var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, relPath));
-                        changedFiles.Add(new FileStatus(fullPath, status.StartsWith('D')));
-                    }
-                }
-            }
-        }
-
-        if (currentCommit != null)
-        {
-            commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
-        }
-
-        return commits;
-    }
-
-    private static string GetRange(string diffBase) => diffBase.Contains("..") ? diffBase : $"{diffBase}...HEAD";
-
     public async Task<FileMetadata> GetFileMetadata(string filePath, string workingDirectory)
     {
         if (_metadataCache.TryGetValue(filePath, out var cached))
@@ -387,6 +331,62 @@ public class GitService(
         _metadataCache[filePath] = result;
         return result;
     }
+
+    internal IEnumerable<CommitMetadata> ParseCommits(string output, string repoRoot)
+    {
+        var commits = new List<CommitMetadata>();
+        var lines = output.Split('\n', StringSplitOptions.TrimEntries);
+        CommitMetadata? currentCommit = null;
+        var changedFiles = new List<FileStatus>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.StartsWith("COMMIT|"))
+            {
+                if (currentCommit != null)
+                {
+                    commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
+                    changedFiles = [];
+                }
+
+                var headerParts = line["COMMIT|".Length..].Split("|#|", 5, StringSplitOptions.None);
+                if (headerParts.Length >= 5)
+                {
+                    if (DateTimeOffset.TryParse(headerParts[3], out var date))
+                    {
+                        currentCommit = new CommitMetadata(headerParts[0], headerParts[1], headerParts[2], date, headerParts[4], []);
+                    }
+                }
+            }
+            else
+            {
+                if (currentCommit != null)
+                {
+                    var fileParts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                    if (fileParts.Length >= 2)
+                    {
+                        var status = fileParts[0];
+                        var relPath = fileParts[1];
+                        var fullPath = fileService.NormalizePath(fileSystem.Path.Combine(repoRoot, relPath));
+                        changedFiles.Add(new FileStatus(fullPath, status.StartsWith('D')));
+                    }
+                }
+            }
+        }
+
+        if (currentCommit != null)
+        {
+            commits.Add(currentCommit with { ChangedFiles = [.. changedFiles] });
+        }
+
+        return commits;
+    }
+
+    private readonly Dictionary<string, FileMetadata> _metadataCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private static string GetRange(string diffBase) => diffBase.Contains("..") ? diffBase : $"{diffBase}...HEAD";
 
     private static async Task<string> GetGitRoot(string workingDirectory)
     {

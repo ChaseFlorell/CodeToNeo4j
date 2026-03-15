@@ -12,6 +12,11 @@ public sealed class ConsoleLoggerProvider(LogLevel minLogLevel) : ILoggerProvide
         GC.SuppressFinalize(this);
     }
 
+    ~ConsoleLoggerProvider()
+    {
+        ConsoleLoggerProvider.Dispose(false);
+    }
+
     private static void Dispose(bool disposing)
     {
         if (disposing)
@@ -20,10 +25,5 @@ public sealed class ConsoleLoggerProvider(LogLevel minLogLevel) : ILoggerProvide
         }
 
         // Dispose unmanaged resources here if any
-    }
-
-    ~ConsoleLoggerProvider()
-    {
-        ConsoleLoggerProvider.Dispose(false);
     }
 }
