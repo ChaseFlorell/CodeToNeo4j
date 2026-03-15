@@ -17,6 +17,11 @@
   <Folder Name="/.src/.github/">
     <File Path=".github\release.yml" />
   </Folder>
+  <Folder Name="/.src/.github/ISSUE_TEMPLATE/">
+    <File Path=".github\ISSUE_TEMPLATE\bug_report.yml" />
+    <File Path=".github\ISSUE_TEMPLATE\config.yml" />
+    <File Path=".github\ISSUE_TEMPLATE\feature_request.yml" />
+  </Folder>
   <Folder Name="/.src/.github/scripts/">
     <File Path=".github\scripts\close-associated-issues.js" />
     <File Path=".github\scripts\test-summary-comment.js" />
