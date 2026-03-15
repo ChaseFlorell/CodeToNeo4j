@@ -24,7 +24,7 @@ public class Program
 
     public static (RootCommand root, OptionsBinder binder) CreateRootCommand()
     {
-        string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".html", ".xml", ".json", ".css", ".csproj"];
+        string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".ts", ".tsx", ".html", ".xml", ".json", ".css", ".csproj"];
         var uriOption = new Option<string>("--uri")
             .IsRequired()
             .WithDefaultValueFunc(() => "bolt://localhost:7687")
