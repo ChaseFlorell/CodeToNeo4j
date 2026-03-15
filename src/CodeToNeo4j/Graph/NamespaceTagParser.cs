@@ -11,6 +11,7 @@ public static class NamespaceTagParser
     /// </summary>
     public static readonly IReadOnlySet<string> Whitelist = new HashSet<string>(StringComparer.Ordinal)
     {
+        "DotNet",
         "iOS",
     };
 
@@ -19,7 +20,7 @@ public static class NamespaceTagParser
     /// Pascal Case words are separated, but consecutive uppercase letters (acronyms) are kept together.
     /// Segments that appear in <see cref="Whitelist"/> are returned verbatim.
     /// Examples:
-    ///   "Microsoft.DotNet.Cli"      → ["Microsoft", "Dot_Net", "Cli"]
+    ///   "Microsoft.DotNet.Cli"      → ["Microsoft", "DotNet", "Cli"]
     ///   "SomeApp.SomeFeature.BDC"   → ["Some_App", "Some_Feature", "BDC"]
     ///   "MyApp.HTTPClient.Core"     → ["My_App", "HTTP_Client", "Core"]
     ///   "MyApp.iOS.Views"           → ["My_App", "iOS", "Views"]

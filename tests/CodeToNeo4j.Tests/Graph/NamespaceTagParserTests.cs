@@ -7,7 +7,7 @@ namespace CodeToNeo4j.Tests.Graph;
 public class NamespaceTagParserTests
 {
     [Theory]
-    [InlineData("Microsoft.DotNet.Cli", new[] { "Microsoft", "Dot_Net", "Cli" })]
+    [InlineData("Microsoft.DotNet.Cli", new[] { "Microsoft", "DotNet", "Cli" })]
     [InlineData("SomeApp.SomeFeature.BDC", new[] { "Some_App", "Some_Feature", "BDC" })]
     [InlineData("MyApp.HTTPClient.Core", new[] { "My_App", "HTTP_Client", "Core" })]
     public void GivenMultiSegmentNamespace_WhenParseTags_ThenCorrectTagsReturned(string @namespace, string[] expected)
@@ -94,5 +94,18 @@ public class NamespaceTagParserTests
     public void GivenWhitelist_ThenContainsiOS()
     {
         NamespaceTagParser.Whitelist.ShouldContain("iOS");
+    }
+
+    [Fact]
+    public void GivenWhitelist_ThenContainsDotNet()
+    {
+        NamespaceTagParser.Whitelist.ShouldContain("DotNet");
+    }
+
+    [Fact]
+    public void GivenDotNetSegment_WhenParseTags_ThenTagPreservedExactly()
+    {
+        var result = NamespaceTagParser.ParseTags("DotNet");
+        result.ShouldBe(["DotNet"]);
     }
 }
