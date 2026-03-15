@@ -144,7 +144,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
                 relativePath: string.Empty,
                 fileNamespace: null,
                 startLine: -1));
-            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_PROJECT_URL"));
+            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_URL"));
         }
 
         if (!string.IsNullOrEmpty(repositoryUrl))
@@ -160,7 +160,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
                 relativePath: string.Empty,
                 fileNamespace: null,
                 startLine: -1));
-            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_REPOSITORY_URL"));
+            relBuffer.Add(new Relationship(FromKey: depKey, ToKey: urlKey, RelType: "HAS_URL"));
         }
     }
 

@@ -119,15 +119,15 @@ public class CsprojHandlerTests
         relBuffer.ShouldContain(r =>
             r.FromKey == "pkg:Newtonsoft.Json" &&
             r.ToKey == "url:https://www.newtonsoft.com/json" &&
-            r.RelType == "HAS_PROJECT_URL");
+            r.RelType == "HAS_URL");
         relBuffer.ShouldContain(r =>
             r.FromKey == "pkg:Newtonsoft.Json" &&
             r.ToKey == "url:https://github.com/JamesNK/Newtonsoft.Json" &&
-            r.RelType == "HAS_REPOSITORY_URL");
+            r.RelType == "HAS_URL");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecHasOnlyProjectUrl_WhenHandled_ThenOnlyHasProjectUrlRelationship()
+    public async Task GivenPackageReference_AndNuspecHasOnlyProjectUrl_WhenHandled_ThenOnlyOneUrlRelationship()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -164,12 +164,12 @@ public class CsprojHandlerTests
 
         // Assert
         symbolBuffer.Count(s => s.Kind == "Url").ShouldBe(1);
-        relBuffer.ShouldContain(r => r.RelType == "HAS_PROJECT_URL");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_REPOSITORY_URL");
+        relBuffer.Count(r => r.RelType == "HAS_URL").ShouldBe(1);
+        relBuffer.ShouldContain(r => r.ToKey == "url:https://serilog.net" && r.RelType == "HAS_URL");
     }
 
     [Fact]
-    public async Task GivenPackageReference_AndNuspecHasOnlyRepositoryUrl_WhenHandled_ThenOnlyHasRepositoryUrlRelationship()
+    public async Task GivenPackageReference_AndNuspecHasOnlyRepositoryUrl_WhenHandled_ThenOnlyOneUrlRelationship()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -206,8 +206,8 @@ public class CsprojHandlerTests
 
         // Assert
         symbolBuffer.Count(s => s.Kind == "Url").ShouldBe(1);
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_PROJECT_URL");
-        relBuffer.ShouldContain(r => r.RelType == "HAS_REPOSITORY_URL");
+        relBuffer.Count(r => r.RelType == "HAS_URL").ShouldBe(1);
+        relBuffer.ShouldContain(r => r.ToKey == "url:https://github.com/org/mylib" && r.RelType == "HAS_URL");
     }
 
     [Fact]
@@ -239,8 +239,8 @@ public class CsprojHandlerTests
 
         // Assert
         symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_PROJECT_URL");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_REPOSITORY_URL");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
     }
 
     [Fact]
@@ -272,8 +272,8 @@ public class CsprojHandlerTests
 
         // Assert
         symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_PROJECT_URL");
-        relBuffer.ShouldNotContain(r => r.RelType == "HAS_REPOSITORY_URL");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+        relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
     }
 
     [Fact]
