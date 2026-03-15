@@ -21,10 +21,10 @@ public class ConsoleLogger(
         var isProgress = message.Contains("[Progress");
         var threadId = Environment.CurrentManagedThreadId;
         var threadTag = threadId == MainThreadId
-            ? $"[MAIN-{threadId}]"
+            ? $"[MAIN-{threadId:D3}]"
             : Thread.CurrentThread.IsThreadPoolThread
-                ? $"[TASK-{threadId}]"
-                : $"[FINL-{threadId}]";
+                ? $"[TASK-{threadId:D3}]"
+                : $"[FINL-{threadId:D3}]";
 
         if (!IsRunningOnCI(message))
         {
