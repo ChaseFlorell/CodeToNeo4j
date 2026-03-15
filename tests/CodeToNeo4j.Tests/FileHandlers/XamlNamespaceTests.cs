@@ -28,7 +28,7 @@ public class XamlNamespaceTests
     <StackPanel x:Name=""MainPanel"">
     </StackPanel>
 </Window>";
-        var filePath = "test.xaml";
+        const string filePath = "test.xaml";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();
@@ -66,7 +66,7 @@ public class XamlNamespaceTests
              x:Class=""MauiApp.MainPage"">
     <Label x:Name=""WelcomeLabel"" Text=""Welcome to .NET MAUI!"" />
 </ContentPage>";
-        var filePath = "MainPage.xaml";
+        const string filePath = "MainPage.xaml";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();
@@ -104,7 +104,7 @@ public class XamlNamespaceTests
              x:Class=""FormsApp.MainPage"">
     <Button x:Name=""ClickMe"" />
 </ContentPage>";
-        var filePath = "MainPage.xaml";
+        const string filePath = "MainPage.xaml";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();
@@ -140,7 +140,7 @@ public class XamlNamespaceTests
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />
 </Window>";
-        var filePath = "test.xaml";
+        const string filePath = "test.xaml";
         fileSystem.AddFile(filePath, new MockFileData(content));
 
         var symbolBuffer = new List<Symbol>();

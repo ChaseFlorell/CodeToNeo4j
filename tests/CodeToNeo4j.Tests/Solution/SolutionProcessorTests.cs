@@ -1,6 +1,5 @@
 using System.IO.Abstractions;
 using System.Threading.Channels;
-using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
 using CodeToNeo4j.Progress;

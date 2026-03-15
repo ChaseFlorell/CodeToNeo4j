@@ -9,7 +9,7 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class DocumentHandlerBaseTests
 {
-    private class TestHandler(MockFileSystem fs) : DocumentHandlerBase(fs)
+    private sealed class TestHandler(MockFileSystem fs) : DocumentHandlerBase(fs)
     {
         public override string FileExtension => ".test";
 

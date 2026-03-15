@@ -6,7 +6,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -32,7 +31,7 @@ public class Foo
         var workspace = new AdhocWorkspace();
         var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
             .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(Microsoft.CodeAnalysis.SyntaxTree).Assembly.Location));
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(SyntaxTree).Assembly.Location));
 
         var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
         var compilation = await document.Project.GetCompilationAsync();
@@ -129,7 +128,7 @@ public class Foo
         var workspace = new AdhocWorkspace();
         var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
             .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(Microsoft.CodeAnalysis.SyntaxTree).Assembly.Location));
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(SyntaxTree).Assembly.Location));
 
         var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
         var compilation = await document.Project.GetCompilationAsync();
@@ -178,7 +177,7 @@ public class Foo
         var workspace = new AdhocWorkspace();
         var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
             .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(Microsoft.CodeAnalysis.SyntaxTree).Assembly.Location));
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(SyntaxTree).Assembly.Location));
 
         _ = workspace.AddDocument(project.Id, "GlobalUsings.cs", SourceText.From(globalUsingCode));
         var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
