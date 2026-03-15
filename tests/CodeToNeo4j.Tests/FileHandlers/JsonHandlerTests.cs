@@ -40,14 +40,17 @@ public class JsonHandlerTests
         var fooSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "foo");
         fooSymbol.ShouldNotBeNull();
         fooSymbol.Fqn.ShouldBe("foo");
+        fooSymbol.Class.ShouldBe("property");
 
         var barSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "bar");
         barSymbol.ShouldNotBeNull();
         barSymbol.Fqn.ShouldBe("foo.bar");
+        barSymbol.Class.ShouldBe("property");
 
         var bazSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "baz");
         bazSymbol.ShouldNotBeNull();
         bazSymbol.Fqn.ShouldBe("baz");
+        bazSymbol.Class.ShouldBe("property");
 
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == fooSymbol.Key && r.RelType == "CONTAINS");
         relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == bazSymbol.Key && r.RelType == "CONTAINS");

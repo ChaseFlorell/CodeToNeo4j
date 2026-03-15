@@ -31,24 +31,16 @@ public class CSharpHandler(
             {
                 var semanticModel = compilation.GetSemanticModel(syntaxTree, ignoreAccessibility: true);
                 
-                // Get namespace and FQN for the file metadata
+                // Get namespace for the file metadata
                 var root = await syntaxTree.GetRootAsync().ConfigureAwait(false);
                 var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
                 if (firstType != null)
                 {
                     var symbol = semanticModel.GetDeclaredSymbol(firstType);
                     fileNamespace = symbol?.ContainingNamespace?.ToDisplayString();
-                    var fqn = symbol?.ToDisplayString();
-                    if (!string.IsNullOrEmpty(fqn))
-                    {
-                        fileKey = fqn;
-                    }
                 }
 
                 symbolProcessor.ProcessSyntaxTree(syntaxTree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
-                
-                // Re-get the fileKey in case it was updated by ProcessSyntaxTree if we ever decide to do that, 
-                // but actually CSharpHandler computes it.
             }
         }
 

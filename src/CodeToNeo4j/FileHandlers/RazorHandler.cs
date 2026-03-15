@@ -107,6 +107,7 @@ public partial class RazorHandler(
                 Key: key,
                 Name: name,
                 Kind: kind,
+                Class: "component",
                 Fqn: name,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -115,7 +116,8 @@ public partial class RazorHandler(
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);

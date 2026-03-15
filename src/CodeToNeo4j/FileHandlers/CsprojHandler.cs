@@ -66,6 +66,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                     Key: key,
                     Name: name,
                     Kind: "ProjectProperty",
+                    Class: name,
                     Fqn: $"{name}: {value}",
                     Accessibility: "Public",
                     FileKey: fileKey,
@@ -74,7 +75,8 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                     EndLine: startLine,
                     Documentation: value,
                     Comments: null,
-                    Namespace: fileNamespace
+                    Namespace: fileNamespace,
+                    Version: null
                 );
 
                 symbolBuffer.Add(record);
@@ -99,6 +101,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 Key: key,
                 Name: include,
                 Kind: "PackageReference",
+                Class: include,
                 Fqn: $"{include} ({version})",
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -134,6 +137,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 Key: key,
                 Name: include,
                 Kind: "ProjectReference",
+                Class: include,
                 Fqn: include,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -142,7 +146,8 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);

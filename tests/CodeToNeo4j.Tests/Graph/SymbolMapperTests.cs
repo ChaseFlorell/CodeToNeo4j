@@ -27,6 +27,7 @@ public class SymbolMapperTests
         result.Name.ShouldBe("MyClass");
         result.Kind.ShouldBe("NamedType");
         result.Fqn.ShouldContain("MyNamespace.MyClass");
+        result.Class.ShouldBe("MyClass");
         result.Key.ShouldBe("repo:MyNamespace.MyClass");
         result.Accessibility.ShouldBe("Public");
         result.RelativePath.ShouldBe("path.cs");

@@ -2,6 +2,7 @@ UNWIND $symbols AS s
 MERGE (n:Symbol {key:s.key})
 SET n.name = s.name,
     n.kind = s.kind,
+    n.class = s.class,
     n.fqn = s.fqn,
     n.accessibility = s.accessibility,
     n.fileKey = s.fileKey,
