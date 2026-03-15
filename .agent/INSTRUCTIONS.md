@@ -55,3 +55,9 @@
     4. Do all implementation work inside the worktree directory.
     5. After each change, commit with a descriptive (but short) message, and then rebase the `main` branch.
     6. When ready to submit a pull request, ensure that the branch is up-to-date with `main` and that all tests pass before pushing.
+
+# Pull Requests
+- **Template Compliance**: Before creating a PR, ALWAYS read `.github/pull_request_template.md` and use its exact structure for the PR body. The CI workflow (`pr-requirements.yml`) checks for exact string matches on checklist items.
+- **Checklist**: The PR body must include the `## Checklist` section from the template with checkboxes. Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
+- **Issue Reference**: The `## Issue` section must contain `Resolves #<number>` on its own line.
+- **Labels**: Apply the same label(s) to the PR as the linked issue.
