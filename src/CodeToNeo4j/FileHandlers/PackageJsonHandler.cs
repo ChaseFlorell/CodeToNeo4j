@@ -136,9 +136,9 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
                     urlNodes.Add(new UrlNode(depKey, $"url:{repoUrl}", repoUrl));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Fail gracefully
+            logger.LogWarning(ex, "Failed to read npm package metadata for: {PackageName}", name);
         }
     }
 

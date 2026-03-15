@@ -3,10 +3,11 @@ using System.Xml;
 using System.Xml.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
+public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<CsprojHandler> logger)
     : PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
 {
     public override string FileExtension => ".csproj";
@@ -34,15 +35,16 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
                 await ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, urlNodes, minAccessibility).ConfigureAwait(false);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Fail gracefully
+            _logger.LogWarning(ex, "Failed to parse .csproj file: {FilePath}", filePath);
         }
 
         return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
 
     private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly ILogger<CsprojHandler> _logger = logger;
 
     private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, List<UrlNode> urlNodes, Accessibility minAccessibility)
     {
@@ -168,8 +170,9 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 
             return (projectUrl, repositoryUrl);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to read .nuspec metadata for package: {PackageName}", name);
             return (null, null);
         }
     }

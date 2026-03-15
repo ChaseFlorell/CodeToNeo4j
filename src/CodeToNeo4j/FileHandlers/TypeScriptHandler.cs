@@ -23,7 +23,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (!IsPublicAccessible(minAccessibility)) return;
 
         ExtractInterfaces(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
         ExtractTypeAliases(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
@@ -35,7 +35,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
         foreach (Match match in InterfaceRegex().Matches(content))
         {
             var name = match.Groups[1].Value;
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = TextSymbolMapper.BuildKey(fileKey, "Interface", name, startLine);
 
             symbolBuffer.Add(TextSymbolMapper.CreateSymbol(
@@ -58,7 +58,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
         foreach (Match match in TypeAliasRegex().Matches(content))
         {
             var name = match.Groups[1].Value;
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = TextSymbolMapper.BuildKey(fileKey, "TypeAlias", name, startLine);
 
             symbolBuffer.Add(TextSymbolMapper.CreateSymbol(
@@ -81,7 +81,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
         foreach (Match match in EnumRegex().Matches(content))
         {
             var name = match.Groups[1].Value;
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = TextSymbolMapper.BuildKey(fileKey, "Enum", name, startLine);
 
             symbolBuffer.Add(TextSymbolMapper.CreateSymbol(

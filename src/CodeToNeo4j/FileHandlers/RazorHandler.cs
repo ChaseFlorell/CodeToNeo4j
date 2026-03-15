@@ -85,7 +85,7 @@ public partial class RazorHandler(
 
     private void ExtractDirectives(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility)
+        if (!IsPublicAccessible(minAccessibility))
         {
             return;
         }
@@ -102,7 +102,7 @@ public partial class RazorHandler(
 
             var name = match.Groups[1].Value.Trim();
             var key = textSymbolMapper.BuildKey(fileKey, kind, name);
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
 
             var record = textSymbolMapper.CreateSymbol(
                 key: key,

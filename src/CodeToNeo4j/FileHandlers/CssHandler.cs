@@ -30,7 +30,7 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
     private void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (!IsPublicAccessible(minAccessibility)) return;
 
         // Basic regex to find CSS selectors
         var matches = Regex().Matches(content);
@@ -40,7 +40,7 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
             var selector = match.Groups[1].Value.Trim();
             if (string.IsNullOrEmpty(selector) || selector.StartsWith("@")) continue;
 
-            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            var startLine = GetLineNumber(content, match.Index);
             var key = textSymbolMapper.BuildKey(fileKey, "CssSelector", selector, startLine);
 
             var record = textSymbolMapper.CreateSymbol(

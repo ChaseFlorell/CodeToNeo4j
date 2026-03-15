@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
@@ -42,6 +43,12 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
             ? document.GetTextAsync()
                 .ContinueWith(x => x.Result.ToString())
             : fileSystem.File.ReadAllTextAsync(filePath);
+
+    protected static int GetLineNumber(string content, int index)
+        => content[..index].Count(c => c == '\n') + 1;
+
+    protected static bool IsPublicAccessible(Accessibility minAccessibility)
+        => Accessibility.Public >= minAccessibility;
 
     private int _numberOfFilesHandled;
 }

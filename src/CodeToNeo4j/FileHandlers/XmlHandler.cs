@@ -2,10 +2,11 @@ using System.IO.Abstractions;
 using System.Xml.Linq;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
+public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xml";
 
@@ -31,9 +32,9 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
                 ProcessElement(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Fail gracefully for malformed XML
+            _logger.LogWarning(ex, "Failed to parse XML file: {FilePath}", filePath);
         }
 
         return new FileResult(fileNamespace, fileKey);
@@ -68,4 +69,6 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
             ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         }
     }
+
+    private readonly ILogger<XmlHandler> _logger = logger;
 }

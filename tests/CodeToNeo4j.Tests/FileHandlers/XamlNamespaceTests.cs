@@ -2,6 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
 
@@ -19,7 +20,7 @@ public class XamlNamespaceTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         var content = $@"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
@@ -58,7 +59,7 @@ public class XamlNamespaceTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -96,7 +97,7 @@ public class XamlNamespaceTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -134,7 +135,7 @@ public class XamlNamespaceTests
         var symbolMapper = new SymbolMapper();
         var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
         var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />
