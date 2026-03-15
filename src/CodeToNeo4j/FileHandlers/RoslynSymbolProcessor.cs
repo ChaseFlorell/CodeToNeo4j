@@ -364,7 +364,7 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
             if (semanticModel.GetSymbolInfo(invocation).Symbol is not IMethodSymbol calleeSymbol) continue;
             var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
             if (seenCallees.Add(calleeKey))
-                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "EXECUTES"));
+                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
         }
 
         foreach (var objectCreation in body.DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>())
@@ -372,7 +372,7 @@ public class RoslynSymbolProcessor(ISymbolMapper symbolMapper) : IRoslynSymbolPr
             if (semanticModel.GetSymbolInfo(objectCreation).Symbol is not IMethodSymbol ctorSymbol) continue;
             var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, ctorSymbol);
             if (seenCallees.Add(calleeKey))
-                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "EXECUTES"));
+                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
         }
     }
 

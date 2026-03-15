@@ -424,7 +424,7 @@ public class Foo
     }
 
     [Fact]
-    public async Task GivenMethodThatCallsAnotherMethod_WhenHandleCalled_ThenAddsExecutesRelationship()
+    public async Task GivenMethodThatCallsAnotherMethod_WhenHandleCalled_ThenAddsInvokesRelationship()
     {
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
@@ -470,17 +470,17 @@ public class OrderService
 
         relBuffer.ShouldContain(r =>
             r.FromKey == processOrder.Key &&
-            r.RelType == "EXECUTES" &&
+            r.RelType == "INVOKES" &&
             r.ToKey.Contains("Validate"));
 
         relBuffer.ShouldContain(r =>
             r.FromKey == processOrder.Key &&
-            r.RelType == "EXECUTES" &&
+            r.RelType == "INVOKES" &&
             r.ToKey.Contains("Save"));
     }
 
     [Fact]
-    public async Task GivenMethodThatUsesNewExpression_WhenHandleCalled_ThenAddsExecutesRelationshipForConstructor()
+    public async Task GivenMethodThatUsesNewExpression_WhenHandleCalled_ThenAddsInvokesRelationshipForConstructor()
     {
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
@@ -526,12 +526,12 @@ public class Factory
 
         relBuffer.ShouldContain(r =>
             r.FromKey == createMethod.Key &&
-            r.RelType == "EXECUTES" &&
+            r.RelType == "INVOKES" &&
             r.ToKey.Contains("Widget"));
     }
 
     [Fact]
-    public async Task GivenMethodWithNoCallsToLocalMethods_WhenHandleCalled_ThenNoExecutesRelationship()
+    public async Task GivenMethodWithNoCallsToLocalMethods_WhenHandleCalled_ThenNoInvokesRelationship()
     {
         // Arrange
         var fileSystem = A.Fake<IFileSystem>();
@@ -565,6 +565,6 @@ public class Pure
             minAccessibility: Accessibility.Private);
 
         // Assert
-        relBuffer.ShouldNotContain(r => r.RelType == "EXECUTES");
+        relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
     }
 }

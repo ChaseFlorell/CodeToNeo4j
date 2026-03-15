@@ -127,7 +127,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 var calledName = match.Groups[1].Value;
                 if (JsKeywords.Contains(calledName)) continue;
                 if (functionLookup.TryGetValue(calledName, out var calleeKey) && seen.Add(calleeKey))
-                    relBuffer.Add(new Relationship(FromKey: caller.Key, ToKey: calleeKey, RelType: "EXECUTES"));
+                    relBuffer.Add(new Relationship(FromKey: caller.Key, ToKey: calleeKey, RelType: "INVOKES"));
             }
         }
     }

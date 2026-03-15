@@ -85,7 +85,7 @@ const myArrow = () => {};";
     }
 
     [Fact]
-    public async Task GivenFunctionThatCallsAnotherFunction_WhenHandleCalled_ThenAddsExecutesRelationship()
+    public async Task GivenFunctionThatCallsAnotherFunction_WhenHandleCalled_ThenAddsInvokesRelationship()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -125,12 +125,12 @@ function save(order) {}";
         validate.ShouldNotBeNull();
         save.ShouldNotBeNull();
 
-        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == "EXECUTES");
-        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == "EXECUTES");
+        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == "INVOKES");
+        relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == "INVOKES");
     }
 
     [Fact]
-    public async Task GivenFunctionWithNoCalls_WhenHandleCalled_ThenNoExecutesRelationship()
+    public async Task GivenFunctionWithNoCalls_WhenHandleCalled_ThenNoInvokesRelationship()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -154,11 +154,11 @@ function save(order) {}";
             minAccessibility: Accessibility.Private);
 
         // Assert
-        relBuffer.ShouldNotContain(r => r.RelType == "EXECUTES");
+        relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
     }
 
     [Fact]
-    public async Task GivenFunctionThatCallsExternalFunction_WhenHandleCalled_ThenNoExecutesRelationship()
+    public async Task GivenFunctionThatCallsExternalFunction_WhenHandleCalled_ThenNoInvokesRelationship()
     {
         // Arrange — externalFn is not defined in this file
         var fileSystem = new MockFileSystem();
@@ -185,6 +185,6 @@ function doWork() {
             minAccessibility: Accessibility.Private);
 
         // Assert
-        relBuffer.ShouldNotContain(r => r.RelType == "EXECUTES");
+        relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
     }
 }
