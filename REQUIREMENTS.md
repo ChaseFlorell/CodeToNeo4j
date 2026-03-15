@@ -92,3 +92,22 @@
 - **MSBuild Support**: Uses `Microsoft.Build.Locator` to find and register a valid MSBuild instance on the host machine.
 - **Global Tool**: Packable as a .NET global tool (`codetoneo4j`) for easy installation and global shell usage.
 - **Development Workflow**: A `run.sh` script for local building, packing, and global installation testing.
+
+## 5. Dependency Management (Renovate)
+
+### 5.1 Summary
+Set up [Renovate](https://docs.renovatebot.com/) to automatically manage dependency updates across the project.
+
+### 5.2 Motivation
+Keeping dependencies up to date manually is tedious and error-prone. Renovate automates this by opening PRs for dependency updates, allowing us to stay current with security patches and new releases with minimal effort.
+
+### 5.3 Tasks
+- [x] Add `renovate.json` configuration to the repository root
+- [x] Configure Renovate for NuGet (.NET) package updates
+- [x] Set appropriate auto-merge rules for patch/minor updates
+- [x] Configure PR grouping and scheduling as needed
+- [ ] Install/enable the Renovate GitHub App on the repository (User Action required)
+
+### 5.4 Grouping Logic
+- **Alignment with Directory.Packages.props**: Renovate groups are configured to match the `ItemGroup` labels within `Directory.Packages.props` exactly.
+- **Microsoft and System**: All core `Microsoft.*` and `System.*` dependencies are grouped together under the "Microsoft and System" label to ensure they update in sync. This is particularly important for `Microsoft.Extensions.Logging` to stay aligned with other core packages.

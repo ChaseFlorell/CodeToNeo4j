@@ -1,0 +1,90 @@
+{
+  "configMigration": true,
+  "extends": [
+    "config:recommended"
+  ],
+  "ignorePresets": [
+    ":disableRateLimiting"
+  ],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "packageRules": [
+    {
+      "description": "Automerge non-major updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoApprove": true,
+      "automerge": true
+    },
+    {
+      "description": "Skip pinned versions",
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchCurrentValue": "/^\\[[^,]+\\]$/",
+      "enabled": false
+    },
+    {
+      "groupName": "Analyzers",
+      "matchPackageNames": [
+        "coverlet.collector",
+        "Roslynator.Analyzers"
+      ]
+    },
+    {
+      "groupName": "FakeItEasy",
+      "matchPackageNames": [
+        "/^FakeItEasy/"
+      ]
+    },
+    {
+      "groupName": "Microsoft and System",
+      "matchPackageNames": [
+        "/^Microsoft\\./",
+        "/^System\\.(?!IO\\.Abstractions)/"
+      ]
+    },
+    {
+      "groupName": "Neo4j.Driver",
+      "matchPackageNames": [
+        "/^Neo4j\\.Driver/"
+      ]
+    },
+    {
+      "groupName": "Polly",
+      "matchPackageNames": [
+        "/^Polly/"
+      ]
+    },
+    {
+      "groupName": "Shouldly",
+      "matchPackageNames": [
+        "/^Shouldly/"
+      ]
+    },
+    {
+      "groupName": "Spectre.Console",
+      "matchPackageNames": [
+        "/^Spectre\\.Console/"
+      ]
+    },
+    {
+      "groupName": "System.IO.Abstractions",
+      "matchPackageNames": [
+        "/^System\\.IO\\.Abstractions/"
+      ]
+    },
+    {
+      "groupName": "xunit",
+      "matchPackageNames": [
+        "/^xunit/"
+      ]
+    }
+  ]
+}
