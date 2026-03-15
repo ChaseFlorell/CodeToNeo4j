@@ -18,7 +18,7 @@ public class XamlRoslynTests
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
-        var sut = new XamlHandler(symbolProcessor, fileSystem);
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         
         var xamlFilePath = "MainWindow.xaml";
         var xamlContent = @"<Window x:Class=""MyApp.MainWindow""

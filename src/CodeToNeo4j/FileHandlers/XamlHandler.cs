@@ -8,7 +8,8 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class XamlHandler(
     IRoslynSymbolProcessor symbolProcessor,
-    IFileSystem fileSystem)
+    IFileSystem fileSystem,
+    ITextSymbolMapper textSymbolMapper)
     : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xaml";
@@ -35,8 +36,8 @@ public class XamlHandler(
                 var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
                 if (!string.IsNullOrEmpty(xClass))
                 {
-                    fileNamespace = xClass.Contains('.') 
-                        ? xClass.Substring(0, xClass.LastIndexOf('.')) 
+                    fileNamespace = xClass.Contains('.')
+                        ? xClass.Substring(0, xClass.LastIndexOf('.'))
                         : null;
                 }
 
@@ -100,25 +101,20 @@ public class XamlHandler(
         System.Xml.IXmlLineInfo lineInfo = element;
         var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
 
+        // XAML element keys embed the optional x:Name/x:Key suffix directly in the key
         var symbolKey = $"{fileKey}:{name}{keySuffix}:{startLine}";
         if (Accessibility.Public >= minAccessibility)
         {
-            var record = new Symbol(
-                Key: symbolKey,
-                Name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
-                Kind: "XamlElement",
-                Class: "element",
-                Fqn: $"{name}{keySuffix}",
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: symbolKey,
+                name: xNameAttr?.Value ?? xKeyAttr?.Value ?? name,
+                kind: "XamlElement",
+                @class: "element",
+                fqn: $"{name}{keySuffix}",
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: symbolKey, RelType: "CONTAINS"));
@@ -131,23 +127,20 @@ public class XamlHandler(
             {
                 if (Accessibility.Private >= minAccessibility)
                 {
-                    var handlerKey = $"{fileKey}:EventHandler:{attr.Value}";
-                    var handlerRecord = new Symbol(
-                        Key: handlerKey,
-                        Name: attr.Value,
-                        Kind: "XamlEventHandler",
-                        Class: "event-handler",
-                        Fqn: attr.Value,
-                        Accessibility: "Private",
-                        FileKey: fileKey,
-                        RelativePath: relativePath,
-                        StartLine: startLine,
-                        EndLine: startLine,
-                        Documentation: null,
-                        Comments: null,
-                        Namespace: fileNamespace,
-                        Version: null
-                    );
+                    var handlerKey = textSymbolMapper.BuildKey(fileKey, "EventHandler", attr.Value);
+
+                    var handlerRecord = textSymbolMapper.CreateSymbol(
+                        key: handlerKey,
+                        name: attr.Value,
+                        kind: "XamlEventHandler",
+                        @class: "event-handler",
+                        fqn: attr.Value,
+                        fileKey: fileKey,
+                        relativePath: relativePath,
+                        fileNamespace: fileNamespace,
+                        startLine: startLine,
+                        accessibility: "Private");
+
                     symbolBuffer.Add(handlerRecord);
                     relBuffer.Add(new Relationship(FromKey: symbolKey, ToKey: handlerKey, RelType: "BINDS_TO"));
                 }

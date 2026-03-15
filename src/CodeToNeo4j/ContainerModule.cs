@@ -45,6 +45,7 @@ public static class ContainerModule
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IVersionControlService, GitService>();
         services.AddSingleton<ISymbolMapper, SymbolMapper>();
+        services.AddSingleton<ITextSymbolMapper, TextSymbolMapper>();
         services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
         services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
         services.AddSingleton<IRoslynSymbolProcessor, RoslynSymbolProcessor>();

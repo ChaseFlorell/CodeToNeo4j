@@ -8,7 +8,8 @@ namespace CodeToNeo4j.FileHandlers;
 
 public partial class RazorHandler(
     IRoslynSymbolProcessor symbolProcessor,
-    IFileSystem fileSystem)
+    IFileSystem fileSystem,
+    ITextSymbolMapper textSymbolMapper)
     : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".razor";
@@ -82,7 +83,7 @@ public partial class RazorHandler(
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
-    private static void ExtractDirectives(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractDirectives(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -100,25 +101,19 @@ public partial class RazorHandler(
                 line.StartsWith("@model") ? "ModelDirective" : "InheritsDirective";
 
             var name = match.Groups[1].Value.Trim();
-            var key = $"{fileKey}:{kind}:{name}";
+            var key = textSymbolMapper.BuildKey(fileKey, kind, name);
             var startLine = content[..match.Index].Count(c => c == '\n') + 1;
 
-            var record = new Symbol(
-                Key: key,
-                Name: name,
-                Kind: kind,
-                Class: "component",
-                Fqn: name,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: name,
+                kind: kind,
+                @class: "component",
+                fqn: name,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));

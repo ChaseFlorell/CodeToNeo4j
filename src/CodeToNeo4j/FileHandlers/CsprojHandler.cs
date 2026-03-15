@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".csproj";
 
@@ -40,7 +40,7 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -60,24 +60,19 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 
                 IXmlLineInfo lineInfo = property;
                 var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-                var key = $"{fileKey}:Property:{name}:{startLine}";
+                var key = textSymbolMapper.BuildKey(fileKey, "Property", name, startLine);
 
-                var record = new Symbol(
-                    Key: key,
-                    Name: name,
-                    Kind: "ProjectProperty",
-                    Class: name,
-                    Fqn: $"{name}: {value}",
-                    Accessibility: "Public",
-                    FileKey: fileKey,
-                    RelativePath: relativePath,
-                    StartLine: startLine,
-                    EndLine: startLine,
-                    Documentation: value,
-                    Comments: null,
-                    Namespace: fileNamespace,
-                    Version: null
-                );
+                var record = textSymbolMapper.CreateSymbol(
+                    key: key,
+                    name: name,
+                    kind: "ProjectProperty",
+                    @class: name,
+                    fqn: $"{name}: {value}",
+                    fileKey: fileKey,
+                    relativePath: relativePath,
+                    fileNamespace: fileNamespace,
+                    startLine: startLine,
+                    documentation: value);
 
                 symbolBuffer.Add(record);
                 relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "HAS_PROPERTY"));
@@ -95,24 +90,20 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 
             IXmlLineInfo lineInfo = packageRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-            var key = $"{fileKey}:PackageReference:{include}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "PackageReference", include, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: include,
-                Kind: "PackageReference",
-                Class: include,
-                Fqn: $"{include} ({version})",
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: version,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: version
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: include,
+                kind: "PackageReference",
+                @class: include,
+                fqn: $"{include} ({version})",
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine,
+                documentation: version,
+                version: version);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
@@ -131,24 +122,18 @@ public class CsprojHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSys
 
             IXmlLineInfo lineInfo = projectRef;
             var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
-            var key = $"{fileKey}:ProjectReference:{include}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "ProjectReference", include, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: include,
-                Kind: "ProjectReference",
-                Class: include,
-                Fqn: include,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: include,
+                kind: "ProjectReference",
+                @class: include,
+                fqn: include,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));

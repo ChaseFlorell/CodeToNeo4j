@@ -17,7 +17,7 @@ public class JsonHandlerTests
         // Arrange
         var fileSystem = new MockFileSystem();
         var logger = A.Fake<ILogger<JsonHandler>>();
-        var sut = new JsonHandler(fileSystem, logger);
+        var sut = new JsonHandler(fileSystem, logger, new TextSymbolMapper());
         const string content = @"{ ""foo"": { ""bar"": 123 }, ""baz"": [1, 2] }";
         const string filePath = "test.json";
         fileSystem.AddFile(filePath, new MockFileData(content));

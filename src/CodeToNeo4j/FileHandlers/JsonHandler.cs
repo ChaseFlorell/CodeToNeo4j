@@ -8,7 +8,8 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class JsonHandler(
     IFileSystem fileSystem,
-    ILogger<JsonHandler> logger) : DocumentHandlerBase(fileSystem)
+    ILogger<JsonHandler> logger,
+    ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".json";
 
@@ -39,7 +40,7 @@ public class JsonHandler(
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ProcessElement(JsonElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
+    private void ProcessElement(JsonElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility, string path)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -52,24 +53,18 @@ public class JsonHandler(
                 foreach (var property in element.EnumerateObject())
                 {
                     var propertyPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
-                    var key = $"{fileKey}:JsonProperty:{propertyPath}";
+                    var key = textSymbolMapper.BuildKey(fileKey, "JsonProperty", propertyPath);
 
-                    var record = new Symbol(
-                        Key: key,
-                        Name: property.Name,
-                        Kind: "JsonProperty",
-                        Class: "property",
-                        Fqn: propertyPath,
-                        Accessibility: "Public",
-                        FileKey: fileKey,
-                        RelativePath: relativePath,
-                        StartLine: -1, // System.Text.Json.JsonDocument does not provide line numbers easily
-                        EndLine: -1,
-                        Documentation: null,
-                        Comments: null,
-                        Namespace: fileNamespace,
-                        Version: null
-                    );
+                    var record = textSymbolMapper.CreateSymbol(
+                        key: key,
+                        name: property.Name,
+                        kind: "JsonProperty",
+                        @class: "property",
+                        fqn: propertyPath,
+                        fileKey: fileKey,
+                        relativePath: relativePath,
+                        fileNamespace: fileNamespace,
+                        startLine: -1); // System.Text.Json.JsonDocument does not provide line numbers easily
 
                     symbolBuffer.Add(record);
                     relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));

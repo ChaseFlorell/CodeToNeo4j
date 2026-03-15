@@ -16,7 +16,7 @@ public class XamlHandlerTests
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
-        var sut = new XamlHandler(symbolProcessor, fileSystem);
+        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""

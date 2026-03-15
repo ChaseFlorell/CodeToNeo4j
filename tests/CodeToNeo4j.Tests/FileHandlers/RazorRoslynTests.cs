@@ -18,7 +18,7 @@ public class RazorRoslynTests
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
-        var sut = new RazorHandler(symbolProcessor, fileSystem);
+        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         
         var razorFilePath = "Pages/Index.razor";
         var razorContent = @"@page ""/""

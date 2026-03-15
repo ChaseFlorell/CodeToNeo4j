@@ -16,7 +16,7 @@ public class RazorHandlerTests
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
-        var sut = new RazorHandler(symbolProcessor, fileSystem);
+        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"@namespace MyProject.Pages
 <h1>Hello</h1>";
         var filePath = "test.razor";
@@ -47,7 +47,7 @@ public class RazorHandlerTests
         var fileSystem = new MockFileSystem();
         var symbolMapper = new SymbolMapper();
         var symbolProcessor = new RoslynSymbolProcessor(symbolMapper);
-        var sut = new RazorHandler(symbolProcessor, fileSystem);
+        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
         var content = @"
 @using System.Text
 @inject IMyService MyService

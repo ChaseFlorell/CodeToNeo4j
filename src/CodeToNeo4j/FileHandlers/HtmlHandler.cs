@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".html";
 
@@ -27,12 +27,12 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         ExtractScriptReferences(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
         // Extract IDs and Classes
-        HtmlHandler.ExtractIdsAndClasses(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+        ExtractIdsAndClasses(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility)
         {
@@ -44,31 +44,25 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         {
             var src = match.Groups[1].Value;
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
-            var key = $"{fileKey}:ScriptRef:{src}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "ScriptRef", src, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: src,
-                Kind: "HtmlScriptReference",
-                Class: "script",
-                Fqn: src,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: src,
+                kind: "HtmlScriptReference",
+                @class: "script",
+                fqn: src,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
         }
     }
 
-    private static void ExtractIdsAndClasses(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractIdsAndClasses(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -78,24 +72,18 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
         {
             var id = match.Groups[1].Value;
             var startLine = content.Substring(0, match.Index).Count(c => c == '\n') + 1;
-            var key = $"{fileKey}:ElementId:{id}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "ElementId", id, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: id,
-                Kind: "HtmlElementId",
-                Class: "element",
-                Fqn: id,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: id,
+                kind: "HtmlElementId",
+                @class: "element",
+                fqn: id,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));

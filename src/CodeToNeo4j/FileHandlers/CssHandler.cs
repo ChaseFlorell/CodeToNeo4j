@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(fileSystem)
+public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".css";
 
@@ -23,12 +23,12 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
         var content = await GetContent(document, filePath).ConfigureAwait(false);
         var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
-        CssHandler.ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
+        ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
 
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private static void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -41,24 +41,18 @@ public partial class CssHandler (IFileSystem fileSystem) : DocumentHandlerBase(f
             if (string.IsNullOrEmpty(selector) || selector.StartsWith("@")) continue;
 
             var startLine = content[..match.Index].Count(c => c == '\n') + 1;
-            var key = $"{fileKey}:CssSelector:{selector}:{startLine}";
+            var key = textSymbolMapper.BuildKey(fileKey, "CssSelector", selector, startLine);
 
-            var record = new Symbol(
-                Key: key,
-                Name: selector,
-                Kind: "CssSelector",
-                Class: "selector",
-                Fqn: selector,
-                Accessibility: "Public",
-                FileKey: fileKey,
-                RelativePath: relativePath,
-                StartLine: startLine,
-                EndLine: startLine,
-                Documentation: null,
-                Comments: null,
-                Namespace: fileNamespace,
-                Version: null
-            );
+            var record = textSymbolMapper.CreateSymbol(
+                key: key,
+                name: selector,
+                kind: "CssSelector",
+                @class: "selector",
+                fqn: selector,
+                fileKey: fileKey,
+                relativePath: relativePath,
+                fileNamespace: fileNamespace,
+                startLine: startLine);
 
             symbolBuffer.Add(record);
             relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
