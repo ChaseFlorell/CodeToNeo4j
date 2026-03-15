@@ -24,6 +24,7 @@ public class SolutionProcessor(
 {
     public async Task ProcessSolution(FileInfo sln, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var solutionRoot = fileService.NormalizePath(sln.Directory?.FullName ?? fileSystem.Directory.GetCurrentDirectory());
         logger.LogInformation("Processing solution: {SlnPath}", sln.FullName);
@@ -108,7 +109,7 @@ public class SolutionProcessor(
             logger.LogInformation("{FileExtension} files handled: {Count}", handler.FileExtension, handler.NumberOfFilesHandled);
         }
 
-        logger.LogInformation("Done.");
+        logger.LogInformation("Done: {Elapsed}", stopwatch.Elapsed);
     }
 
     private async Task<(int TotalSymbols, int TotalRelationships)> RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
