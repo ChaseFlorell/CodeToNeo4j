@@ -26,8 +26,6 @@ public class FileService(IFileSystem fileSystem) : IFileService
         var extension = fileSystem.Path.GetExtension(relativePath);
         var isRoslyn = extension is ".cs" or ".razor" or ".xaml";
         var directory = fileSystem.Path.GetDirectoryName(relativePath) ?? string.Empty;
-        var fileNameWithoutExtension = fileSystem.Path.GetFileNameWithoutExtension(relativePath);
-
         var ns = directory.Replace('\\', '/');
 
         if (isRoslyn)
@@ -38,8 +36,7 @@ public class FileService(IFileSystem fileSystem) : IFileService
             else if (roslynNs.StartsWith("source.", StringComparison.OrdinalIgnoreCase)) roslynNs = roslynNs[7..];
             else if (roslynNs.Equals("source", StringComparison.OrdinalIgnoreCase)) roslynNs = string.Empty;
 
-            var key = string.IsNullOrEmpty(roslynNs) ? fileNameWithoutExtension : $"{roslynNs}.{fileNameWithoutExtension}";
-            return (key, roslynNs);
+            return (relativePath, roslynNs);
         }
 
         return (relativePath, ns);

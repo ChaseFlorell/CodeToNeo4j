@@ -164,13 +164,14 @@
 - **Batched Deletions for Large Data Sets**: When purging large amounts of data in Neo4j, use batched deletions to avoid exceeding transaction memory limits. Implement a loop in C# that repeatedly executes a `LIMIT`ed `DETACH DELETE` query. Ensure the `LIMIT` uses a parameter (e.g., `LIMIT $batchSize`) rather than a variable. For project-specific purges, use `UNION ALL` to prioritize deleting leaf nodes (Symbols) before their parents (Files, Projects) to maintain the integrity of `EXISTS` filters across multiple batches.
 
 ## Roslyn File Key and Node Structure
-- For Roslyn-based files (.cs, .razor, .xaml), use the fully qualified class name (FQN) as the `FileKey` instead of the file path.
-- In Neo4j, merge `:File` nodes based on this `FileKey`. This naturally handles partial classes by merging multiple physical files into a single logical `File` node in the graph.
-- When merging on a unique `key`, ensure that `path` is updated as a property. If multiple files merge, the `path` property will reflect the last file processed in the batch.
-- To avoid unique constraint violations in Neo4j during batched updates, always use the unique identifier (the `key`) as the merge key in Cypher (`MERGE (f:File {key: file.fileKey})`).
-- When deleting prior symbols for a file, use the `fileKey` to ensure all symbols associated with that logical file (including all parts of a partial class) are cleared before re-ingestion.
-- For non-Roslyn files, use the relative path as the `FileKey` to maintain a one-to-one mapping between physical files and `:File` nodes.
-- Always include a `fileName` property (name + extension) on `:File` nodes for easier querying and display, separate from the `key` or `path`.
+- Use the relative path as the `FileKey` for all files (including Roslyn .cs, .razor, .xaml) to maintain a one-to-one mapping between physical files and `:File` nodes.
+- Setting the `FileKey` to the FQN (fully qualified name) of the first class in a file is problematic for partial classes, as it causes multiple physical files to merge into a single logical `:File` node in Neo4j, losing file-specific metadata.
+- With unique `:File` nodes per physical file, partial classes are naturally handled by having multiple `:File` nodes with `DECLARES` relationships to the same `:Symbol` node (keyed by FQN).
+- When renaming properties in core records (like `Symbol`), ensure all manual instantiations in specialized handlers (Css, Html, Json, etc.) and their corresponding unit tests are updated to match the new constructor signature.
+- Symbols for classes should store both the class name (in a `class` property) and the fully qualified name (in an `fql` property) as requested by users for better queryability.
+- Maintain stable symbol keys based on FQN (`[repoKey]:[fqn]`) rather than file paths to allow for natural merging of partial class parts and easy dependency linking, while keeping file nodes unique via path-based keys.
+- When shifting from FQN-based `FileKey` to path-based `FileKey` for Roslyn files, ensure all unit tests (especially `CSharpUsingDependencyTests` and `XamlHandlerTests`) are updated to expect the new `FileKey` in their assertions for relationships like `DEPENDS_ON` and `CONTAINS`.
+- Reverting property values (like `Namespace: null` to `Namespace: fileNamespace`) across multiple handlers can fix unexpected regressions in symbol metadata that unit tests for those specific handlers might be sensitive to.
 
 
 ## Neo4j Node Consistency

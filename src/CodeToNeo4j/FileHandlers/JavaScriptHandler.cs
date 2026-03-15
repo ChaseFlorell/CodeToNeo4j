@@ -58,6 +58,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 Key: key,
                 Name: name,
                 Kind: "JavaScriptFunction",
+                Class: "function",
                 Fqn: name,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -66,7 +67,8 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);
@@ -90,6 +92,7 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 Key: key,
                 Name: module,
                 Kind: "JavaScriptImport",
+                Class: "module",
                 Fqn: module,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -98,7 +101,8 @@ public partial class JavaScriptHandler (IFileSystem fileSystem) : DocumentHandle
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);

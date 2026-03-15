@@ -10,6 +10,7 @@ public class SymbolMapper : ISymbolMapper
         var kind = symbol.Kind.ToString();
         var name = symbol.Name;
         var fqn = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var className = symbol.Name;
         var key = BuildStableSymbolKey(repoKey, symbol);
         var (startLine, endLine) = GetLineSpan(node.GetLocation());
         var documentation = symbol.GetDocumentationCommentXml();
@@ -23,6 +24,7 @@ public class SymbolMapper : ISymbolMapper
             Key: key,
             Name: name,
             Kind: kind,
+            Class: className,
             Fqn: fqn,
             Accessibility: symbol.DeclaredAccessibility.ToString(),
             FileKey: fileKey,
@@ -31,7 +33,8 @@ public class SymbolMapper : ISymbolMapper
             EndLine: endLine,
             Documentation: string.IsNullOrWhiteSpace(documentation) ? null : documentation,
             Comments: string.IsNullOrWhiteSpace(comments) ? null : comments,
-            Namespace: @namespace
+            Namespace: @namespace,
+            Version: null
         );
     }
 

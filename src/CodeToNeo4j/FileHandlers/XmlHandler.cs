@@ -54,6 +54,7 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
             Key: key,
             Name: name,
             Kind: "XmlElement",
+            Class: "element",
             Fqn: name,
             Accessibility: "Public",
             FileKey: fileKey,
@@ -62,7 +63,8 @@ public class XmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(fileSystem
             EndLine: startLine,
             Documentation: null,
             Comments: null,
-            Namespace: fileNamespace
+            Namespace: fileNamespace,
+            Version: null
         );
 
         symbolBuffer.Add(record);

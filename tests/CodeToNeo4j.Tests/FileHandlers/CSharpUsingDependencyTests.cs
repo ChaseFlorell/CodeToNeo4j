@@ -51,8 +51,7 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        // The fileKey in CSharpHandler will be updated to the FQN of the first type
-        var expectedFileKey = "Foo";
+        var expectedFileKey = "test-file";
 
         // Check for DEPENDS_ON relationship from expectedFileKey to Microsoft.CodeAnalysis
         relBuffer.ShouldContain(r =>
@@ -99,7 +98,7 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        var expectedFileKey = "Foo";
+        var expectedFileKey = "test-file";
 
         // Check for DEPENDS_ON relationship from expectedFileKey to Microsoft.CodeAnalysis.CSharp.SyntaxKind
         relBuffer.ShouldContain(r =>
@@ -147,7 +146,7 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        var expectedFileKey = "Foo";
+        var expectedFileKey = "test-file";
 
         // Check for DEPENDS_ON relationship from expectedFileKey to Microsoft.CodeAnalysis
         relBuffer.ShouldContain(r =>
@@ -198,7 +197,7 @@ public class Foo
             minAccessibility: Accessibility.Private);
 
         // Assert
-        var expectedFileKey = "Foo";
+        var expectedFileKey = "test-file";
 
         // This currently FAILS because we only look at using directives in the current syntax tree.
         relBuffer.ShouldContain(r =>

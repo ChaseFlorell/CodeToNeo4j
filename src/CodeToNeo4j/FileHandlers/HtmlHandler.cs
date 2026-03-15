@@ -50,6 +50,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 Key: key,
                 Name: src,
                 Kind: "HtmlScriptReference",
+                Class: "script",
                 Fqn: src,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -58,7 +59,8 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);
@@ -82,6 +84,7 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 Key: key,
                 Name: id,
                 Kind: "HtmlElementId",
+                Class: "element",
                 Fqn: id,
                 Accessibility: "Public",
                 FileKey: fileKey,
@@ -90,7 +93,8 @@ public partial class HtmlHandler(IFileSystem fileSystem) : DocumentHandlerBase(f
                 EndLine: startLine,
                 Documentation: null,
                 Comments: null,
-                Namespace: fileNamespace
+                Namespace: fileNamespace,
+                Version: null
             );
 
             symbolBuffer.Add(record);

@@ -58,6 +58,7 @@ public class JsonHandler(
                         Key: key,
                         Name: property.Name,
                         Kind: "JsonProperty",
+                        Class: "property",
                         Fqn: propertyPath,
                         Accessibility: "Public",
                         FileKey: fileKey,
@@ -66,7 +67,8 @@ public class JsonHandler(
                         EndLine: -1,
                         Documentation: null,
                         Comments: null,
-                        Namespace: fileNamespace
+                        Namespace: fileNamespace,
+                        Version: null
                     );
 
                     symbolBuffer.Add(record);
