@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Reflection;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
 using Microsoft.Extensions.Logging;
@@ -108,6 +109,7 @@ public class Program
                     .BuildServiceProvider();
 
                 var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("CodeToNeo4j version {Version}", GetVersion());
                 logger.LogInformation("{Options}", options);
                 var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
                 await handlers.BuildChain().Handle(options);
@@ -116,6 +118,11 @@ public class Program
 
         return (root, binder);
     }
+
+    internal static string GetVersion() =>
+        typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? typeof(Program).Assembly.GetName().Version?.ToString()
+        ?? "unknown";
 
     private static async Task<int> Run(string[] args)
     {

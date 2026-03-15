@@ -135,4 +135,14 @@ public class ProgramTests
         // assert
         result.Errors.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void GivenAssembly_WhenGettingVersion_ThenVersionIsNotNullOrEmpty()
+    {
+        // act
+        var version = Program.GetVersion();
+
+        // assert
+        version.ShouldNotBeNullOrWhiteSpace();
+    }
 }
