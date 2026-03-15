@@ -114,7 +114,7 @@ public class SolutionProcessor(
         logger.LogInformation("Done: {Duration}", duration);
     }
 
-    private async Task<(int TotalSymbols, int TotalRelationships)> RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
+    internal async Task<(int TotalSymbols, int TotalRelationships)> RunConsumer(ChannelReader<ProcessResult> reader, int totalFiles, string databaseName, int batchSize)
     {
         var fileBuffer = new List<FileMetaData>(batchSize);
         var symbolBuffer = new List<Symbol>(batchSize);
@@ -237,7 +237,7 @@ public class SolutionProcessor(
         return new ProcessResult(fileRecord, symbols, relationships, urlNodes, relativePath);
     }
 
-    private static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
+    internal static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
     {
         var result = discoveredFiles.ToArray();
 
@@ -262,7 +262,7 @@ public class SolutionProcessor(
         return result;
     }
 
-    private record ProcessResult(
+    internal record ProcessResult(
         FileMetaData File,
         List<Symbol> Symbols,
         List<Relationship> Relationships,

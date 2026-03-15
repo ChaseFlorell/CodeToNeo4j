@@ -219,4 +219,148 @@ function doWork() {
         // Assert
         relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
     }
+
+    [Fact]
+    public async Task GivenFunctionWithStringLiteralsContainingBraces_WhenHandleCalled_ThenExtractsFunction()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
+        var content = """
+            function render(name) {
+                return `Hello ${name}, welcome to {world}`;
+            }
+            """;
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.ShouldContain(s => s.Name == "render" && s.Kind == "JavaScriptFunction");
+    }
+
+    [Fact]
+    public async Task GivenArrowFunctionWithDestructuring_WhenHandleCalled_ThenExtractsFunction()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
+        var content = """
+            const processUser = ({ name, age }) => {
+                return `${name} is ${age}`;
+            };
+            """;
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.ShouldContain(s => s.Name == "processUser" && s.Kind == "JavaScriptFunction");
+    }
+
+    [Fact]
+    public async Task GivenReExport_WhenHandleCalled_ThenExtractsImportRelationship()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
+        var content = """
+            import { foo } from './foo';
+            import { bar } from './bar';
+            """;
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.Count(s => s.Kind == "JavaScriptImport").ShouldBe(2);
+        relBuffer.Count(r => r.RelType == "DEPENDS_ON").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task GivenRequireCall_WhenHandleCalled_ThenExtractsModuleReference()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
+        var content = """
+            const path = require('./utils/path');
+            function main() {}
+            """;
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        symbolBuffer.ShouldContain(s => s.Name == "./utils/path" && s.Kind == "JavaScriptImport");
+    }
+
+    [Theory]
+    [InlineData("lodash")]
+    [InlineData("express")]
+    [InlineData("@angular/core")]
+    public async Task GivenBareModuleSpecifier_WhenHandleCalled_ThenAddsDependsOnWithPkgPrefix(string moduleName)
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new JavaScriptHandler(fileSystem, new TextSymbolMapper());
+        var content = $"import something from '{moduleName}';";
+        var filePath = "test.js";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test.js",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert
+        relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == $"pkg:{moduleName}" && r.RelType == "DEPENDS_ON");
+        symbolBuffer.ShouldNotContain(s => s.Kind == "JavaScriptImport");
+    }
 }
