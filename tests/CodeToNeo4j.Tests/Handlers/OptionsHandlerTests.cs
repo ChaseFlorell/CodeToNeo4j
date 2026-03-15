@@ -23,7 +23,7 @@ public class OptionsHandlerTests
         A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
     }
 
-    private class TestHandler : OptionsHandler
+    private sealed class TestHandler : OptionsHandler
     {
         protected override Task<bool> HandleOptions(Options options) => Task.FromResult(true);
     }
