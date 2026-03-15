@@ -146,34 +146,56 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
     {
         if (Accessibility.Public < minAccessibility) return;
 
-        var importRegex = ImportRegex();
-        foreach (Match match in importRegex.Matches(content))
+        foreach (Match match in ImportRegex().Matches(content))
         {
             var module = match.Groups[1].Value;
             var startLine = content[..match.Index].Count(c => c == '\n') + 1;
-            var key = TextSymbolMapper.BuildKey(fileKey, "Import", module, startLine);
+            AddModuleReference(module, fileKey, relativePath, fileNamespace, startLine, symbolBuffer, relBuffer);
+        }
 
-            var record = TextSymbolMapper.CreateSymbol(
-                key: key,
-                name: module,
-                kind: $"{KindPrefix}Import",
-                @class: "module",
-                fqn: module,
-                fileKey: fileKey,
-                relativePath: relativePath,
-                fileNamespace: fileNamespace,
-                startLine: startLine);
-
-            symbolBuffer.Add(record);
-            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+        foreach (Match match in RequireRegex().Matches(content))
+        {
+            var module = match.Groups[1].Value;
+            var startLine = content[..match.Index].Count(c => c == '\n') + 1;
+            AddModuleReference(module, fileKey, relativePath, fileNamespace, startLine, symbolBuffer, relBuffer);
         }
     }
+
+    private void AddModuleReference(string module, string fileKey, string relativePath, string? fileNamespace, int startLine, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer)
+    {
+        if (IsBareModuleSpecifier(module))
+        {
+            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: $"pkg:{module}", RelType: "DEPENDS_ON"));
+            return;
+        }
+
+        var key = TextSymbolMapper.BuildKey(fileKey, "Import", module, startLine);
+
+        var record = TextSymbolMapper.CreateSymbol(
+            key: key,
+            name: module,
+            kind: $"{KindPrefix}Import",
+            @class: "module",
+            fqn: module,
+            fileKey: fileKey,
+            relativePath: relativePath,
+            fileNamespace: fileNamespace,
+            startLine: startLine);
+
+        symbolBuffer.Add(record);
+        relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+    }
+
+    private static bool IsBareModuleSpecifier(string module)
+        => !module.StartsWith('.') && !module.StartsWith('/');
 
     // Handles: function name(...), const/let/var name = (...) => (with optional TS return type), name: function(...)
     [GeneratedRegex(@"(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?\(.*?\)(?:\s*:\s*[\w<>[\]|&. ?,]+)?\s*=>|([a-zA-Z0-9_$]+)\s*:\s*function)", RegexOptions.Multiline)]
     private static partial Regex FunctionRegex();
     [GeneratedRegex(@"import\s+.*?\s+from\s+['""](.*?)['""]", RegexOptions.Multiline)]
     private static partial Regex ImportRegex();
+    [GeneratedRegex(@"\brequire\(['""`](.*?)['""`]\)", RegexOptions.Multiline)]
+    private static partial Regex RequireRegex();
     [GeneratedRegex(@"\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(", RegexOptions.Multiline)]
     private static partial Regex FunctionCallRegex();
 }

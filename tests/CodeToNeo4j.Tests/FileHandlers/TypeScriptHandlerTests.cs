@@ -84,10 +84,9 @@ const myArrow = (x: number): number => x * 2;";
             relBuffer: relBuffer,
             minAccessibility: Accessibility.Private);
 
-        // Assert
-        var importSymbol = symbolBuffer.FirstOrDefault(s => s.Kind == "TypeScriptImport");
-        importSymbol.ShouldNotBeNull();
-        importSymbol.Name.ShouldBe("@angular/core");
+        // Assert — @angular/core is a bare module specifier, so it links directly to pkg: without creating a symbol
+        symbolBuffer.ShouldNotContain(s => s.Kind == "TypeScriptImport");
+        relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == "pkg:@angular/core" && r.RelType == "DEPENDS_ON");
 
         var functionSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "myFunction");
         functionSymbol.ShouldNotBeNull();
@@ -97,7 +96,6 @@ const myArrow = (x: number): number => x * 2;";
         arrowSymbol.ShouldNotBeNull();
         arrowSymbol.Kind.ShouldBe("TypeScriptFunction");
 
-        relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == importSymbol.Key && r.RelType == "DEPENDS_ON");
         relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
     }
 
@@ -306,7 +304,8 @@ function createUser(name: string): User {
             minAccessibility: Accessibility.Private);
 
         // Assert
-        symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptImport" && s.Name == "@angular/core");
+        // @angular/core is a bare module specifier — links directly to pkg: node, no symbol created
+        relBuffer.ShouldContain(r => r.ToKey == "pkg:@angular/core" && r.RelType == "DEPENDS_ON");
         symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptInterface" && s.Name == "UserService");
         symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptTypeAlias" && s.Name == "UserId");
         symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptEnum" && s.Name == "Role");

@@ -1,0 +1,43 @@
+using System.IO.Abstractions;
+using CodeToNeo4j.Graph;
+
+namespace CodeToNeo4j.FileHandlers;
+
+/// <summary>
+/// Base handler for package manifest files (e.g. .csproj, package.json).
+/// Provides shared infrastructure for producing Dependency nodes keyed as
+/// <c>pkg:{packageName}</c> with <c>DEPENDS_ON</c> relationships.
+/// </summary>
+public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
+    : DocumentHandlerBase(fileSystem)
+{
+    protected ITextSymbolMapper SymbolMapper { get; } = textSymbolMapper;
+
+    protected void AddDependency(
+        string name,
+        string? version,
+        string fileKey,
+        string relativePath,
+        string? fileNamespace,
+        ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer)
+    {
+        var key = $"pkg:{name}";
+
+        var record = SymbolMapper.CreateSymbol(
+            key: key,
+            name: name,
+            kind: "Dependency",
+            @class: name,
+            fqn: version is not null ? $"{name} ({version})" : name,
+            fileKey: fileKey,
+            relativePath: relativePath,
+            fileNamespace: fileNamespace,
+            startLine: -1,
+            documentation: version,
+            version: version);
+
+        symbolBuffer.Add(record);
+        relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
+    }
+}

@@ -50,10 +50,11 @@ public class CsprojHandlerTests
         propertySymbol.Kind.ShouldBe("ProjectProperty");
         propertySymbol.Documentation.ShouldBe("net8.0");
 
-        // Check for PackageReference
+        // Check for Dependency (package reference unified as Dependency node)
         var packageSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "Newtonsoft.Json");
         packageSymbol.ShouldNotBeNull();
-        packageSymbol.Kind.ShouldBe("PackageReference");
+        packageSymbol.Key.ShouldBe("pkg:Newtonsoft.Json");
+        packageSymbol.Kind.ShouldBe("Dependency");
         packageSymbol.Documentation.ShouldBe("13.0.1");
         packageSymbol.Version.ShouldBe("13.0.1");
 
