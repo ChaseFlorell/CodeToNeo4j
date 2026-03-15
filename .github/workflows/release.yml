@@ -37,7 +37,7 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal
 
     - name: Pack
-      run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-build -c Release -o out /p:Version=${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
+      run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-restore -c Release -o out /p:Version=${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
 
     - name: Attest build provenance
       uses: actions/attest-build-provenance@v2
