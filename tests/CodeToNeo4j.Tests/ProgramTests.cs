@@ -145,4 +145,84 @@ public class ProgramTests
         // assert
         version.ShouldNotBeNullOrWhiteSpace();
     }
+
+    // ── Info switches ────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("--version")]
+    [InlineData("--supported-files")]
+    [InlineData("--info")]
+    public void GivenInfoSwitch_WhenParsingWithNoOtherArgs_ThenShouldNotHaveErrors(string infoSwitch)
+    {
+        // arrange
+        var (sut, _) = Program.CreateRootCommand();
+
+        // act
+        var result = sut.Parse(infoSwitch);
+
+        // assert
+        result.Errors.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("--version")]
+    [InlineData("--supported-files")]
+    [InlineData("--info")]
+    public async Task GivenInfoSwitch_WhenInvoked_ThenExitsWithCodeZero(string infoSwitch)
+    {
+        // act
+        var exitCode = await Program.Main([infoSwitch]);
+
+        // assert
+        exitCode.ShouldBe(0);
+    }
+
+    [Fact]
+    public void GivenVersionRequested_WhenFormattingVersionLine_ThenContainsToolNameAndVersion()
+    {
+        // act
+        var version = Program.GetVersion();
+
+        // assert — the version line is "CodeToNeo4j {version}"
+        var line = $"CodeToNeo4j {version}";
+        line.ShouldContain("CodeToNeo4j");
+        line.ShouldContain(version);
+    }
+
+    [Fact]
+    public void GivenPrintSupportedFiles_WhenCalled_ThenAllHandlersAreListed()
+    {
+        // arrange
+        var stdout = new StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(stdout);
+
+        try
+        {
+            // act
+            Program.PrintSupportedFiles();
+
+            // assert
+            var output = stdout.ToString();
+            output.ShouldContain("Supported file types:");
+            foreach (var (ext, handler) in Program.SupportedFileTypes)
+            {
+                output.ShouldContain(ext);
+                output.ShouldContain(handler);
+            }
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void GivenSupportedFileTypes_WhenChecked_ThenContainsExpectedEntries()
+    {
+        Program.SupportedFileTypes.ShouldContain(e => e.Extension == ".cs" && e.HandlerName == "CSharpHandler");
+        Program.SupportedFileTypes.ShouldContain(e => e.Extension == "package.json" && e.HandlerName == "PackageJsonHandler");
+        Program.SupportedFileTypes.ShouldContain(e => e.Extension == ".csproj" && e.HandlerName == "CsprojHandler");
+        Program.SupportedFileTypes.ShouldContain(e => e.Extension.Contains(".ts") && e.HandlerName == "TypeScriptHandler");
+    }
 }

@@ -149,5 +149,8 @@ public class OptionsHandlerTests
         skipDependencies,
         Microsoft.CodeAnalysis.Accessibility.Private,
         includeExtensions ?? [],
-        purgeData);
+        purgeData,
+        ShowVersion: false,
+        ShowSupportedFiles: false,
+        ShowInfo: false);
 }

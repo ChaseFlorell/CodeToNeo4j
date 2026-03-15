@@ -17,11 +17,29 @@ public static class OptionsBinderValidator
         Option<bool> quietOption,
         Option<bool> purgeDataOption,
         Option<bool> skipDependenciesOption,
-        Option<Accessibility> minAccessibilityOption)
+        Option<Accessibility> minAccessibilityOption,
+        Option<string> passOption,
+        Option<bool> showVersionOption,
+        Option<bool> showSupportedFilesOption,
+        Option<bool> showInfoOption)
     {
+        var isInfo = result.GetValueForOption(showVersionOption)
+                     || result.GetValueForOption(showSupportedFilesOption)
+                     || result.GetValueForOption(showInfoOption);
+
+        if (isInfo)
+            return;
+
         var isPurge = result.GetValueForOption(purgeDataOption);
         var noKey = result.GetValueForOption(noKeyOption);
         var sln = result.GetValueForOption(slnOption);
+        var pass = result.FindResultFor(passOption);
+
+        if (pass is null)
+        {
+            result.ErrorMessage = "--password is required";
+            return;
+        }
 
         if (isPurge)
         {
