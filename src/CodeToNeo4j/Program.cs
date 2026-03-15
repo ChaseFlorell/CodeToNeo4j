@@ -1,4 +1,6 @@
-﻿using System.CommandLine;
+using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
 using System.Reflection;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
@@ -10,6 +12,22 @@ namespace CodeToNeo4j;
 
 public class Program
 {
+    // Each entry is (Extension/Pattern, HandlerName) — kept in sync with ContainerModule handler registrations.
+    internal static readonly (string Extension, string HandlerName)[] SupportedFileTypes =
+    [
+        (".cs",           "CSharpHandler"),
+        (".razor",        "RazorHandler"),
+        (".xaml",         "XamlHandler"),
+        (".js",           "JavaScriptHandler"),
+        (".ts / .tsx",    "TypeScriptHandler"),
+        (".html",         "HtmlHandler"),
+        (".xml",          "XmlHandler"),
+        ("package.json",  "PackageJsonHandler"),
+        (".json",         "JsonHandler"),
+        (".css",          "CssHandler"),
+        (".csproj",       "CsprojHandler"),
+    ];
+
     public static async Task<int> Main(string[] args)
     {
         try
@@ -36,7 +54,6 @@ public class Program
             .WithAlias("-s")
             .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
         var passOption = new Option<string>("--password")
-            .IsRequired()
             .WithDescription("Password for the Neo4j database. Example: your-pass")
             .WithAlias("-p");
         var noKeyOption = new Option<bool>("--no-key")
@@ -80,7 +97,12 @@ public class Program
         var purgeDataOption = new Option<bool>("--purge-data")
             .WithDefaultValueFunc(() => false)
             .WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data");
-
+        var showVersionOption = new Option<bool>("--version")
+            .WithDescription("Print the current tool version and exit.");
+        var showSupportedFilesOption = new Option<bool>("--supported-files")
+            .WithDescription("Print a table of all supported file types and exit.");
+        var showInfoOption = new Option<bool>("--info")
+            .WithDescription("Print the version and all supported file types, then exit.");
 
         var binder = new OptionsBinder(
             slnOption,
@@ -98,14 +120,31 @@ public class Program
             quietOption,
             skipDependenciesOption,
             purgeDataOption,
-            includeExtensionsOption);
+            includeExtensionsOption,
+            showVersionOption,
+            showSupportedFilesOption,
+            showInfoOption);
 
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn");
+
         binder.AddToCommand(root);
         root.SetHandler(async options =>
             {
+                if (options.ShowVersion || options.ShowInfo)
+                {
+                    Console.WriteLine($"CodeToNeo4j {GetVersion()}");
+                }
+
+                if (options.ShowSupportedFiles || options.ShowInfo)
+                {
+                    PrintSupportedFiles();
+                }
+
+                if (options.ShowVersion || options.ShowSupportedFiles || options.ShowInfo)
+                    return;
+
                 await using var services = new ServiceCollection()
-                    .AddApplicationServices(options.Uri, options.User, options.Pass, options.LogLevel)
+                    .AddApplicationServices(options.Uri, options.User, options.Pass!, options.LogLevel)
                     .BuildServiceProvider();
 
                 var logger = services.GetRequiredService<ILogger<Program>>();
@@ -124,9 +163,34 @@ public class Program
         ?? typeof(Program).Assembly.GetName().Version?.ToString()
         ?? "unknown";
 
+    internal static void PrintSupportedFiles()
+    {
+        const int extWidth = 20;
+        var separator = new string('─', extWidth) + "  " + new string('─', 20);
+
+        Console.WriteLine("Supported file types:");
+        Console.WriteLine($"  {"Extension/Pattern",-20}  Handler");
+        Console.WriteLine($"  {separator}");
+        foreach (var (ext, handler) in SupportedFileTypes)
+        {
+            Console.WriteLine($"  {ext,-20}  {handler}");
+        }
+    }
+
     private static async Task<int> Run(string[] args)
     {
         var (root, _) = CreateRootCommand();
-        return await root.InvokeAsync(args);
+        var parser = new CommandLineBuilder(root)
+            .UseHelp()
+            .UseEnvironmentVariableDirective()
+            .UseParseDirective()
+            .UseSuggestDirective()
+            .RegisterWithDotnetSuggest()
+            .UseTypoCorrections()
+            .UseParseErrorReporting()
+            .UseExceptionHandler()
+            .CancelOnProcessTermination()
+            .Build();
+        return await parser.InvokeAsync(args);
     }
 }

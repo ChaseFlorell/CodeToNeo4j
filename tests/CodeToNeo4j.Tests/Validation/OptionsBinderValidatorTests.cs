@@ -19,6 +19,10 @@ public class OptionsBinderValidatorTests
     private readonly Option<bool> _purgeDataOption = new("--purge-data");
     private readonly Option<bool> _skipDependenciesOption = new("--skip-dependencies");
     private readonly Option<Accessibility> _minAccessibilityOption;
+    private readonly Option<string> _passOption = new("--password");
+    private readonly Option<bool> _showVersionOption = new("--version");
+    private readonly Option<bool> _showSupportedFilesOption = new("--supported-files");
+    private readonly Option<bool> _showInfoOption = new("--info");
 
     public OptionsBinderValidatorTests()
     {
@@ -38,7 +42,11 @@ public class OptionsBinderValidatorTests
             _quietOption,
             _purgeDataOption,
             _skipDependenciesOption,
-            _minAccessibilityOption
+            _minAccessibilityOption,
+            _passOption,
+            _showVersionOption,
+            _showSupportedFilesOption,
+            _showInfoOption
         };
 
         return root.Parse(args).CommandResult;
@@ -56,14 +64,18 @@ public class OptionsBinderValidatorTests
             _quietOption,
             _purgeDataOption,
             _skipDependenciesOption,
-            _minAccessibilityOption);
+            _minAccessibilityOption,
+            _passOption,
+            _showVersionOption,
+            _showSupportedFilesOption,
+            _showInfoOption);
     }
 
     [Fact]
     public void GivenMultipleLogOptions_WhenValidating_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--debug", "--quiet");
+        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--debug", "--quiet");
 
         // act
         Validate(result);
@@ -76,7 +88,7 @@ public class OptionsBinderValidatorTests
     public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldNotHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--purge-data", "--skip-dependencies");
+        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies");
 
         // act
         Validate(result);
@@ -89,7 +101,7 @@ public class OptionsBinderValidatorTests
     public void GivenPurgeWithMinAccessibility_WhenValidating_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--purge-data", "--min-accessibility", "Public");
+        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public");
 
         // act
         Validate(result);
@@ -102,7 +114,7 @@ public class OptionsBinderValidatorTests
     public void GivenValidOptions_WhenValidating_ThenShouldNotHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--debug", "--purge-data");
+        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--debug", "--purge-data");
 
         // act
         Validate(result);
@@ -115,7 +127,7 @@ public class OptionsBinderValidatorTests
     public void GivenNoSln_WhenPurgeDataAndNoKey_ThenShouldNotHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--purge-data", "--no-key");
+        var result = GetCommandResult("--purge-data", "--no-key", "--password", "pass");
 
         // act
         Validate(result);
@@ -128,7 +140,7 @@ public class OptionsBinderValidatorTests
     public void GivenNoSln_WhenPurgeDataWithoutNoKey_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--purge-data");
+        var result = GetCommandResult("--purge-data", "--password", "pass");
 
         // act
         Validate(result);
@@ -141,12 +153,41 @@ public class OptionsBinderValidatorTests
     public void GivenNoSln_WhenNoPurgeData_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--debug");
+        var result = GetCommandResult("--debug", "--password", "pass");
 
         // act
         Validate(result);
 
         // assert
         result.ErrorMessage.ShouldBe("--sln is required");
+    }
+
+    [Fact]
+    public void GivenNoPassword_WhenNoPurgeData_ThenShouldHaveErrorMessage()
+    {
+        // arrange
+        var result = GetCommandResult("--sln", "test.sln");
+
+        // act
+        Validate(result);
+
+        // assert
+        result.ErrorMessage.ShouldBe("--password is required");
+    }
+
+    [Theory]
+    [InlineData("--version")]
+    [InlineData("--supported-files")]
+    [InlineData("--info")]
+    public void GivenInfoSwitch_WhenNoOtherRequiredOptions_ThenShouldNotHaveErrorMessage(string infoSwitch)
+    {
+        // arrange
+        var result = GetCommandResult(infoSwitch);
+
+        // act
+        Validate(result);
+
+        // assert
+        result.ErrorMessage.ShouldBeNull();
     }
 }

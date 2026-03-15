@@ -7,7 +7,7 @@ public sealed record Options(
     FileInfo Sln,
     string Uri,
     string User,
-    string Pass,
+    string? Pass,
     bool NoKey,
     string? DiffBase,
     int BatchSize,
@@ -16,7 +16,10 @@ public sealed record Options(
     bool SkipDependencies,
     Accessibility MinAccessibility,
     IEnumerable<string> IncludeExtensions,
-    bool PurgeData)
+    bool PurgeData,
+    bool ShowVersion,
+    bool ShowSupportedFiles,
+    bool ShowInfo)
 {
     private bool PrintMembers(System.Text.StringBuilder builder)
     {
@@ -34,6 +37,9 @@ public sealed record Options(
         builder.AppendLine($"\tMinAccessibility = {MinAccessibility}, ");
         builder.AppendLine($"\tIncludeExtensions = [ {string.Join(", ", IncludeExtensions)} ], ");
         builder.AppendLine($"\tPurgeData = {PurgeData}");
+        builder.AppendLine($"\tShowVersion = {ShowVersion}");
+        builder.AppendLine($"\tShowSupportedFiles = {ShowSupportedFiles}");
+        builder.AppendLine($"\tShowInfo = {ShowInfo}");
         return true;
     }
 

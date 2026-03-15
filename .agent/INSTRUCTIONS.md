@@ -53,3 +53,5 @@
     2. If the branch already contains the issue number, you are already in the right place — git cannot check out the same branch in two worktrees, so just work in the current directory.
     3. If not, pull the latest `main` first, then create a new branch in the worktree: `git checkout main && git pull && git worktree add ../<repo>-issue-{number} -b users/CFlorell/story/{issue-number}`
     4. Do all implementation work inside the worktree directory.
+    5. After each change, commit with a descriptive (but short) message, and then rebase the `main` branch.
+    6. When ready to submit a pull request, ensure that the branch is up-to-date with `main` and that all tests pass before pushing.

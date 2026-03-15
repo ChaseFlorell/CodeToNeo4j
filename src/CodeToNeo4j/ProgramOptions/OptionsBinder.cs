@@ -21,7 +21,10 @@ public class OptionsBinder(
     Option<bool> quietOption,
     Option<bool> skipDependenciesOption,
     Option<bool> purgeDataOption,
-    Option<string[]> includeExtensionsOption) : BinderBase<Options>
+    Option<string[]> includeExtensionsOption,
+    Option<bool> showVersionOption,
+    Option<bool> showSupportedFilesOption,
+    Option<bool> showInfoOption) : BinderBase<Options>
 {
     public void AddToCommand(Command command)
     {
@@ -41,6 +44,9 @@ public class OptionsBinder(
         command.AddOption(skipDependenciesOption);
         command.AddOption(purgeDataOption);
         command.AddOption(includeExtensionsOption);
+        command.AddOption(showVersionOption);
+        command.AddOption(showSupportedFilesOption);
+        command.AddOption(showInfoOption);
 
         command.AddValidator(result => OptionsBinderValidator.Validate(
             result,
@@ -52,7 +58,11 @@ public class OptionsBinder(
             quietOption,
             purgeDataOption,
             skipDependenciesOption,
-            minAccessibilityOption));
+            minAccessibilityOption,
+            passOption,
+            showVersionOption,
+            showSupportedFilesOption,
+            showInfoOption));
     }
 
     protected override Options GetBoundValue(BindingContext bindingContext) =>
@@ -60,7 +70,7 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(slnOption)!,
             bindingContext.ParseResult.GetValueForOption(uriOption)!,
             bindingContext.ParseResult.GetValueForOption(userOption)!,
-            bindingContext.ParseResult.GetValueForOption(passOption)!,
+            bindingContext.ParseResult.GetValueForOption(passOption),
             bindingContext.ParseResult.GetValueForOption(noKeyOption),
             bindingContext.ParseResult.GetValueForOption(diffBaseOption),
             bindingContext.ParseResult.GetValueForOption(batchSizeOption),
@@ -69,7 +79,10 @@ public class OptionsBinder(
             bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
             bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
             bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataOption)
+            bindingContext.ParseResult.GetValueForOption(purgeDataOption),
+            bindingContext.ParseResult.GetValueForOption(showVersionOption),
+            bindingContext.ParseResult.GetValueForOption(showSupportedFilesOption),
+            bindingContext.ParseResult.GetValueForOption(showInfoOption)
         );
 
     private LogLevel ParseLogLevel(BindingContext bindingContext)
