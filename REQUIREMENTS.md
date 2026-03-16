@@ -5,7 +5,7 @@
 ## 1. Functional Requirements
 
 ### 1.1 Input
-- **Solution File**: Path to a valid `.sln` file.
+- **Solution File**: Path to a valid `.sln`, `.slnx`, or `.csproj` file.
 - **Neo4j Configuration**: URI, Username, Password, and Database Name.
 - **Repository Metadata**: The repository key is derived from the solution file name by default.
   - **No Key Mode**: (Optional) Use `--no-key` to ingest data without a `repoKey`, suitable for single-repository Neo4j instances. All data ingested by this tool is marked with metadata (`CodeToNeo4j: true`) for identification.
