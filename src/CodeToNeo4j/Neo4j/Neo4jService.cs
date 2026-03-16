@@ -98,6 +98,9 @@ public class Neo4jService(
     public Task UpsertDependencyUrls(IEnumerable<UrlNode> urlNodes, string databaseName) =>
         flushService.UpsertDependencyUrls(urlNodes, databaseName);
 
+    public Task FlushTargetFrameworks(IEnumerable<TargetFrameworkBatch> batches, string databaseName) =>
+        flushService.FlushTargetFrameworks(batches, databaseName);
+
     public async Task PurgeData(string? repoKey, IEnumerable<string>? includeExtensions, string databaseName, bool purgeDependencies, int batchSize)
     {
         var purgeTarget = repoKey is null ? "ALL CodeToNeo4j data" : $"repoKey '{repoKey}'";

@@ -139,4 +139,21 @@ public class Neo4jFlushService(
         await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch }))
             .ConfigureAwait(false);
     }
+
+    public async Task FlushTargetFrameworks(IEnumerable<TargetFrameworkBatch> batches, string databaseName)
+    {
+        var tfmBatch = batches.Select(b => new Dictionary<string, object?>
+        {
+            ["fileKey"] = b.FileKey,
+            ["symbolKeys"] = b.SymbolKeys.ToArray(),
+            ["tfms"] = b.TargetFrameworks.ToArray()
+        }).ToArray();
+
+        if (tfmBatch.Length == 0) return;
+
+        logger.LogDebug("Upserting target frameworks for {Count} files in database: {DatabaseName}", tfmBatch.Length, databaseName);
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertTargetFrameworks), new { items = tfmBatch }))
+            .ConfigureAwait(false);
+    }
 }

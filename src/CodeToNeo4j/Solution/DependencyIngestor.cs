@@ -24,7 +24,10 @@ public class DependencyIngestor(
             CancellationToken = CancellationToken.None
         };
 
-        await Parallel.ForEachAsync(solution.Projects, parallelOptions, (project, token) =>
+        // Filter out outer multi-target wrapper projects (they have 0 documents and produce empty compilations)
+        var projects = solution.Projects.Where(p => p.Documents.Any() || p.AdditionalDocuments.Any());
+
+        await Parallel.ForEachAsync(projects, parallelOptions, (project, token) =>
                 ProcessProject(dependencies, project, token))
             .ConfigureAwait(false);
 
@@ -38,20 +41,29 @@ public class DependencyIngestor(
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 
-    private static async ValueTask ProcessProject(ConcurrentBag<Dependency> dependencies, Project project, CancellationToken token)
+    private async ValueTask ProcessProject(ConcurrentBag<Dependency> dependencies, Project project, CancellationToken token)
     {
         if (!project.SupportsCompilation)
         {
             return;
         }
 
-        // Project.GetCompilationAsync is expensive because it can trigger a full build.
-        // However, for extracting NuGet dependencies, Roslyn must at least resolve metadata references.
-        // We use GetCompilationAsync but rely on Roslyn's internal caching.
-        // Once a project is compiled, subsequent calls for the same project in the same solution 
-        // will be much faster.
-        var compilation = await project.GetCompilationAsync(token)
-            .ConfigureAwait(false);
+        Compilation? compilation;
+        try
+        {
+            // Project.GetCompilationAsync is expensive because it can trigger a full build.
+            // However, for extracting NuGet dependencies, Roslyn must at least resolve metadata references.
+            // We use GetCompilationAsync but rely on Roslyn's internal caching.
+            // Once a project is compiled, subsequent calls for the same project in the same solution
+            // will be much faster.
+            compilation = await project.GetCompilationAsync(token)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Failed to get compilation for project {ProjectName}, skipping dependency extraction", project.Name);
+            return;
+        }
 
         if (compilation is null)
         {

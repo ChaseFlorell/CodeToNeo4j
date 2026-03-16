@@ -1,9 +1,10 @@
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using CodeToNeo4j.FileSystem;
 
 namespace CodeToNeo4j.Solution;
 
-public class SolutionFileDiscoveryService(
+public partial class SolutionFileDiscoveryService(
     IFileService fileService,
     IFileSystem fileSystem) : ISolutionFileDiscoveryService
 {
@@ -17,6 +18,14 @@ public class SolutionFileDiscoveryService(
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
         {
+            // Skip outer multi-target wrapper projects (they have 0 documents and no useful data)
+            if (!project.Documents.Any() && !project.AdditionalDocuments.Any())
+            {
+                continue;
+            }
+
+            var tfm = ExtractTargetFramework(project.Name);
+
             // Regular Documents
             foreach (var doc in project.Documents)
             {
@@ -24,9 +33,13 @@ public class SolutionFileDiscoveryService(
                 if (string.IsNullOrEmpty(path)) continue;
                 if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
-                if (!solutionFiles.ContainsKey(path))
+                if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
+                    solutionFiles[path] = existing with { TargetFrameworks = MergeTfm(existing.TargetFrameworks, tfm) };
+                }
+                else
+                {
+                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id, MergeTfm(null, tfm));
                 }
             }
 
@@ -37,9 +50,13 @@ public class SolutionFileDiscoveryService(
                 if (string.IsNullOrEmpty(path)) continue;
                 if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
-                if (!solutionFiles.ContainsKey(path))
+                if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
+                    solutionFiles[path] = existing with { TargetFrameworks = MergeTfm(existing.TargetFrameworks, tfm) };
+                }
+                else
+                {
+                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id, MergeTfm(null, tfm));
                 }
             }
         }
@@ -62,6 +79,23 @@ public class SolutionFileDiscoveryService(
         return solutionFiles.Values;
     }
 
+    internal static string? ExtractTargetFramework(string projectName)
+    {
+        var match = TfmRegex().Match(projectName);
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private static IReadOnlySet<string>? MergeTfm(IReadOnlySet<string>? existing, string? tfm)
+    {
+        if (tfm is null) return existing;
+
+        var set = existing is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+        set.Add(tfm);
+        return set;
+    }
+
     private static bool IsExcluded(string path) =>
         path.Split('/')
             .Any(p => p.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
@@ -69,4 +103,7 @@ public class SolutionFileDiscoveryService(
                       p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
+
+    [GeneratedRegex(@"\(([^)]+)\)$")]
+    private static partial Regex TfmRegex();
 }
