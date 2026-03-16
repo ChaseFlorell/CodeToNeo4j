@@ -1,5 +1,6 @@
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -80,21 +81,81 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 
         var seenCallees = new HashSet<string>();
 
-        foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        foreach (var node in body.DescendantNodes())
         {
-            if (semanticModel.GetSymbolInfo(invocation).Symbol is not IMethodSymbol calleeSymbol) continue;
-            var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
-            if (seenCallees.Add(calleeKey))
-                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
-        }
+            switch (node)
+            {
+                // Method invocations
+                case InvocationExpressionSyntax invocation:
+                    if (semanticModel.GetSymbolInfo(invocation).Symbol is IMethodSymbol calleeSymbol)
+                        AddInvokes(calleeSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
 
-        foreach (var objectCreation in body.DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>())
-        {
-            if (semanticModel.GetSymbolInfo(objectCreation).Symbol is not IMethodSymbol ctorSymbol) continue;
-            var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, ctorSymbol);
-            if (seenCallees.Add(calleeKey))
-                relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
+                // Constructor invocations
+                case BaseObjectCreationExpressionSyntax objectCreation:
+                    if (semanticModel.GetSymbolInfo(objectCreation).Symbol is IMethodSymbol ctorSymbol)
+                        AddInvokes(ctorSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+
+                // Binary operators (==, !=, >, <, >=, <=, |, &, ^) and 'as' expressions
+                case BinaryExpressionSyntax binary:
+                    if (semanticModel.GetSymbolInfo(binary).Symbol is IMethodSymbol binSymbol
+                        && binSymbol.MethodKind is MethodKind.UserDefinedOperator or MethodKind.Conversion)
+                        AddInvokes(binSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+
+                // Explicit cast expressions: (int)foo
+                case CastExpressionSyntax cast:
+                    if (semanticModel.GetSymbolInfo(cast).Symbol is IMethodSymbol { MethodKind: MethodKind.Conversion } convSymbol)
+                        AddInvokes(convSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+
+                // Unary prefix operators: !, ~, +, -, ++, --
+                case PrefixUnaryExpressionSyntax prefix:
+                    if (semanticModel.GetSymbolInfo(prefix).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } prefixOp)
+                        AddInvokes(prefixOp, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+
+                // Unary postfix operators: ++, --
+                case PostfixUnaryExpressionSyntax postfix:
+                    if (semanticModel.GetSymbolInfo(postfix).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } postfixOp)
+                        AddInvokes(postfixOp, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+            }
+
+            // Implicit conversions (assignments, arguments, return values, etc.)
+            if (node is ExpressionSyntax expr && IsImplicitConversionCandidate(expr))
+            {
+                var conversion = semanticModel.GetConversion(expr);
+                if (conversion.IsUserDefined && conversion.MethodSymbol is { MethodKind: MethodKind.Conversion } implicitSymbol)
+                    AddInvokes(implicitSymbol, callerRec, repoKey, relBuffer, seenCallees);
+            }
         }
+    }
+
+    private static bool IsImplicitConversionCandidate(ExpressionSyntax expr)
+    {
+        return expr.Parent switch
+        {
+            EqualsValueClauseSyntax => true,
+            AssignmentExpressionSyntax a => expr == a.Right,
+            ArgumentSyntax => true,
+            ReturnStatementSyntax => true,
+            ArrowExpressionClauseSyntax => true,
+            _ => false
+        };
+    }
+
+    private void AddInvokes(
+        IMethodSymbol calleeSymbol,
+        Symbol callerRec,
+        string? repoKey,
+        ICollection<Relationship> relBuffer,
+        HashSet<string> seenCallees)
+    {
+        var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
+        if (seenCallees.Add(calleeKey))
+            relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
     }
 
     private void ExtractMethodDependencies(
