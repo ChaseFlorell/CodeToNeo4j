@@ -45,7 +45,7 @@ jobs:
         subject-path: out/*.nupkg
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: CodeToNeo4j.nupkg
         path: out/*.nupkg
