@@ -151,6 +151,212 @@ public class MemberDependencyExtractorTests
         relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON" && r.FromKey == typeRec.Key);
     }
 
+    [Theory]
+    [InlineData(
+        "method argument",
+        @"
+            using System;
+            public class TestClass {
+                public void Subscribe(Action handler) {}
+                public void HandleValue() {}
+                public void Foo() { Subscribe(HandleValue); }
+            }",
+        "HandleValue")]
+    [InlineData(
+        "this-qualified method argument",
+        @"
+            using System;
+            public class TestClass {
+                public void Subscribe(Action handler) {}
+                public void HandleValue() {}
+                public void Foo() { Subscribe(this.HandleValue); }
+            }",
+        "HandleValue")]
+    [InlineData(
+        "constructor argument",
+        @"
+            using System;
+            public class Command { public Command(Action execute) {} }
+            public class TestClass {
+                public void Execute() {}
+                public void Foo() { new Command(Execute); }
+            }",
+        "Execute")]
+    [InlineData(
+        "delegate assignment",
+        @"
+            using System;
+            public class TestClass {
+                public void MyMethod() {}
+                public void Foo() { Action a = MyMethod; }
+            }",
+        "MyMethod")]
+    [InlineData(
+        "event subscription",
+        @"
+            using System;
+            public class TestClass {
+                public event Action MyEvent;
+                public void Handler() {}
+                public void Foo() { MyEvent += Handler; }
+            }",
+        "Handler")]
+    public void GivenMethodGroup_WhenExtractMemberDependenciesCalled_ThenAddsInvokesRelationship(
+        string scenario,
+        string code,
+        string expectedMethodName)
+    {
+        // Arrange
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+
+        var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+            .First(c => c.Identifier.Text == "TestClass");
+        var methodNode = classDecl.Members.OfType<MethodDeclarationSyntax>()
+            .First(m => m.Identifier.Text == "Foo");
+        var methodSymbol = model.GetDeclaredSymbol(methodNode)!;
+
+        var symbolMapper = new SymbolMapper();
+        var sut = new MemberDependencyExtractor(symbolMapper);
+        var relBuffer = new List<Relationship>();
+
+        var typeRec = new Symbol("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null, null);
+        var memberRec = new Symbol("test:TestClass.Foo", "Foo", "Method", "TestClass", "TestClass.Foo()", "Public", "file.cs", "file.cs", 3, 3, null, null, null);
+
+        // Act
+        sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
+
+        // Assert – should have an INVOKES for the method group target
+        relBuffer.ShouldContain(
+            r => r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains(expectedMethodName),
+            $"Scenario '{scenario}' should create INVOKES for {expectedMethodName}");
+    }
+
+    [Fact]
+    public void GivenMethodGroupAndDirectCall_WhenExtractMemberDependenciesCalled_ThenNoDuplicateInvokes()
+    {
+        // Arrange — Foo calls HandleValue() directly AND passes it as a method group
+        var code = @"
+            using System;
+            public class TestClass {
+                public void Subscribe(Action handler) {}
+                public void HandleValue() {}
+                public void Foo() {
+                    HandleValue();
+                    Subscribe(HandleValue);
+                }
+            }";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+
+        var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+            .First(c => c.Identifier.Text == "TestClass");
+        var methodNode = classDecl.Members.OfType<MethodDeclarationSyntax>()
+            .First(m => m.Identifier.Text == "Foo");
+        var methodSymbol = model.GetDeclaredSymbol(methodNode)!;
+
+        var symbolMapper = new SymbolMapper();
+        var sut = new MemberDependencyExtractor(symbolMapper);
+        var relBuffer = new List<Relationship>();
+
+        var typeRec = new Symbol("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null, null);
+        var memberRec = new Symbol("test:TestClass.Foo", "Foo", "Method", "TestClass", "TestClass.Foo()", "Public", "file.cs", "file.cs", 3, 3, null, null, null);
+
+        // Act
+        sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
+
+        // Assert — HandleValue should appear exactly once as an INVOKES target
+        var handleValueInvokes = relBuffer.Where(r =>
+            r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue")).ToList();
+        handleValueInvokes.Count.ShouldBe(1, "HandleValue should have exactly one INVOKES relationship (no duplicates)");
+    }
+
+    [Fact]
+    public void GivenDirectCallOnly_WhenExtractMemberDependenciesCalled_ThenNoDoubleCountFromMethodGroupDetection()
+    {
+        // Arrange — only a direct call, no method group; ensure the invoked method name
+        // in `Helper.DoWork()` is not double-counted by method group detection
+        var code = @"
+            public class Helper { public static void DoWork() {} }
+            public class TestClass {
+                public void Foo() { Helper.DoWork(); }
+            }";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+
+        var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+            .First(c => c.Identifier.Text == "TestClass");
+        var methodNode = classDecl.Members.OfType<MethodDeclarationSyntax>().First();
+        var methodSymbol = model.GetDeclaredSymbol(methodNode)!;
+
+        var symbolMapper = new SymbolMapper();
+        var sut = new MemberDependencyExtractor(symbolMapper);
+        var relBuffer = new List<Relationship>();
+
+        var typeRec = new Symbol("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null, null);
+        var memberRec = new Symbol("test:TestClass.Foo", "Foo", "Method", "TestClass", "TestClass.Foo()", "Public", "file.cs", "file.cs", 3, 3, null, null, null);
+
+        // Act
+        sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
+
+        // Assert — DoWork should appear exactly once
+        var doWorkInvokes = relBuffer.Where(r =>
+            r.RelType == "INVOKES" && r.ToKey.Contains("DoWork")).ToList();
+        doWorkInvokes.Count.ShouldBe(1, "Direct call should produce exactly one INVOKES, not double-counted by method group detection");
+    }
+
+    [Fact]
+    public void GivenLambdaWithMethodCall_WhenExtractMemberDependenciesCalled_ThenAddsInvokesForCallInsideLambda()
+    {
+        // Arrange — verify existing behavior: a method called inside a lambda is detected
+        var code = @"
+            using System;
+            public class TestClass {
+                public void Subscribe(Action handler) {}
+                public void HandleValue() {}
+                public void Foo() { Subscribe(() => HandleValue()); }
+            }";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var compilation = CSharpCompilation.Create("Test",
+            [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+        var root = tree.GetRoot();
+
+        var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+            .First(c => c.Identifier.Text == "TestClass");
+        var methodNode = classDecl.Members.OfType<MethodDeclarationSyntax>()
+            .First(m => m.Identifier.Text == "Foo");
+        var methodSymbol = model.GetDeclaredSymbol(methodNode)!;
+
+        var symbolMapper = new SymbolMapper();
+        var sut = new MemberDependencyExtractor(symbolMapper);
+        var relBuffer = new List<Relationship>();
+
+        var typeRec = new Symbol("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null, null);
+        var memberRec = new Symbol("test:TestClass.Foo", "Foo", "Method", "TestClass", "TestClass.Foo()", "Public", "file.cs", "file.cs", 3, 3, null, null, null);
+
+        // Act
+        sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
+
+        // Assert
+        relBuffer.ShouldContain(
+            r => r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue"),
+            "Lambda body invocation of HandleValue should be detected");
+    }
+
     [Fact]
     public void GivenExternalNamespaceSymbol_WhenAddDependsOnIfExternalCalled_ThenAddsRelationship()
     {
