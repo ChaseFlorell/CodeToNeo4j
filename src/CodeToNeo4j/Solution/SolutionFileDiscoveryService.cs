@@ -13,7 +13,9 @@ public partial class SolutionFileDiscoveryService(
         IEnumerable<string> includeExtensions)
     {
         var extensions = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var solutionFiles = new Dictionary<string, ProcessedFile>(StringComparer.OrdinalIgnoreCase);
+        // Track files with their first-seen ProjectId/DocumentId and a mutable TFM set to avoid
+        // allocation churn from copy-on-merge with immutable sets.
+        var solutionFiles = new Dictionary<string, (ProcessedFile File, HashSet<string>? Tfms)>(StringComparer.OrdinalIgnoreCase);
 
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
@@ -35,11 +37,20 @@ public partial class SolutionFileDiscoveryService(
 
                 if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = existing with { TargetFrameworks = MergeTfm(existing.TargetFrameworks, tfm) };
+                    if (tfm is not null)
+                    {
+                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        existing.Tfms.Add(tfm);
+                    }
                 }
                 else
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id, MergeTfm(null, tfm));
+                    HashSet<string>? tfms = null;
+                    if (tfm is not null)
+                    {
+                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                    }
+                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                 }
             }
 
@@ -52,11 +63,20 @@ public partial class SolutionFileDiscoveryService(
 
                 if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = existing with { TargetFrameworks = MergeTfm(existing.TargetFrameworks, tfm) };
+                    if (tfm is not null)
+                    {
+                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        existing.Tfms.Add(tfm);
+                    }
                 }
                 else
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id, MergeTfm(null, tfm));
+                    HashSet<string>? tfms = null;
+                    if (tfm is not null)
+                    {
+                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                    }
+                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                 }
             }
         }
@@ -72,28 +92,21 @@ public partial class SolutionFileDiscoveryService(
 
             if (!solutionFiles.ContainsKey(normalizedPath))
             {
-                solutionFiles[normalizedPath] = new ProcessedFile(normalizedPath, null, null);
+                solutionFiles[normalizedPath] = (new ProcessedFile(normalizedPath, null, null), null);
             }
         }
 
-        return solutionFiles.Values;
+        // Freeze the mutable TFM sets into the ProcessedFile records
+        return solutionFiles.Values.Select(entry =>
+            entry.Tfms is { Count: > 0 }
+                ? entry.File with { TargetFrameworks = entry.Tfms }
+                : entry.File);
     }
 
     internal static string? ExtractTargetFramework(string projectName)
     {
         var match = TfmRegex().Match(projectName);
         return match.Success ? match.Groups[1].Value : null;
-    }
-
-    private static IReadOnlySet<string>? MergeTfm(IReadOnlySet<string>? existing, string? tfm)
-    {
-        if (tfm is null) return existing;
-
-        var set = existing is null
-            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            : new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
-        set.Add(tfm);
-        return set;
     }
 
     private static bool IsExcluded(string path) =>

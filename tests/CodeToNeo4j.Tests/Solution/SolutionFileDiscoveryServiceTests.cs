@@ -158,4 +158,48 @@ public class SolutionFileDiscoveryServiceTests
         files.Length.ShouldBe(1);
         files[0].TargetFrameworks.ShouldBeNull();
     }
+
+    [Fact]
+    public void GivenAdditionalDocumentsFromMultiTargetProjects_WhenGetFilesToProcessCalled_ThenAccumulatesTfms()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        fileSystem.AddDirectory("/solution");
+        fileSystem.AddFile("/solution/data/config.json", new MockFileData("{}"));
+
+        var fileService = A.Fake<IFileService>();
+        A.CallTo(() => fileService.NormalizePath(A<string>._)).ReturnsLazily((string p) => p);
+
+        var sut = new SolutionFileDiscoveryService(fileService, fileSystem);
+
+        var workspace = new AdhocWorkspace();
+        var projectId1 = ProjectId.CreateNewId();
+        var projectId2 = ProjectId.CreateNewId();
+        var docId1 = DocumentId.CreateNewId(projectId1);
+        var docId2 = DocumentId.CreateNewId(projectId2);
+
+        // Add a regular document so the projects aren't filtered as wrappers
+        var codeDocId1 = DocumentId.CreateNewId(projectId1);
+        var codeDocId2 = DocumentId.CreateNewId(projectId2);
+
+        var solution = workspace.CurrentSolution
+            .AddProject(ProjectInfo.Create(projectId1, VersionStamp.Default, "MyProject(net9.0)", "MyProject", LanguageNames.CSharp))
+            .AddDocument(DocumentInfo.Create(codeDocId1, "Dummy.cs", filePath: "/solution/src/Dummy.cs"))
+            .AddAdditionalDocument(DocumentInfo.Create(docId1, "config.json", filePath: "/solution/data/config.json"))
+            .AddProject(ProjectInfo.Create(projectId2, VersionStamp.Default, "MyProject(net8.0)", "MyProject", LanguageNames.CSharp))
+            .AddDocument(DocumentInfo.Create(codeDocId2, "Dummy.cs", filePath: "/solution/src/Dummy.cs"))
+            .AddAdditionalDocument(DocumentInfo.Create(docId2, "config.json", filePath: "/solution/data/config.json"));
+
+        var sln = new FileInfo("/solution/MySolution.sln");
+
+        // Act
+        var files = sut.GetFilesToProcess(sln, solution, [".cs", ".json"]).ToArray();
+
+        // Assert
+        var configFile = files.FirstOrDefault(f => f.FilePath.EndsWith("config.json"));
+        configFile.ShouldNotBeNull();
+        configFile.TargetFrameworks.ShouldNotBeNull();
+        configFile.TargetFrameworks!.ShouldContain("net9.0");
+        configFile.TargetFrameworks!.ShouldContain("net8.0");
+    }
 }
