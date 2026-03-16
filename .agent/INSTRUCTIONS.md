@@ -57,10 +57,22 @@
     5. After each change, commit with a descriptive (but short) message, and then rebase the `main` branch.
     6. When ready to submit a pull request, ensure that the branch is up-to-date with `main` and that all tests pass before pushing.
 
+# GitHub Issues
+- **Template Selection**: When creating a GitHub issue, always use the correct issue template:
+    - **Bug Report** (`.github/ISSUE_TEMPLATE/bug_report.yml`): For bugs or unexpected behaviour. Auto-labels `Bug`. Required fields: Description, Steps to Reproduce, Expected Behaviour, Actual Behaviour, `dotnet --list-sdks` output, Environment. Optional: Logs/Screenshots.
+    - **Feature Request** (`.github/ISSUE_TEMPLATE/feature_request.yml`): For new features or enhancements. Auto-labels `Enhancement`. Required fields: Description, Motivation/Use Case. Optional: Alternatives Considered, Additional Context.
+- **Using `gh`**: When creating issues via `gh issue create`, use `--template bug_report.yml` or `--template feature_request.yml` and fill in all required fields in the body. Structure the body to match the template's field labels (e.g., `### Description`, `### Steps to Reproduce`, etc.).
+
 # Pull Requests
-- **Template Compliance**: Before creating a PR, ALWAYS read `.github/pull_request_template.md` and use its exact structure for the PR body. The CI workflow (`pr-requirements.yml`) checks for exact string matches on checklist items.
-- **Checklist**: The PR body must include the `## Checklist` section from the template with checkboxes. Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
-- **Issue Reference**: The `## Issue` section must contain `Resolves #<number>` on its own line.
+- **Template Compliance**: Before creating a PR, ALWAYS use the exact structure from `.github/pull_request_template.md` for the PR body. The CI workflow (`pr-requirements.yml`) checks for exact string matches on checklist items. The body must contain these sections in order:
+    1. `## Summary` — describe the changes
+    2. `## Issue` — must contain `Resolves #<number>` on its own line
+    3. `## Checklist` — all four checkboxes from the template:
+        - `- [ ] This PR resolves the linked issue`
+        - `- [ ] Tests have been added or updated`
+        - `- [ ] Rebased on top of main`
+        - `- [ ] This is a breaking change`
+- **Checklist**: Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
 - **Labels**: Apply the same label(s) to the PR as the linked issue.
 
 # Artifacts
