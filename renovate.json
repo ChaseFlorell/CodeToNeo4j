@@ -17,10 +17,21 @@
     "",
     "- [x] This PR resolves the linked issue",
     "- [ ] Tests have been added or updated",
-    "- [x] Rebased on top of main",
-    "- [ ] This is a breaking change"
+    "- [x] Rebased on top of main"
   ],
   "packageRules": [
+    {
+      "description": "Label major updates as breaking changes",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "addLabels": [
+        "breaking-change"
+      ],
+      "prBodyNotes": [
+        "- [x] This is a breaking change"
+      ]
+    },
     {
       "description": "Automerge non-major updates",
       "matchUpdateTypes": [
@@ -28,7 +39,10 @@
         "patch"
       ],
       "autoApprove": true,
-      "automerge": true
+      "automerge": true,
+      "prBodyNotes": [
+        "- [ ] This is a breaking change"
+      ]
     },
     {
       "description": "Skip pinned versions",
