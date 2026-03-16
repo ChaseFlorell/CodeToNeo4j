@@ -33,12 +33,13 @@ jobs:
     - name: Test
       run: |
         rm -rf ./TestResults
-        dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage"
+        dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
-    - name: Upload Coverage to Codecov
+    - name: Upload coverage reports to Codecov
       if: always()
       uses: codecov/codecov-action@v5
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./TestResults
         fail_ci_if_error: false
 
