@@ -19,7 +19,7 @@
 
 # Performance Principles
 - **Batching**: Always prefer batching I/O operations (database writes, git commands) to minimize overhead.
-- **Concurrency**: Use `Parallel.ForEachAsync` for independent CPU-bound tasks, but cap the degree of parallelism (default: 20) to manage memory and resource pressure.
+- **Concurrency**: Use `Parallel.ForEachAsync` for independent CPU-bound tasks with `MaxDegreeOfParallelism` set to `Environment.ProcessorCount` to fully utilize the machine's resources.
 - **Lazy Loading**: Avoid pre-loading heavy objects (like Roslyn compilations) for the entire solution. Load them only when needed for the current batch of work.
 - **Producer-Consumer**: Decouple analysis from ingestion using `System.Threading.Channels` to ensure a responsive UI and optimal database batching.
 - **Git Ingestion**: Parallelize git log fetching and commit ingestion using `--batch-size` to manage process and database overhead.
