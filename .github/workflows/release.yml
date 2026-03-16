@@ -40,7 +40,7 @@ jobs:
       run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-restore -c Release -o out /p:Version=${{ env.MAJOR }}.${{ env.MINOR }}.${{ github.run_number }}
 
     - name: Attest build provenance
-      uses: actions/attest-build-provenance@v2
+      uses: actions/attest-build-provenance@v4
       with:
         subject-path: out/*.nupkg
 
