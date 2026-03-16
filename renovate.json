@@ -49,7 +49,7 @@
       "matchManagers": [
         "nuget"
       ],
-      "matchCurrentValue": "/^\[[^,]+\]$/",
+      "matchCurrentValue": "/^\\[[^,]+\\]$/",
       "enabled": false
     },
     {
