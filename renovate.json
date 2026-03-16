@@ -22,6 +22,15 @@
   ],
   "packageRules": [
     {
+      "description": "Label major updates as breaking changes",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "addLabels": [
+        "breaking-change"
+      ]
+    },
+    {
       "description": "Automerge non-major updates",
       "matchUpdateTypes": [
         "minor",
