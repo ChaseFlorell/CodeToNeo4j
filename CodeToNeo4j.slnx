@@ -16,6 +16,7 @@
     <File Path=".agent/LESSONS.md" />
   </Folder>
   <Folder Name="/.src/.github/">
+    <File Path=".github\pull_request_template.md" />
     <File Path=".github\release.yml" />
   </Folder>
   <Folder Name="/.src/.github/ISSUE_TEMPLATE/">
