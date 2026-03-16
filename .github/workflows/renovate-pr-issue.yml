@@ -20,28 +20,38 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
+            const currentBody = pr.body || '';
 
             // Skip if PR body already contains a Resolves reference
-            if (pr.body && /^Resolves #\d+/m.test(pr.body)) {
+            if (/^Resolves #\d+/m.test(currentBody)) {
               core.info(`PR #${pr.number} already has a Resolves reference. Skipping.`);
               return;
             }
 
-            // Create a tracking issue for this Renovate PR
-            const issue = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: pr.title,
-              body: `Tracking issue for Renovate PR #${pr.number}.`,
-              labels: ['dependencies', 'renovate']
-            });
+            // Search for an existing tracking issue for this PR
+            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:issue label:renovate "Tracking issue for Renovate PR #${pr.number}"`;
+            const searchResult = await github.rest.search.issuesAndPullRequests({ q: searchQuery });
 
-            const issueNumber = issue.data.number;
-            const resolvesBanner = `Resolves #${issueNumber}`;
+            let issueNumber;
+            if (searchResult.data.total_count > 0) {
+              // Reuse the existing tracking issue
+              issueNumber = searchResult.data.items[0].number;
+              core.info(`Found existing tracking issue #${issueNumber} for PR #${pr.number}`);
+            } else {
+              // Create a new tracking issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: pr.title,
+                body: `Tracking issue for Renovate PR #${pr.number}.`,
+                labels: ['dependencies', 'renovate']
+              });
+              issueNumber = issue.data.number;
+              core.info(`Created tracking issue #${issueNumber} for PR #${pr.number}`);
+            }
 
-            // Prepend the Resolves line to the existing PR body
-            const currentBody = pr.body || '';
-            const updatedBody = `${resolvesBanner}\n\n${currentBody}`;
+            // Prepend the Resolves line to the PR body
+            const updatedBody = `Resolves #${issueNumber}\n\n${currentBody}`;
 
             await github.rest.pulls.update({
               owner: context.repo.owner,
@@ -49,5 +59,3 @@ jobs:
               pull_number: pr.number,
               body: updatedBody
             });
-
-            core.info(`Created issue #${issueNumber} and linked to PR #${pr.number}`);
