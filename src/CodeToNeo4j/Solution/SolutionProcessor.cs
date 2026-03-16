@@ -249,7 +249,7 @@ public class SolutionProcessor(
                     logger.LogDebug(ex,
                         "Failed to get compilation for project {ProjectName}, skipping compilation for file {FilePath}. "
                         + "This is common with multi-target projects where the outer wrapper project lacks a Compile target. "
-                        + "File processing will continue without semantic analysis",
+                        + "Semantic analysis will still occur for the specific target framework projects (e.g. net9.0, net8.0)",
                         project.Name, filePath);
                 }
             }

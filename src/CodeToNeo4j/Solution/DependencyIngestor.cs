@@ -63,7 +63,8 @@ public class DependencyIngestor(
         {
             logger.LogDebug(ex,
                 "Failed to get compilation for project {ProjectName}, skipping dependency extraction. "
-                + "This is common with multi-target projects where the outer wrapper project lacks a Compile target",
+                + "This is common with multi-target projects where the outer wrapper project lacks a Compile target. "
+                + "Dependencies will still be extracted from the specific target framework projects (e.g. net9.0, net8.0)",
                 project.Name);
             return;
         }
