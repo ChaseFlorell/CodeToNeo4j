@@ -4,7 +4,86 @@ on:
   pull_request:
     types: [opened, labeled, unlabeled, synchronize, reopened, edited]
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
+  create-and-link-issue:
+    if: contains(github.event.pull_request.labels.*.name, 'renovate')
+    runs-on: self-hosted
+    steps:
+      - name: Create issue and update PR body
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          retries: 3
+          script: |
+            const prNumber = context.payload.pull_request.number;
+
+            // Always fetch the latest PR body from the API to avoid stale payload data
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            // Determine labels for the tracking issue (mirror breaking-change from PR)
+            const issueLabels = ['dependencies', 'renovate'];
+            const prLabels = pr.labels.map(l => l.name);
+            if (prLabels.includes('breaking-change')) {
+              issueLabels.push('breaking-change');
+            }
+
+            // Search for an existing tracking issue for this PR
+            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:issue label:renovate "Tracking issue for Renovate PR #${prNumber}"`;
+            const searchResult = await github.rest.search.issuesAndPullRequests({ q: searchQuery });
+
+            let issueNumber;
+            if (searchResult.data.total_count > 0) {
+              issueNumber = searchResult.data.items[0].number;
+              core.info(`Found existing tracking issue #${issueNumber} for PR #${prNumber}`);
+
+              // Ensure breaking-change label is synced to existing issue
+              if (prLabels.includes('breaking-change')) {
+                const existingIssue = searchResult.data.items[0];
+                const existingLabels = existingIssue.labels.map(l => l.name);
+                if (!existingLabels.includes('breaking-change')) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    labels: ['breaking-change']
+                  });
+                  core.info(`Added breaking-change label to existing issue #${issueNumber}`);
+                }
+              }
+            } else {
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: pr.title,
+                body: `Tracking issue for Renovate PR #${prNumber}.`,
+                labels: issueLabels
+              });
+              issueNumber = issue.data.number;
+              core.info(`Created tracking issue #${issueNumber} for PR #${prNumber}`);
+            }
+
+            // Strip any existing Resolves line, then always prepend the correct one
+            const body = (pr.body || '').replace(/^Resolves #\d+\s*/m, '').trimStart();
+            const updatedBody = `Resolves #${issueNumber}\n\n${body}`;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body: updatedBody
+            });
+
+            core.info(`Linked PR #${prNumber} to issue #${issueNumber}`);
+
   check-label:
     runs-on: self-hosted
     steps:
@@ -20,17 +99,27 @@ jobs:
           echo "Labels found: $(echo "$LABELS" | jq -r '[.[].name] | join(", ")')"
 
   check-issue-reference:
+    needs: [create-and-link-issue]
+    if: always() && !cancelled()
     runs-on: self-hosted
     steps:
       - name: Check for issue number in Resolves field
-        env:
-          BODY: ${{ github.event.pull_request.body }}
-        run: |
-          if ! echo "$BODY" | grep -qE '^Resolves #[0-9]+'; then
-            echo "::error::PR body must contain 'Resolves #<issue-number>' (e.g. 'Resolves #42')."
-            exit 1
-          fi
-          echo "Issue reference found."
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const body = pr.body || '';
+            if (!/^Resolves #[0-9]+/m.test(body)) {
+              core.setFailed("PR body must contain 'Resolves #<issue-number>' (e.g. 'Resolves #42').");
+              return;
+            }
+            core.info('Issue reference found.');
 
   check-tests-checkbox:
     runs-on: self-hosted
