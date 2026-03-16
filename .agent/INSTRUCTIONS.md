@@ -34,7 +34,7 @@
     5. Private members
     6. Private static members
     7. Private const members (CRITICAL: These must be at the very bottom of the class)
-- **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action/e]_Then[Result]()`.
+- **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action]_Then[Result]()`.
 - **Theory vs Fact**: Prefer `[Theory]` with `[InlineData]` over `[Fact]` wherever multiple inputs exercise the same logic. Use `[Fact]` only when a test has complex setup or multiple unrelated assertions that cannot be parameterized.
 - **No Conditional Branching**: Unit tests must never use conditional branching (if/else). Split such tests into separate `[Fact]` or `[Theory]` methods to ensure each test has a single, clear purpose and predictable path.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
