@@ -11,7 +11,7 @@
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
   </ItemGroup>
   <ItemGroup Label="FakeItEasy">
-    <PackageVersion Include="FakeItEasy" Version="8.3.0" />
+    <PackageVersion Include="FakeItEasy" Version="9.0.1" />
   </ItemGroup>
   <ItemGroup Label="Microsoft and System">
     <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.31" />
