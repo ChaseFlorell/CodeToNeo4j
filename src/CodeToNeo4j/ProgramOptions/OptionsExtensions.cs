@@ -9,19 +9,19 @@ public static class OptionsExtensions
     {
         public Option<T> WithAlias(string alias)
         {
-            option.AddAlias(alias);
+            option.Aliases.Add(alias);
             return option;
         }
 
         public Option<T> IsRequired()
         {
-            option.IsRequired = true;
+            option.Required = true;
             return option;
         }
 
         public Option<T> WithArgumentHelpName(string argumentHelpName)
         {
-            option.ArgumentHelpName = argumentHelpName;
+            option.HelpName = argumentHelpName;
             return option;
         }
 
@@ -33,7 +33,7 @@ public static class OptionsExtensions
 
         public Option<T> WithDefaultValueFunc(Func<T> defaultValue)
         {
-            option.SetDefaultValueFactory(() => defaultValue());
+            option.DefaultValueFactory = _ => defaultValue();
             return option;
         }
     }

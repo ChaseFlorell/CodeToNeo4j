@@ -1,4 +1,3 @@
-using System.CommandLine;
 using Shouldly;
 using Xunit;
 
@@ -13,7 +12,7 @@ public class ProgramTests
         var (sut, _) = Program.CreateRootCommand();
 
         // act
-        var result = sut.Parse();
+        var result = sut.Parse([]);
 
         // assert
         result.Errors.ShouldNotBeEmpty();

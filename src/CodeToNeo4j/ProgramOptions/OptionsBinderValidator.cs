@@ -23,21 +23,21 @@ public static class OptionsBinderValidator
         Option<bool> showSupportedFilesOption,
         Option<bool> showInfoOption)
     {
-        var isInfo = result.GetValueForOption(showVersionOption)
-                     || result.GetValueForOption(showSupportedFilesOption)
-                     || result.GetValueForOption(showInfoOption);
+        var isInfo = result.GetValue(showVersionOption)
+                     || result.GetValue(showSupportedFilesOption)
+                     || result.GetValue(showInfoOption);
 
         if (isInfo)
             return;
 
-        var isPurge = result.GetValueForOption(purgeDataOption);
-        var noKey = result.GetValueForOption(noKeyOption);
-        var sln = result.GetValueForOption(slnOption);
-        var pass = result.FindResultFor(passOption);
+        var isPurge = result.GetValue(purgeDataOption);
+        var noKey = result.GetValue(noKeyOption);
+        var sln = result.GetValue(slnOption);
+        var pass = result.GetResult(passOption);
 
-        if (pass is null)
+        if (pass is null or { Implicit: true })
         {
-            result.ErrorMessage = "--password is required";
+            result.AddError("--password is required");
             return;
         }
 
@@ -45,32 +45,32 @@ public static class OptionsBinderValidator
         {
             if (!noKey && sln is null)
             {
-                result.ErrorMessage = "--sln is required when using --purge-data without --no-key";
+                result.AddError("--sln is required when using --purge-data without --no-key");
             }
 
-            var minAccResult = result.FindResultFor(minAccessibilityOption);
-            if (minAccResult is not null && !minAccResult.IsImplicit)
+            var minAccResult = result.GetResult(minAccessibilityOption);
+            if (minAccResult is not null && !minAccResult.Implicit)
             {
-                result.ErrorMessage = "--min-accessibility is not allowed when using --purge-data";
+                result.AddError("--min-accessibility is not allowed when using --purge-data");
             }
         }
         else
         {
             if (sln is null)
             {
-                result.ErrorMessage = "--sln is required";
+                result.AddError("--sln is required");
             }
         }
 
-        var usedLogLevel = result.FindResultFor(logLevelOption) is not null && !result.FindResultFor(logLevelOption)!.IsImplicit;
-        var usedDebug = result.FindResultFor(debugOption) is not null;
-        var usedVerbose = result.FindResultFor(verboseOption) is not null;
-        var usedQuiet = result.FindResultFor(quietOption) is not null;
+        var usedLogLevel = result.GetResult(logLevelOption) is { Implicit: false };
+        var usedDebug = result.GetResult(debugOption) is { Implicit: false };
+        var usedVerbose = result.GetResult(verboseOption) is { Implicit: false };
+        var usedQuiet = result.GetResult(quietOption) is { Implicit: false };
 
         var logOptionsCount = (usedLogLevel ? 1 : 0) + (usedDebug ? 1 : 0) + (usedVerbose ? 1 : 0) + (usedQuiet ? 1 : 0);
         if (logOptionsCount > 1)
         {
-            result.ErrorMessage = "Only one of --log-level, --debug, --verbose, or --quiet can be used.";
+            result.AddError("Only one of --log-level, --debug, --verbose, or --quiet can be used.");
         }
     }
 }

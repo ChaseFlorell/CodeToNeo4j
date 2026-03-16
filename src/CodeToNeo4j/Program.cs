@@ -1,6 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using System.Reflection;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
@@ -15,17 +13,17 @@ public class Program
     // Each entry is (Extension/Pattern, HandlerName) — kept in sync with ContainerModule handler registrations.
     internal static readonly (string Extension, string HandlerName)[] SupportedFileTypes =
     [
-        (".cs",           "CSharpHandler"),
-        (".razor",        "RazorHandler"),
-        (".xaml",         "XamlHandler"),
-        (".js",           "JavaScriptHandler"),
-        (".ts / .tsx",    "TypeScriptHandler"),
-        (".html",         "HtmlHandler"),
-        (".xml",          "XmlHandler"),
-        ("package.json",  "PackageJsonHandler"),
-        (".json",         "JsonHandler"),
-        (".css",          "CssHandler"),
-        (".csproj",       "CsprojHandler"),
+        (".cs", "CSharpHandler"),
+        (".razor", "RazorHandler"),
+        (".xaml", "XamlHandler"),
+        (".js", "JavaScriptHandler"),
+        (".ts / .tsx", "TypeScriptHandler"),
+        (".html", "HtmlHandler"),
+        (".xml", "XmlHandler"),
+        ("package.json", "PackageJsonHandler"),
+        (".json", "JsonHandler"),
+        (".css", "CssHandler"),
+        (".csproj", "CsprojHandler"),
     ];
 
     public static async Task<int> Main(string[] args)
@@ -128,32 +126,34 @@ public class Program
         var root = new RootCommand("Index .NET solution into Neo4j via Roslyn");
 
         binder.AddToCommand(root);
-        root.SetHandler(async options =>
+        root.SetAction(async (parseResult, cancellationToken) =>
+        {
+            var options = binder.Bind(parseResult);
+
+            if (options.ShowVersion || options.ShowInfo)
             {
-                if (options.ShowVersion || options.ShowInfo)
-                {
-                    Console.WriteLine($"CodeToNeo4j {GetVersion()}");
-                }
+                Console.WriteLine($"CodeToNeo4j {GetVersion()}");
+            }
 
-                if (options.ShowSupportedFiles || options.ShowInfo)
-                {
-                    PrintSupportedFiles();
-                }
+            if (options.ShowSupportedFiles || options.ShowInfo)
+            {
+                PrintSupportedFiles();
+            }
 
-                if (options.ShowVersion || options.ShowSupportedFiles || options.ShowInfo)
-                    return;
+            if (options.ShowVersion || options.ShowSupportedFiles || options.ShowInfo)
+                return 0;
 
-                await using var services = new ServiceCollection()
-                    .AddApplicationServices(options.Uri, options.User, options.Pass!, options.LogLevel)
-                    .BuildServiceProvider();
+            await using var services = new ServiceCollection()
+                .AddApplicationServices(options.Uri, options.User, options.Pass!, options.LogLevel)
+                .BuildServiceProvider();
 
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogInformation("CodeToNeo4j version {Version}", GetVersion());
-                logger.LogInformation("{Options}", options);
-                var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
-                await handlers.BuildChain().Handle(options);
-            },
-            binder);
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("CodeToNeo4j version {Version}", GetVersion());
+            logger.LogInformation("{Options}", options);
+            var handlers = services.GetRequiredService<IEnumerable<IOptionsHandler>>();
+            await handlers.BuildChain().Handle(options);
+            return 0;
+        });
 
         return (root, binder);
     }
@@ -180,17 +180,6 @@ public class Program
     private static async Task<int> Run(string[] args)
     {
         var (root, _) = CreateRootCommand();
-        var parser = new CommandLineBuilder(root)
-            .UseHelp()
-            .UseEnvironmentVariableDirective()
-            .UseParseDirective()
-            .UseSuggestDirective()
-            .RegisterWithDotnetSuggest()
-            .UseTypoCorrections()
-            .UseParseErrorReporting()
-            .UseExceptionHandler()
-            .CancelOnProcessTermination()
-            .Build();
-        return await parser.InvokeAsync(args);
+        return await root.Parse(args).InvokeAsync();
     }
 }
