@@ -1,9 +1,10 @@
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using CodeToNeo4j.FileSystem;
 
 namespace CodeToNeo4j.Solution;
 
-public class SolutionFileDiscoveryService(
+public partial class SolutionFileDiscoveryService(
     IFileService fileService,
     IFileSystem fileSystem) : ISolutionFileDiscoveryService
 {
@@ -12,11 +13,21 @@ public class SolutionFileDiscoveryService(
         IEnumerable<string> includeExtensions)
     {
         var extensions = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var solutionFiles = new Dictionary<string, ProcessedFile>(StringComparer.OrdinalIgnoreCase);
+        // Track files with their first-seen ProjectId/DocumentId and a mutable TFM set to avoid
+        // allocation churn from copy-on-merge with immutable sets.
+        var solutionFiles = new Dictionary<string, (ProcessedFile File, HashSet<string>? Tfms)>(StringComparer.OrdinalIgnoreCase);
 
         // 1. Get all documents from MSBuild
         foreach (var project in solution.Projects)
         {
+            // Skip outer multi-target wrapper projects (they have 0 documents and no useful data)
+            if (!project.Documents.Any() && !project.AdditionalDocuments.Any())
+            {
+                continue;
+            }
+
+            var tfm = ExtractTargetFramework(project.Name);
+
             // Regular Documents
             foreach (var doc in project.Documents)
             {
@@ -24,9 +35,22 @@ public class SolutionFileDiscoveryService(
                 if (string.IsNullOrEmpty(path)) continue;
                 if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
-                if (!solutionFiles.ContainsKey(path))
+                if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
+                    if (tfm is not null)
+                    {
+                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        existing.Tfms.Add(tfm);
+                    }
+                }
+                else
+                {
+                    HashSet<string>? tfms = null;
+                    if (tfm is not null)
+                    {
+                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                    }
+                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                 }
             }
 
@@ -37,9 +61,22 @@ public class SolutionFileDiscoveryService(
                 if (string.IsNullOrEmpty(path)) continue;
                 if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
-                if (!solutionFiles.ContainsKey(path))
+                if (solutionFiles.TryGetValue(path, out var existing))
                 {
-                    solutionFiles[path] = new ProcessedFile(path, project.Id, doc.Id);
+                    if (tfm is not null)
+                    {
+                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        existing.Tfms.Add(tfm);
+                    }
+                }
+                else
+                {
+                    HashSet<string>? tfms = null;
+                    if (tfm is not null)
+                    {
+                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                    }
+                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                 }
             }
         }
@@ -55,11 +92,21 @@ public class SolutionFileDiscoveryService(
 
             if (!solutionFiles.ContainsKey(normalizedPath))
             {
-                solutionFiles[normalizedPath] = new ProcessedFile(normalizedPath, null, null);
+                solutionFiles[normalizedPath] = (new ProcessedFile(normalizedPath, null, null), null);
             }
         }
 
-        return solutionFiles.Values;
+        // Freeze the mutable TFM sets into the ProcessedFile records
+        return solutionFiles.Values.Select(entry =>
+            entry.Tfms is { Count: > 0 }
+                ? entry.File with { TargetFrameworks = entry.Tfms }
+                : entry.File);
+    }
+
+    internal static string? ExtractTargetFramework(string projectName)
+    {
+        var match = TfmRegex().Match(projectName);
+        return match.Success ? match.Groups[1].Value : null;
     }
 
     private static bool IsExcluded(string path) =>
@@ -69,4 +116,7 @@ public class SolutionFileDiscoveryService(
                       p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
+
+    [GeneratedRegex(@"\(([^)]+)\)$")]
+    private static partial Regex TfmRegex();
 }

@@ -211,6 +211,53 @@ public class SolutionProcessorTests
     }
 
     [Fact]
+    public async Task GivenResultWithTargetFrameworks_WhenRunConsumerCalled_ThenFlushesTargetFrameworks()
+    {
+        // Arrange
+        var graphService = A.Fake<IGraphService>();
+        var sut = CreateProcessor(graphService: graphService);
+
+        var channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
+        var metadata = new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
+        var file = new FileMetaData("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
+        var symbols = new List<Symbol>
+        {
+            new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")
+        };
+        var tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "net9.0", "net8.0" } as IReadOnlySet<string>;
+
+        await channel.Writer.WriteAsync(new SolutionProcessor.ProcessResult(file, symbols, [], [], "file.cs", tfms));
+        channel.Writer.Complete();
+
+        // Act
+        await sut.RunConsumer(channel.Reader, 1, "testdb", 100);
+
+        // Assert
+        A.CallTo(() => graphService.FlushTargetFrameworks(A<IEnumerable<TargetFrameworkBatch>>._, "testdb")).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GivenResultWithNoTargetFrameworks_WhenRunConsumerCalled_ThenDoesNotFlushTargetFrameworks()
+    {
+        // Arrange
+        var graphService = A.Fake<IGraphService>();
+        var sut = CreateProcessor(graphService: graphService);
+
+        var channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
+        var metadata = new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
+        var file = new FileMetaData("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
+
+        await channel.Writer.WriteAsync(new SolutionProcessor.ProcessResult(file, [], [], [], "file.cs"));
+        channel.Writer.Complete();
+
+        // Act
+        await sut.RunConsumer(channel.Reader, 1, "testdb", 100);
+
+        // Assert
+        A.CallTo(() => graphService.FlushTargetFrameworks(A<IEnumerable<TargetFrameworkBatch>>._, A<string>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
     public void GivenHandlersWithExtensionsAndFilenames_WhenHandlerLookupCreated_ThenIndexesCorrectly()
     {
         // Arrange

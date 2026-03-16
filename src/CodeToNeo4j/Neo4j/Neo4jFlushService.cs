@@ -139,4 +139,39 @@ public class Neo4jFlushService(
         await session.ExecuteWriteAsync(async tx => await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch }))
             .ConfigureAwait(false);
     }
+
+    public async Task FlushTargetFrameworks(IEnumerable<TargetFrameworkBatch> batches, string databaseName)
+    {
+        var batchArray = batches.ToArray();
+        if (batchArray.Length == 0) return;
+
+        // Pre-aggregate unique TFM names to avoid redundant MERGE operations in Neo4j
+        var allTfmNames = batchArray
+            .SelectMany(b => b.TargetFrameworks)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        // File-level items (fileKey + tfms)
+        var items = batchArray.Select(b => new Dictionary<string, object?>
+        {
+            ["fileKey"] = b.FileKey,
+            ["tfms"] = b.TargetFrameworks.ToArray()
+        }).ToArray();
+
+        // Flatten symbol-to-TFM pairs to avoid cartesian product in Cypher
+        var symbolTfms = batchArray
+            .SelectMany(b => b.SymbolKeys
+                .SelectMany(sk => b.TargetFrameworks
+                    .Select(tfm => new Dictionary<string, object?> { ["symbolKey"] = sk, ["tfm"] = tfm })))
+            .ToArray();
+
+        logger.LogDebug("Upserting {TfmCount} target frameworks for {FileCount} files and {SymbolTfmCount} symbol-TFM pairs in database: {DatabaseName}",
+            allTfmNames.Length, items.Length, symbolTfms.Length, databaseName);
+
+        await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+        await session.ExecuteWriteAsync(async tx =>
+                await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertTargetFrameworks),
+                    new { tfmNames = allTfmNames, items, symbolTfms }))
+            .ConfigureAwait(false);
+    }
 }

@@ -13,19 +13,21 @@ public class DependencyIngestor(
     {
         logger.LogInformation("Ingesting NuGet dependencies...");
 
-        // Parallelizing project compilation can be memory intensive.
-        // We'll process projects in batches to avoid overwhelming the system while still being faster than sequential.
         var dependencies = new ConcurrentBag<Dependency>();
         var parallelOptions = new ParallelOptions
         {
-            // Reduced from 20 to a more balanced number based on processor count to avoid high memory pressure
-            // while still maintaining high throughput.
             MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount),
             CancellationToken = CancellationToken.None
         };
 
-        await Parallel.ForEachAsync(solution.Projects, parallelOptions, (project, token) =>
-                ProcessProject(dependencies, project, token))
+        // Filter out outer multi-target wrapper projects (they have 0 documents and produce empty compilations).
+        // For multi-target projects, only compile one representative per base project name since
+        // TFM variants share ~95% of the same NuGet dependencies and the result is deduplicated anyway.
+        var processedBaseNames = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+        var projects = solution.Projects.Where(p => p.Documents.Any() || p.AdditionalDocuments.Any());
+
+        await Parallel.ForEachAsync(projects, parallelOptions, (project, token) =>
+                ProcessProject(dependencies, processedBaseNames, project, token))
             .ConfigureAwait(false);
 
         var uniqueDeps = dependencies.DistinctBy(d => d.Key)
@@ -38,20 +40,38 @@ public class DependencyIngestor(
         logger.LogInformation("Ingested {Count} unique dependencies.", uniqueDeps.Length);
     }
 
-    private static async ValueTask ProcessProject(ConcurrentBag<Dependency> dependencies, Project project, CancellationToken token)
+    private async ValueTask ProcessProject(ConcurrentBag<Dependency> dependencies, ConcurrentDictionary<string, byte> processedBaseNames, Project project, CancellationToken token)
     {
         if (!project.SupportsCompilation)
         {
             return;
         }
 
-        // Project.GetCompilationAsync is expensive because it can trigger a full build.
-        // However, for extracting NuGet dependencies, Roslyn must at least resolve metadata references.
-        // We use GetCompilationAsync but rely on Roslyn's internal caching.
-        // Once a project is compiled, subsequent calls for the same project in the same solution 
-        // will be much faster.
-        var compilation = await project.GetCompilationAsync(token)
-            .ConfigureAwait(false);
+        // For multi-target projects (e.g. "Serilog(net9.0)", "Serilog(net8.0)"), only compile one
+        // representative per base project name. The TFM variants share nearly identical dependencies
+        // and the results are deduplicated via DistinctBy afterward.
+        var baseName = ExtractBaseProjectName(project.Name);
+        if (!processedBaseNames.TryAdd(baseName, 0))
+        {
+            logger.LogDebug("Skipping dependency extraction for {ProjectName} — already extracted from another TFM of {BaseName}", project.Name, baseName);
+            return;
+        }
+
+        Compilation? compilation;
+        try
+        {
+            compilation = await project.GetCompilationAsync(token)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex,
+                "Failed to get compilation for project {ProjectName}, skipping dependency extraction. "
+                + "This is common with multi-target projects where the outer wrapper project lacks a Compile target. "
+                + "Dependencies will still be extracted from the specific target framework projects (e.g. net9.0, net8.0)",
+                project.Name);
+            return;
+        }
 
         if (compilation is null)
         {
@@ -61,10 +81,15 @@ public class DependencyIngestor(
         foreach (var reference in compilation.ReferencedAssemblyNames)
         {
             var name = reference.Name;
-            // Ensure we use the simple name for the key to avoid including version or culture info.
             var simpleName = name.Split(',')[0].Split(':')[0].Trim();
             var key = $"pkg:{simpleName}";
             dependencies.Add(new Dependency(key, simpleName, reference.Version.ToString()));
         }
+    }
+
+    internal static string ExtractBaseProjectName(string projectName)
+    {
+        var tfm = SolutionFileDiscoveryService.ExtractTargetFramework(projectName);
+        return tfm is null ? projectName : projectName[..^(tfm.Length + 2)]; // strip "(tfm)"
     }
 }

@@ -128,6 +128,7 @@ public class SolutionProcessor(
         var symbolBuffer = new List<Symbol>(batchSize);
         var relBuffer = new List<Relationship>(batchSize);
         var urlBuffer = new List<UrlNode>(batchSize);
+        var tfmBuffer = new List<TargetFrameworkBatch>(batchSize);
         var currentFileIndex = 0;
         var totalSymbols = 0;
         var totalRelationships = 0;
@@ -139,26 +140,34 @@ public class SolutionProcessor(
             relBuffer.AddRange(result.Relationships);
             urlBuffer.AddRange(result.UrlNodes);
 
+            if (result.TargetFrameworks is { Count: > 0 })
+            {
+                tfmBuffer.Add(new TargetFrameworkBatch(
+                    result.File.FileKey,
+                    result.Symbols.Select(s => s.Key).ToArray(),
+                    result.TargetFrameworks.ToArray()));
+            }
+
             totalSymbols += result.Symbols.Count;
             totalRelationships += result.Relationships.Count;
 
             if (fileBuffer.Count >= batchSize || symbolBuffer.Count >= batchSize)
             {
-                await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
+                await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, tfmBuffer, databaseName).ConfigureAwait(false);
             }
 
             progressService.ReportProgress(++currentFileIndex, totalFiles, result.RelativePath);
         }
 
-        if (fileBuffer.Count > 0 || symbolBuffer.Count > 0 || urlBuffer.Count > 0)
+        if (fileBuffer.Count > 0 || symbolBuffer.Count > 0 || urlBuffer.Count > 0 || tfmBuffer.Count > 0)
         {
-            await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
+            await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, tfmBuffer, databaseName).ConfigureAwait(false);
         }
 
         return (totalSymbols, totalRelationships);
     }
 
-    private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, List<UrlNode> urlNodes, string databaseName)
+    private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, List<UrlNode> urlNodes, List<TargetFrameworkBatch> tfmBatches, string databaseName)
     {
         if (files.Count > 0)
         {
@@ -177,6 +186,12 @@ public class SolutionProcessor(
         {
             await graphService.UpsertDependencyUrls(urlNodes, databaseName).ConfigureAwait(false);
             urlNodes.Clear();
+        }
+
+        if (tfmBatches.Count > 0)
+        {
+            await graphService.FlushTargetFrameworks(tfmBatches, databaseName).ConfigureAwait(false);
+            tfmBatches.Clear();
         }
     }
 
@@ -225,7 +240,18 @@ public class SolutionProcessor(
                     document = (TextDocument?)project.GetDocument(file.DocumentId) ?? project.GetAdditionalDocument(file.DocumentId);
                 }
 
-                compilation = await project.GetCompilationAsync().ConfigureAwait(false);
+                try
+                {
+                    compilation = await project.GetCompilationAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex,
+                        "Failed to get compilation for project {ProjectName}, skipping compilation for file {FilePath}. "
+                        + "This is common with multi-target projects where the outer wrapper project lacks a Compile target. "
+                        + "Semantic analysis will still occur for the specific target framework projects (e.g. net9.0, net8.0)",
+                        project.Name, filePath);
+                }
             }
         }
 
@@ -242,7 +268,7 @@ public class SolutionProcessor(
 
         var fileRecord = new FileMetaData(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
 
-        return new ProcessResult(fileRecord, symbols, relationships, urlNodes, relativePath);
+        return new ProcessResult(fileRecord, symbols, relationships, urlNodes, relativePath, file.TargetFrameworks);
     }
 
     internal static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
@@ -275,7 +301,8 @@ public class SolutionProcessor(
         List<Symbol> Symbols,
         List<Relationship> Relationships,
         List<UrlNode> UrlNodes,
-        string RelativePath);
+        string RelativePath,
+        IReadOnlySet<string>? TargetFrameworks = null);
 
     internal sealed class HandlerLookup
     {

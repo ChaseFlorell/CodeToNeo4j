@@ -52,3 +52,6 @@ FOR (u:Url) REQUIRE u.key IS UNIQUE;
 
 CREATE INDEX url_name IF NOT EXISTS
 FOR (u:Url) ON (u.name);
+
+CREATE CONSTRAINT targetframework_name IF NOT EXISTS
+FOR (tf:TargetFramework) REQUIRE tf.name IS UNIQUE;

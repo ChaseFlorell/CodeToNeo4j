@@ -121,4 +121,29 @@ public class Neo4jFlushServiceTests
         // Assert
         A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task<IResultCursor>>>._, A<Action<TransactionConfigBuilder>?>._)).MustHaveHappened();
     }
+
+    [Fact]
+    public async Task GivenEmptyBatches_WhenFlushTargetFrameworksCalled_ThenDoesNotOpenSession()
+    {
+        // Act
+        await _sut.FlushTargetFrameworks([], "testdb");
+
+        // Assert
+        A.CallTo(() => _driver.AsyncSession()).MustNotHaveHappened();
+        A.CallTo(() => _driver.AsyncSession(A<Action<SessionConfigBuilder>>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task GivenTargetFrameworkBatches_WhenFlushTargetFrameworksCalled_ThenExecutesWrite()
+    {
+        // Arrange
+        var batches = new[] { new TargetFrameworkBatch("fileKey", ["sym1", "sym2"], ["net9.0", "net8.0"]) };
+        var session = SetupSession();
+
+        // Act
+        await _sut.FlushTargetFrameworks(batches, "testdb");
+
+        // Assert
+        A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task<IResultCursor>>>._, A<Action<TransactionConfigBuilder>?>._)).MustHaveHappened();
+    }
 }

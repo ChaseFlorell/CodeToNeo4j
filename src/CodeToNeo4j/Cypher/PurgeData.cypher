@@ -76,12 +76,23 @@ CALL {
     RETURN count(n) AS count
     
     UNION ALL
-    
+
     // 6. Projects
     MATCH (n:Project)
     WHERE n.CodeToNeo4j = true
       AND $extensions IS NULL
       AND ($repoKey IS NULL OR n.key = $repoKey)
+    WITH n LIMIT $batchSize
+    DETACH DELETE n
+    RETURN count(n) AS count
+
+    UNION ALL
+
+    // 7. Orphaned TargetFrameworks
+    MATCH (n:TargetFramework)
+    WHERE n.CodeToNeo4j = true
+      AND $extensions IS NULL
+      AND NOT EXISTS { ()-[:TARGETS_FRAMEWORK]->(n) }
     WITH n LIMIT $batchSize
     DETACH DELETE n
     RETURN count(n) AS count
