@@ -41,6 +41,8 @@ jobs:
       with:
         directory: ./TestResults
         fail_ci_if_error: false
+        disable_safe_directory: true
+        skip_validation: true
 
     - name: Test Summary PR Comment
       if: github.event_name == 'pull_request' && always()
