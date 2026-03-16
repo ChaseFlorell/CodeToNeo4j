@@ -121,6 +121,18 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
                     if (semanticModel.GetSymbolInfo(postfix).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } postfixOp)
                         AddInvokes(postfixOp, callerRec, repoKey, relBuffer, seenCallees);
                     break;
+
+                // Method groups: identifiers or member access expressions that resolve to
+                // an IMethodSymbol but are NOT the expression being invoked in an InvocationExpression.
+                case IdentifierNameSyntax id when !IsInvocationTarget(id):
+                    if (semanticModel.GetSymbolInfo(id).Symbol is IMethodSymbol idMethodGroup)
+                        AddInvokes(idMethodGroup, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
+
+                case MemberAccessExpressionSyntax memberAccess when !IsInvocationTarget(memberAccess):
+                    if (semanticModel.GetSymbolInfo(memberAccess).Symbol is IMethodSymbol maMethodGroup)
+                        AddInvokes(maMethodGroup, callerRec, repoKey, relBuffer, seenCallees);
+                    break;
             }
 
             // Implicit conversions (assignments, arguments, return values, etc.)
@@ -131,6 +143,23 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
                     AddInvokes(implicitSymbol, callerRec, repoKey, relBuffer, seenCallees);
             }
         }
+    }
+
+    private static bool IsInvocationTarget(SyntaxNode node)
+    {
+        // Direct invocation target: node is the Expression of an InvocationExpressionSyntax
+        if (node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node)
+            return true;
+
+        // Identifier is the Name part of a MemberAccessExpression that is itself an invocation target
+        // e.g. `this.DoWork()` — `DoWork` is IdentifierNameSyntax, parent is MemberAccessExpressionSyntax
+        if (node is IdentifierNameSyntax
+            && node.Parent is MemberAccessExpressionSyntax parentMember
+            && parentMember.Parent is InvocationExpressionSyntax parentInvocation
+            && parentInvocation.Expression == parentMember)
+            return true;
+
+        return false;
     }
 
     private static bool IsImplicitConversionCandidate(ExpressionSyntax expr)
