@@ -2,7 +2,7 @@ name: Link Renovate PRs to Issues
 
 on:
   pull_request:
-    types: [opened, reopened, labeled]
+    types: [opened, reopened, labeled, synchronize]
 
 permissions:
   contents: read
