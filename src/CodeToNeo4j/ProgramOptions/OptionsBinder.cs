@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Binding;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
@@ -24,31 +23,38 @@ public class OptionsBinder(
     Option<string[]> includeExtensionsOption,
     Option<bool> showVersionOption,
     Option<bool> showSupportedFilesOption,
-    Option<bool> showInfoOption) : BinderBase<Options>
+    Option<bool> showInfoOption)
 {
     public void AddToCommand(Command command)
     {
-        command.AddOption(slnOption);
-        command.AddOption(uriOption);
-        command.AddOption(userOption);
-        command.AddOption(passOption);
-        command.AddOption(noKeyOption);
-        command.AddOption(diffBaseOption);
-        command.AddOption(batchSizeOption);
-        command.AddOption(databaseOption);
-        command.AddOption(minAccessibilityOption);
-        command.AddOption(logLevelOption);
-        command.AddOption(debugOption);
-        command.AddOption(verboseOption);
-        command.AddOption(quietOption);
-        command.AddOption(skipDependenciesOption);
-        command.AddOption(purgeDataOption);
-        command.AddOption(includeExtensionsOption);
-        command.AddOption(showVersionOption);
-        command.AddOption(showSupportedFilesOption);
-        command.AddOption(showInfoOption);
+        // Remove the built-in VersionOption to avoid conflict with our custom --version flag
+        var builtInVersion = command.Options.OfType<VersionOption>().FirstOrDefault();
+        if (builtInVersion is not null)
+        {
+            command.Options.Remove(builtInVersion);
+        }
 
-        command.AddValidator(result => OptionsBinderValidator.Validate(
+        command.Options.Add(slnOption);
+        command.Options.Add(uriOption);
+        command.Options.Add(userOption);
+        command.Options.Add(passOption);
+        command.Options.Add(noKeyOption);
+        command.Options.Add(diffBaseOption);
+        command.Options.Add(batchSizeOption);
+        command.Options.Add(databaseOption);
+        command.Options.Add(minAccessibilityOption);
+        command.Options.Add(logLevelOption);
+        command.Options.Add(debugOption);
+        command.Options.Add(verboseOption);
+        command.Options.Add(quietOption);
+        command.Options.Add(skipDependenciesOption);
+        command.Options.Add(purgeDataOption);
+        command.Options.Add(includeExtensionsOption);
+        command.Options.Add(showVersionOption);
+        command.Options.Add(showSupportedFilesOption);
+        command.Options.Add(showInfoOption);
+
+        command.Validators.Add(result => OptionsBinderValidator.Validate(
             result,
             slnOption,
             noKeyOption,
@@ -65,38 +71,38 @@ public class OptionsBinder(
             showInfoOption));
     }
 
-    protected override Options GetBoundValue(BindingContext bindingContext) =>
+    public Options Bind(ParseResult parseResult) =>
         new(
-            bindingContext.ParseResult.GetValueForOption(slnOption)!,
-            bindingContext.ParseResult.GetValueForOption(uriOption)!,
-            bindingContext.ParseResult.GetValueForOption(userOption)!,
-            bindingContext.ParseResult.GetValueForOption(passOption),
-            bindingContext.ParseResult.GetValueForOption(noKeyOption),
-            bindingContext.ParseResult.GetValueForOption(diffBaseOption),
-            bindingContext.ParseResult.GetValueForOption(batchSizeOption),
-            bindingContext.ParseResult.GetValueForOption(databaseOption)!,
-            ParseLogLevel(bindingContext),
-            bindingContext.ParseResult.GetValueForOption(skipDependenciesOption),
-            bindingContext.ParseResult.GetValueForOption(minAccessibilityOption),
-            bindingContext.ParseResult.GetValueForOption(includeExtensionsOption)!,
-            bindingContext.ParseResult.GetValueForOption(purgeDataOption),
-            bindingContext.ParseResult.GetValueForOption(showVersionOption),
-            bindingContext.ParseResult.GetValueForOption(showSupportedFilesOption),
-            bindingContext.ParseResult.GetValueForOption(showInfoOption)
+            parseResult.GetValue(slnOption)!,
+            parseResult.GetValue(uriOption)!,
+            parseResult.GetValue(userOption)!,
+            parseResult.GetValue(passOption),
+            parseResult.GetValue(noKeyOption),
+            parseResult.GetValue(diffBaseOption),
+            parseResult.GetValue(batchSizeOption),
+            parseResult.GetValue(databaseOption)!,
+            ParseLogLevel(parseResult),
+            parseResult.GetValue(skipDependenciesOption),
+            parseResult.GetValue(minAccessibilityOption),
+            parseResult.GetValue(includeExtensionsOption)!,
+            parseResult.GetValue(purgeDataOption),
+            parseResult.GetValue(showVersionOption),
+            parseResult.GetValue(showSupportedFilesOption),
+            parseResult.GetValue(showInfoOption)
         );
 
-    private LogLevel ParseLogLevel(BindingContext bindingContext)
+    private LogLevel ParseLogLevel(ParseResult parseResult)
     {
-        var logLevel = bindingContext.ParseResult.GetValueForOption(logLevelOption);
-        if (bindingContext.ParseResult.GetValueForOption(debugOption))
+        var logLevel = parseResult.GetValue(logLevelOption);
+        if (parseResult.GetValue(debugOption))
         {
             logLevel = LogLevel.Debug;
         }
-        else if (bindingContext.ParseResult.GetValueForOption(verboseOption))
+        else if (parseResult.GetValue(verboseOption))
         {
             logLevel = LogLevel.Trace;
         }
-        else if (bindingContext.ParseResult.GetValueForOption(quietOption))
+        else if (parseResult.GetValue(quietOption))
         {
             logLevel = LogLevel.None;
         }
