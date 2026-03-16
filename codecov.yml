@@ -1,0 +1,12 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto    # fail if coverage drops from baseline
+        threshold: 1%   # allow up to 1% drop without failing
+    patch:
+      default:
+        target: 80%     # new code should have ≥80% coverage
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default

@@ -35,6 +35,13 @@ jobs:
         rm -rf ./TestResults
         dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage"
 
+    - name: Upload Coverage to Codecov
+      if: always()
+      uses: codecov/codecov-action@v5
+      with:
+        directory: ./TestResults
+        fail_ci_if_error: false
+
     - name: Test Summary PR Comment
       if: github.event_name == 'pull_request' && always()
       uses: actions/github-script@v8
