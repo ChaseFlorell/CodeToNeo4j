@@ -2,9 +2,9 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Shouldly;
 using Xunit;
 using CodeToNeo4j.ProgramOptions;
+using Shouldly;
 
 namespace CodeToNeo4j.Tests.Validation;
 
@@ -27,7 +27,7 @@ public class OptionsBinderValidatorTests
     public OptionsBinderValidatorTests()
     {
         _minAccessibilityOption = new Option<Accessibility>("--min-accessibility");
-        _minAccessibilityOption.SetDefaultValueFactory(() => Accessibility.Private);
+        _minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.Private);
     }
 
     private CommandResult GetCommandResult(params string[] args)
@@ -48,6 +48,13 @@ public class OptionsBinderValidatorTests
             _showSupportedFilesOption,
             _showInfoOption
         };
+
+        // Remove the built-in VersionOption to avoid conflict with our custom --version flag
+        var builtInVersion = root.Options.OfType<VersionOption>().FirstOrDefault();
+        if (builtInVersion is not null)
+        {
+            root.Options.Remove(builtInVersion);
+        }
 
         return root.Parse(args).CommandResult;
     }
@@ -81,7 +88,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("Only one of --log-level, --debug, --verbose, or --quiet can be used.");
+        result.Errors.ShouldHaveSingleItem("Only one of --log-level, --debug, --verbose, or --quiet can be used.");
     }
 
     [Fact]
@@ -94,7 +101,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBeNull();
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]
@@ -107,7 +114,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("--min-accessibility is not allowed when using --purge-data");
+        result.Errors.ShouldHaveSingleItem("--min-accessibility is not allowed when using --purge-data");
     }
 
     [Fact]
@@ -120,7 +127,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBeNull();
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]
@@ -133,7 +140,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBeNull();
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]
@@ -146,7 +153,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("--sln is required when using --purge-data without --no-key");
+        result.Errors.ShouldHaveSingleItem("--sln is required when using --purge-data without --no-key");
     }
 
     [Fact]
@@ -159,7 +166,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("--sln is required");
+        result.Errors.ShouldHaveSingleItem("--sln is required");
     }
 
     [Fact]
@@ -172,7 +179,7 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBe("--password is required");
+        result.Errors.ShouldHaveSingleItem("--password is required");
     }
 
     [Theory]
@@ -188,6 +195,6 @@ public class OptionsBinderValidatorTests
         Validate(result);
 
         // assert
-        result.ErrorMessage.ShouldBeNull();
+        result.Errors.ShouldBeEmpty();
     }
 }
