@@ -27,7 +27,7 @@ Run the tool by pointing it to your solution file and providing Neo4j credential
 
 ```bash
 codetoneo4j \
-  -sln ./MySolution.sln \
+  -s ./MySolution.sln \
   --uri bolt://localhost:7687 \
   --password your-password
 ```
@@ -48,7 +48,8 @@ codetoneo4j \
 | `--verbose`, `-v`           | Turn on trace logging.                                                                 |
 | `--quiet`, `-q`             | Mute all logging output.                                                               |
 | `--skip-dependencies`       | Skip NuGet dependency ingestion.                                                       |
-| `--min-accessibility`       | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`).                   |
+| `--min-accessibility`       | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). Default: `NotApplicable`. |
+| `--batch-size`              | Number of symbols to batch before flushing to Neo4j. Default: `500`.                   |
 | `--include`, `-i`           | File extensions to include (Default: all supported).                                   |
 | `--purge-data`              | Purge data associated with the repository.                                         |
 

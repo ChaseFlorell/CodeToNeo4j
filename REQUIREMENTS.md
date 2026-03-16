@@ -5,7 +5,7 @@
 ## 1. Functional Requirements
 
 ### 1.1 Input
-- **Solution File**: Path to a valid `.sln` or `.csproj` file.
+- **Solution File**: Path to a valid `.sln` file.
 - **Neo4j Configuration**: URI, Username, Password, and Database Name.
 - **Repository Metadata**: The repository key is derived from the solution file name by default.
   - **No Key Mode**: (Optional) Use `--no-key` to ingest data without a `repoKey`, suitable for single-repository Neo4j instances. All data ingested by this tool is marked with metadata (`CodeToNeo4j: true`) for identification.
@@ -13,15 +13,24 @@
 ### 1.2 Solution and Project Analysis
 - **Solution Loading**: Use `MSBuildWorkspace` to load and analyze .NET solutions and their constituent projects.
 - **File Discovery**: Identify files to process based on a configurable list of extensions.
-  - **Supported Extensions (Default)**: `.cs`, `.razor`, `.xaml`, `.js`, `.html`, `.xml`, `.json`, `.css`, `.csproj`.
+  - **Supported Extensions (Default)**: `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj`.
 - **Symbol Extraction**: Parse source code (via Roslyn) to extract:
   - Types (Classes, Interfaces, Structs, Records, Enums).
   - Members (Methods, Properties, Fields, Events).
-  - Accessibility Filtering: Filter extracted symbols based on their declared accessibility (e.g., only Public, or Public and Protected). Default: `Private` (includes all).
+  - Accessibility Filtering: Filter extracted symbols based on their declared accessibility (e.g., only Public, or Public and Protected). Default: `NotApplicable` (includes all).
   - Syntax mapping (Start/End line numbers, Fully Qualified Names).
   - Documentation and comments.
+- **TypeScript Extraction**: Parse `.ts` and `.tsx` files to extract:
+  - Function definitions and import statements.
+  - Interfaces, type aliases, and enums.
+- **Package.json Extraction**: Parse `package.json` files to extract:
+  - npm/yarn/pnpm dependencies (`dependencies`, `devDependencies`).
 - **Relationship Extraction**: Identify relationships between symbols:
   - `CONTAINS`: Structural containment (e.g., Type contains Method, Class contains Nested Class).
+  - `DEPENDS_ON`: Member-level type dependencies (parameters, return types, property types).
+  - `INVOKES`: Method call relationships between symbols.
+  - `HAS_TAG`: Symbols linked to namespace-derived tags.
+  - `HAS_URL`: Dependencies linked to project/repository URLs.
 
 ### 1.3 Git Integration
 - **File Metadata**: Retrieve author information (names, emails), commit counts, and timestamps (creation, last modification) for each file.
@@ -46,7 +55,7 @@
 ### 1.5 Neo4j Integration
 - **Schema Management**: Automatically ensure required constraints and indexes are present in the target database.
 - **Graph Model**:
-  - **Nodes**: `Project`, `File`, `Symbol`, `Dependency`, `Author`, `Commit`.
+  - **Nodes**: `Project`, `File`, `Symbol`, `Dependency`, `Author`, `Commit`, `Tag`, `Url`.
   - **Relationships**:
     - `(Project)-[:HAS_FILE]->(File)`
     - `(File)-[:DECLARES]->(Symbol)`
@@ -56,6 +65,10 @@
     - `(Commit)-[:PART_OF_PROJECT]->(Project)`
     - `(Commit)-[:MODIFIED_FILE]->(File)`
     - `(Project)-[:DEPENDS_ON]->(Dependency)`
+    - `(Symbol)-[:INVOKES]->(Symbol)`
+    - `(Symbol)-[:DEPENDS_ON]->(Symbol)`
+    - `(Symbol)-[:HAS_TAG]->(Tag)`
+    - `(Dependency)-[:HAS_URL]->(Url)`
 - **Transaction Safety**: Perform database writes within transactions with retry logic to ensure consistency and handle transient network/concurrency issues.
 
 ## 2. Non-Functional Requirements
@@ -72,6 +85,7 @@
   - Provide a single-line, "in-place" progress update in the terminal for `Information` level reporting.
   - Display progress as `[Progress: 99.62 %] [xxx/yyy] Processing <file_path>`.
   - Suppress detailed Neo4j flush logs during progress updates to keep the console clean.
+- **Diagnostic Switches**: `--version` (display tool version), `--supported-files` (list supported file extensions), `--info` (display environment and configuration details).
 - **Error Handling**: Gracefully handle and log exceptions, returning non-zero exit codes on failure (based on `HResult`).
 
 ### 2.3 Resource Management
@@ -79,7 +93,7 @@
 - **Database Connections**: Reuse the Neo4j driver instance throughout the application lifecycle and dispose of it correctly.
 
 ### 2.4 Compatibility
-- **.NET Multi-targeting**: Support and target `net10.0`, `net9.0`, and `net8.0` for broad compatibility.
+- **.NET Multi-targeting**: The tool package multi-targets `net10.0`, `net9.0`, and `net8.0` for installation compatibility; building from source requires `net10.0`.
 - **Neo4j Version**: Support Neo4j version 5.0 and higher.
 - **OS Support**: Run on macOS, Windows, and Linux.
 
@@ -88,7 +102,7 @@
 - **Service-Oriented Architecture**: Decouple responsibilities (Git, Neo4j, File Discovery, Dependency Ingestion) into standalone services for easier testing and maintenance.
 
 ## 4. Environment and Tooling
-- **Build System**: .NET SDK 8.0, 9.0, or 10.0.
+- **Build System**: .NET SDK 10.0.201.
 - **MSBuild Support**: Uses `Microsoft.Build.Locator` to find and register a valid MSBuild instance on the host machine.
 - **Global Tool**: Packable as a .NET global tool (`codetoneo4j`) for easy installation and global shell usage.
 - **Development Workflow**: A `run.sh` script for local building, packing, and global installation testing.
@@ -101,12 +115,8 @@ Set up [Renovate](https://docs.renovatebot.com/) to automatically manage depende
 ### 5.2 Motivation
 Keeping dependencies up to date manually is tedious and error-prone. Renovate automates this by opening PRs for dependency updates, allowing us to stay current with security patches and new releases with minimal effort.
 
-### 5.3 Tasks
-- [x] Add `renovate.json` configuration to the repository root
-- [x] Configure Renovate for NuGet (.NET) package updates
-- [x] Set appropriate auto-merge rules for patch/minor updates
-- [x] Configure PR grouping and scheduling as needed
-- [ ] Install/enable the Renovate GitHub App on the repository (User Action required)
+### 5.3 Configuration
+Renovate is configured via `renovate.json` in the repository root with NuGet package updates, auto-merge rules for patch/minor updates, and PR grouping.
 
 ### 5.4 Grouping Logic
 - **Alignment with Directory.Packages.props**: Renovate groups are configured to match the `ItemGroup` labels within `Directory.Packages.props` exactly.

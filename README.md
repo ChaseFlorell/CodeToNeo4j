@@ -9,7 +9,7 @@ CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions 
 ## Setup
 
 ### Prerequisites
-- **.NET 10 SDK**: Specifically version `10.0.103` (defined in `global.json`).
+- **.NET 10 SDK**: Specifically version `10.0.201` (defined in `global.json`).
 - **Neo4j Database**: Version 5.0 or higher.
 - **Git**: Required if using incremental indexing (`--diff-base`) or tracking file authors.
 
@@ -91,7 +91,7 @@ If running from the build output:
 | `--diff-base`                 | Optional git base ref (e.g., `origin/main`) for incremental indexing. Only changed files since this ref will be processed. | |
 | `--batch-size`                | Number of symbols to batch before flushing to Neo4j.                                                                       | `500` |
 | `--skip-dependencies`         | Skip NuGet dependency ingestion.                                                                                           | `false` |
-| `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `Private` |
+| `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `NotApplicable` |
 | `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
 
@@ -175,26 +175,18 @@ jobs:
 
 This analysis identifies potential "gotchas" and missing features for the enterprise-ready "run from anywhere" and "CI integration" goal.
 
-### 1. MSBuild Discovery in CI Environments
-CodeToNeo4j explicitly discovers and registers the highest versioned MSBuild instance found on the machine. This ensures compatibility with multi-SDK environments. Ensure the workflow environment has the correct .NET SDK installed that matches the solution being indexed.
-
-### 2. Path Resolution
-CodeToNeo4j resolves file paths relative to the git repository root. The tool automatically detects the git root based on the solution file's location. This ensures that incremental indexing works correctly even when the tool is run from a different directory.
-
-### 3. Authentication & Security
+### 1. Authentication & Security
 **Gap**: Only Basic Authentication is currently supported.
 **Gotcha**: Production Neo4j instances might use LDAP, SSO, or Kerberos. Passing passwords via CLI arguments can also leak them in process lists.
 **Recommendation**: Support environment variables for sensitive parameters like `--pass`. Support for environment variables for all options is planned.
 
-### 4. Database Schema Migrations
+### 2. Database Schema Migrations
 **Gap**: The tool runs `EnsureSchemaAsync` on every run.
 **Gotcha**: While it uses `IF NOT EXISTS`, any *changes* to the schema (e.g., adding a new index) require manual update of `Schema.cypher`. It doesn't handle destructive migrations or schema versioning.
 **Recommendation**: Implement a simple schema versioning mechanism if the graph model evolves.
 
-### 5. Performance with Large Repos
+### 3. Performance with Large Repos
 **Gap**: Batching is implemented, but the entire solution is loaded into memory via Roslyn.
 **Gotcha**: Very large solutions (thousands of projects) might exceed memory limits in standard CI runners (e.g., 7GB on GitHub hosted runners).
 **Recommendation**: Consider processing projects one-by-one or in smaller groups if memory becomes an issue.
 
-### 6. Progress Reporting
-**Status: Implemented**. The tool now automatically detects if it's running in GitHub Actions or Azure DevOps and uses platform-specific progress reporting (e.g., `##vso[task.setprogress]` for Azure DevOps). For local execution, it falls back to standard console-based progress logging.
