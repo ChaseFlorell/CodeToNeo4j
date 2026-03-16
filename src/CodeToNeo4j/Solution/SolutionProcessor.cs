@@ -246,7 +246,11 @@ public class SolutionProcessor(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogDebug(ex, "Failed to get compilation for project {ProjectName}, skipping compilation for file {FilePath}", project.Name, filePath);
+                    logger.LogDebug(ex,
+                        "Failed to get compilation for project {ProjectName}, skipping compilation for file {FilePath}. "
+                        + "This is common with multi-target projects where the outer wrapper project lacks a Compile target. "
+                        + "File processing will continue without semantic analysis",
+                        project.Name, filePath);
                 }
             }
         }

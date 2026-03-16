@@ -61,7 +61,10 @@ public class DependencyIngestor(
         }
         catch (Exception ex)
         {
-            logger.LogDebug(ex, "Failed to get compilation for project {ProjectName}, skipping dependency extraction", project.Name);
+            logger.LogDebug(ex,
+                "Failed to get compilation for project {ProjectName}, skipping dependency extraction. "
+                + "This is common with multi-target projects where the outer wrapper project lacks a Compile target",
+                project.Name);
             return;
         }
 
