@@ -19,7 +19,7 @@
 
 # Performance Principles
 - **Batching**: Always prefer batching I/O operations (database writes, git commands) to minimize overhead.
-- **Concurrency**: Use `Parallel.ForEachAsync` for independent CPU-bound tasks, but cap the degree of parallelism (default: 20) to manage memory and resource pressure.
+- **Concurrency**: Use `Parallel.ForEachAsync` for independent CPU-bound tasks with `MaxDegreeOfParallelism` set to `Environment.ProcessorCount` to fully utilize the machine's resources.
 - **Lazy Loading**: Avoid pre-loading heavy objects (like Roslyn compilations) for the entire solution. Load them only when needed for the current batch of work.
 - **Producer-Consumer**: Decouple analysis from ingestion using `System.Threading.Channels` to ensure a responsive UI and optimal database batching.
 - **Git Ingestion**: Parallelize git log fetching and commit ingestion using `--batch-size` to manage process and database overhead.
@@ -34,7 +34,7 @@
     5. Private members
     6. Private static members
     7. Private const members (CRITICAL: These must be at the very bottom of the class)
-- **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action/e]_Then[Result]()`.
+- **Unit Test Naming**: All unit tests must follow the pattern: `Given[Scenario]_When[Action]_Then[Result]()`.
 - **Theory vs Fact**: Prefer `[Theory]` with `[InlineData]` over `[Fact]` wherever multiple inputs exercise the same logic. Use `[Fact]` only when a test has complex setup or multiple unrelated assertions that cannot be parameterized.
 - **No Conditional Branching**: Unit tests must never use conditional branching (if/else). Split such tests into separate `[Fact]` or `[Theory]` methods to ensure each test has a single, clear purpose and predictable path.
 - **Test Setup**: Avoid global setup in constructors. Use `TestCaseSource` or scoped variables within the test method to ensure test isolation and clarity.
@@ -57,10 +57,22 @@
     5. After each change, commit with a descriptive (but short) message, and then rebase the `main` branch.
     6. When ready to submit a pull request, ensure that the branch is up-to-date with `main` and that all tests pass before pushing.
 
+# GitHub Issues
+- **Template Selection**: When creating a GitHub issue, always use the correct issue template:
+    - **Bug Report** (`.github/ISSUE_TEMPLATE/bug_report.yml`): For bugs or unexpected behaviour. Auto-labels `Bug`. Required fields: Description, Steps to Reproduce, Expected Behaviour, Actual Behaviour, `dotnet --list-sdks` output, Environment. Optional: Logs/Screenshots.
+    - **Feature Request** (`.github/ISSUE_TEMPLATE/feature_request.yml`): For new features or enhancements. Auto-labels `Enhancement`. Required fields: Description, Motivation/Use Case. Optional: Alternatives Considered, Additional Context.
+- **Using `gh`**: When creating issues via `gh issue create`, use `--template bug_report.yml` or `--template feature_request.yml` and fill in all required fields in the body. Structure the body to match the template's field labels (e.g., `### Description`, `### Steps to Reproduce`, etc.).
+
 # Pull Requests
-- **Template Compliance**: Before creating a PR, ALWAYS read `.github/pull_request_template.md` and use its exact structure for the PR body. The CI workflow (`pr-requirements.yml`) checks for exact string matches on checklist items.
-- **Checklist**: The PR body must include the `## Checklist` section from the template with checkboxes. Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
-- **Issue Reference**: The `## Issue` section must contain `Resolves #<number>` on its own line.
+- **Template Compliance**: Before creating a PR, ALWAYS use the exact structure from `.github/pull_request_template.md` for the PR body. The CI workflow (`pr-requirements.yml`) checks for exact string matches on checklist items. The body must contain these sections in order:
+    1. `## Summary` — describe the changes
+    2. `## Issue` — must contain `Resolves #<number>` on its own line
+    3. `## Checklist` — all four checkboxes from the template:
+        - `- [ ] This PR resolves the linked issue`
+        - `- [ ] Tests have been added or updated`
+        - `- [ ] Rebased on top of main`
+        - `- [ ] This is a breaking change`
+- **Checklist**: Check (`- [x]`) all items that apply; leave unchecked (`- [ ]`) items that don't apply. The `Tests have been added or updated` and `Rebased on top of main` checkboxes are **required** (enforced by CI).
 - **Labels**: Apply the same label(s) to the PR as the linked issue.
 
 # Artifacts
