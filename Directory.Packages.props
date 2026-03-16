@@ -37,8 +37,8 @@
     <PackageVersion Include="Spectre.Console" Version="0.54.0" />
   </ItemGroup>
   <ItemGroup Label="System.IO.Abstractions">
-    <PackageVersion Include="System.IO.Abstractions" Version="22.0.10" />
-    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.0.10" />
+    <PackageVersion Include="System.IO.Abstractions" Version="22.1.0" />
+    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.1.0" />
   </ItemGroup>
   <ItemGroup Label="xunit">
     <PackageVersion Include="xunit" Version="2.9.3" />
