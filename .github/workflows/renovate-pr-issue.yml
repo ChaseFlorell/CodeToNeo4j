@@ -2,7 +2,7 @@ name: Link Renovate PRs to Issues
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, labeled]
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   create-and-link-issue:
-    if: github.event.pull_request.user.login == 'renovate[bot]'
+    if: contains(github.event.pull_request.labels.*.name, 'renovate')
     runs-on: self-hosted
     steps:
       - name: Create issue and update PR body
@@ -20,6 +20,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
+
+            // Skip if PR body already contains a Resolves reference
+            if (pr.body && /^Resolves #\d+/m.test(pr.body)) {
+              core.info(`PR #${pr.number} already has a Resolves reference. Skipping.`);
+              return;
+            }
 
             // Create a tracking issue for this Renovate PR
             const issue = await github.rest.issues.create({
