@@ -109,6 +109,17 @@
       "matchPackageNames": [
         "/^xunit/"
       ]
+    },
+    {
+      "description": "Keep Renovate up to date (self-managed)",
+      "groupName": "Renovate",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "renovate"
+      ],
+      "automerge": true
     }
   ]
 }
