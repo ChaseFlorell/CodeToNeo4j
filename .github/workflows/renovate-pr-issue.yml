@@ -1,0 +1,47 @@
+name: Link Renovate PRs to Issues
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  create-and-link-issue:
+    if: github.event.pull_request.user.login == 'renovate[bot]'
+    runs-on: self-hosted
+    steps:
+      - name: Create issue and update PR body
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Create a tracking issue for this Renovate PR
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: pr.title,
+              body: `Tracking issue for Renovate PR #${pr.number}.`,
+              labels: ['dependencies', 'renovate']
+            });
+
+            const issueNumber = issue.data.number;
+            const resolvesBanner = `Resolves #${issueNumber}`;
+
+            // Prepend the Resolves line to the existing PR body
+            const currentBody = pr.body || '';
+            const updatedBody = `${resolvesBanner}\n\n${currentBody}`;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              body: updatedBody
+            });
+
+            core.info(`Created issue #${issueNumber} and linked to PR #${pr.number}`);

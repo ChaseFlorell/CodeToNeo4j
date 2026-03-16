@@ -12,6 +12,14 @@
     "dependencies",
     "renovate"
   ],
+  "prBodyNotes": [
+    "## Checklist",
+    "",
+    "- [x] This PR resolves the linked issue",
+    "- [ ] Tests have been added or updated",
+    "- [x] Rebased on top of main",
+    "- [ ] This is a breaking change"
+  ],
   "packageRules": [
     {
       "description": "Automerge non-major updates",

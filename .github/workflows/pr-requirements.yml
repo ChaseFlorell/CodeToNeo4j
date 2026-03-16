@@ -73,7 +73,7 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
           SENDER: ${{ github.event.pull_request.user.login }}
         run: |
-          exempt_senders="renovate dependabot"
+          exempt_senders="dependabot"
 
           for s in $exempt_senders; do
             if [ "$SENDER" = "$s" ] || echo "$SENDER" | grep -qi "^${s}"; then
