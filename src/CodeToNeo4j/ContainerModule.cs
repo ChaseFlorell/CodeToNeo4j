@@ -76,6 +76,7 @@ public static class ContainerModule
         services.AddSingleton<INeo4jFlushService, Neo4jFlushService>();
         services.AddSingleton<IGraphService, Neo4jService>();
 
+        services.AddSingleton<IWorkspaceFactory, MsBuildWorkspaceFactory>();
         services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
 
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))

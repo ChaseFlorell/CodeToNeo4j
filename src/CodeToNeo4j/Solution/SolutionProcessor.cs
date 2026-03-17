@@ -6,7 +6,6 @@ using CodeToNeo4j.Graph;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.VersionControl;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Solution;
@@ -21,6 +20,7 @@ public class SolutionProcessor(
     IDependencyIngestor dependencyIngestor,
     ISolutionFileDiscoveryService discoveryService,
     ICommitIngestionService commitIngestionService,
+    IWorkspaceFactory workspaceFactory,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
     private readonly HandlerLookup _handlerLookup = new(handlers);
@@ -36,29 +36,20 @@ public class SolutionProcessor(
             : fileService.NormalizePath(inputPath);
 
         Microsoft.CodeAnalysis.Solution? solution = null;
-        MSBuildWorkspace? workspace = null;
+        IManagedWorkspace? workspace = null;
 
         try
         {
             if (isProjectFile)
             {
                 logger.LogInformation("Processing: {InputPath}", inputPath);
-                workspace = MSBuildWorkspace.Create(new Dictionary<string, string>
-                {
-                    // Design-time only: skip targets that validate installed SDKs (e.g. JDK for Android/MAUI)
-                    ["DesignTimeBuild"] = "true",
-                    ["BuildingInsideVisualStudio"] = "true",
-                    ["SkipCompilerExecution"] = "true",
-                    // Suppress restore and build targets irrelevant to code analysis
-                    ["ResolveAssemblyReferencesSilently"] = "true",
-                });
+                workspace = workspaceFactory.Create();
                 workspace.RegisterWorkspaceFailedHandler(e => logger.LogWarning("Workspace warning: {Message}", e.Diagnostic.Message));
 
                 if (ext is ".csproj")
                 {
                     logger.LogInformation("Opening project...");
-                    var project = await workspace.OpenProjectAsync(inputPath).ConfigureAwait(false);
-                    solution = project.Solution;
+                    solution = await workspace.OpenProjectAsync(inputPath).ConfigureAwait(false);
                     logger.LogInformation("Project opened successfully.");
                 }
                 else
