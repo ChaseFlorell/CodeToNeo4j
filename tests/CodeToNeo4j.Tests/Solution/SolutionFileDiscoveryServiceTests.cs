@@ -194,4 +194,52 @@ public class SolutionFileDiscoveryServiceTests
         configFile.TargetFrameworks!.ShouldContain("net9.0");
         configFile.TargetFrameworks!.ShouldContain("net8.0");
     }
+
+    [Fact]
+    public void GivenDirectoryWithDartFiles_WhenGetFilesToProcessByDirectoryCalled_ThenReturnsDartFiles()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var fileService = new FileService(fileSystem);
+        var sut = new SolutionFileDiscoveryService(fileService, fileSystem);
+
+        fileSystem.AddFile("/dartproject/pubspec.yaml", new MockFileData("name: test"));
+        fileSystem.AddFile("/dartproject/lib/main.dart", new MockFileData("void main() {}"));
+        fileSystem.AddFile("/dartproject/lib/src/foo.dart", new MockFileData("class Foo {}"));
+        fileSystem.AddFile("/dartproject/build/output.dart", new MockFileData("// excluded"));
+        fileSystem.AddFile("/dartproject/.dart_tool/cache.dart", new MockFileData("// excluded"));
+
+        var includeExtensions = new[] { ".dart", "pubspec.yaml" };
+
+        // Act
+        var result = sut.GetFilesToProcess("/dartproject", includeExtensions).ToList();
+
+        // Assert
+        result.Any(f => f.FilePath.Contains("main.dart")).ShouldBeTrue();
+        result.Any(f => f.FilePath.Contains("foo.dart")).ShouldBeTrue();
+        result.Any(f => f.FilePath.Contains("pubspec.yaml")).ShouldBeTrue();
+        result.Any(f => f.FilePath.Contains("build")).ShouldBeFalse();
+        result.Any(f => f.FilePath.Contains(".dart_tool")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void GivenDirectoryWithNoDartFiles_WhenGetFilesToProcessByDirectoryCalled_ThenReturnsOnlyPubspec()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var fileService = new FileService(fileSystem);
+        var sut = new SolutionFileDiscoveryService(fileService, fileSystem);
+
+        fileSystem.AddFile("/dartproject/pubspec.yaml", new MockFileData("name: test"));
+        fileSystem.AddFile("/dartproject/README.md", new MockFileData("# README"));
+
+        var includeExtensions = new[] { ".dart", "pubspec.yaml" };
+
+        // Act
+        var result = sut.GetFilesToProcess("/dartproject", includeExtensions).ToList();
+
+        // Assert
+        result.Count.ShouldBe(1);
+        result[0].FilePath.ShouldContain("pubspec.yaml");
+    }
 }

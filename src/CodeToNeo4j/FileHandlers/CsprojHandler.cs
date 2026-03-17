@@ -162,10 +162,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             var ns = nuspecDoc.Root?.Name.Namespace ?? XNamespace.None;
             var metadata = nuspecDoc.Root?.Element(ns + "metadata");
 
-            var projectUrl = metadata?.Element(ns + "projectUrl")?.Value?.Trim();
+            var projectUrl = metadata?.Element(ns + "projectUrl")?.Value.Trim();
             if (string.IsNullOrEmpty(projectUrl)) projectUrl = null;
 
-            var repositoryUrl = metadata?.Element(ns + "repository")?.Attribute("url")?.Value?.Trim();
+            var repositoryUrl = metadata?.Element(ns + "repository")?.Attribute("url")?.Value.Trim();
             if (string.IsNullOrEmpty(repositoryUrl)) repositoryUrl = null;
 
             return (projectUrl, repositoryUrl);

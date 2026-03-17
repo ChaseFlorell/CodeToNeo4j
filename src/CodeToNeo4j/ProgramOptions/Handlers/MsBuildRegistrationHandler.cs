@@ -11,6 +11,7 @@ public class MsBuildRegistrationHandler(IFileSystem fileSystem) : OptionsHandler
         if (fileSystem.Directory.Exists(options.InputPath))
             return Task.FromResult(true);
 
+
         if (!MSBuildLocator.IsRegistered)
         {
             var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();

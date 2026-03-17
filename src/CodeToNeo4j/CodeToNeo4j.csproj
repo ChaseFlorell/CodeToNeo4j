@@ -40,6 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CodeToNeo4j.Dart\CodeToNeo4j.Dart.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="CodeToNeo4j.Tests" />
   </ItemGroup>
 </Project>

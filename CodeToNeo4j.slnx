@@ -33,10 +33,11 @@
     <File Path=".github\workflows\index-to-neo4j.yml" />
     <File Path=".github\workflows\pr-requirements.yml" />
     <File Path=".github\workflows\release.yml" />
-    <File Path=".github\workflows\renovate-pr-issue.yml" />
     <File Path=".github\workflows\renovate.yml" />
     <File Path=".github\workflows\verify.yml" />
   </Folder>
   <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
+  <Project Path="src/CodeToNeo4j.Dart/CodeToNeo4j.Dart.csproj" />
   <Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />
+  <Project Path="tests/CodeToNeo4j.Dart.Tests/CodeToNeo4j.Dart.Tests.csproj" />
 </Solution>

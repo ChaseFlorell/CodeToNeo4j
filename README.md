@@ -12,6 +12,7 @@ CodeToNeo4j is a .NET 10 console application designed to analyze .NET solutions 
 - **.NET 10 SDK**: Specifically version `10.0.201` (defined in `global.json`).
 - **Neo4j Database**: Version 5.0 or higher.
 - **Git**: Required if using incremental indexing (`--diff-base`) or tracking file authors.
+- **Dart SDK** *(optional)*: Required only if analyzing Dart projects. Install from [dart.dev/get-dart](https://dart.dev/get-dart). The `dart` executable must be on your `PATH`. If the Dart SDK is not found, `.dart` files are skipped with a warning.
 
 ### Installation
 
@@ -94,7 +95,7 @@ codetoneo4j --input /path/to/project-dir --password your-neo4j-password
 | `--batch-size`                | Number of symbols to batch before flushing to Neo4j.                                                                       | `500` |
 | `--skip-dependencies`         | Skip NuGet dependency ingestion.                                                                                           | `false` |
 | `--min-accessibility`         | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                          | `NotApplicable` |
-| `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
+| `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj`, `.dart` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
 
 > **Note**: When `--input` is omitted, the tool auto-detects the project type from the current directory in priority order: `.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only mode. If multiple files of the same type exist, the tool exits with an error asking you to specify `--input` explicitly. When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the input filename or directory name is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
@@ -156,7 +157,7 @@ jobs:
 
 - **.NET SDK Dependency**: The machine running the tool must have the .NET SDK installed (specifically the version matching the solution being analyzed) because `MSBuildLocator` needs to find a valid MSBuild instance to load the solution.
 - **Neo4j Version**: Only Neo4j 5.x and above are supported due to the use of `IF NOT EXISTS` syntax in Cypher schema commands.
-- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
+- **Supported File Types**: Analyzes `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj`, and `.dart` files (configurable via `--include`).
     - **C#**: Full symbol extraction (Classes, Methods, etc.) and semantic mapping.
     - **Razor**: Extracts directives such as `@using`, `@inject`, `@model`, and `@inherits`.
     - **XAML**: Extracts UI elements and event handler bindings (e.g., `Click`, `Command`).
@@ -167,6 +168,8 @@ jobs:
     - **JSON**: Extracts properties as symbols.
     - **CSS**: Extracts CSS selectors.
     - **Csproj**: Extracts `PackageReference`, `ProjectReference`, and project properties (e.g., `OutputType`, `TargetFramework`).
+    - **Dart**: Full semantic analysis via the Dart `analyzer` package. Extracts classes, mixins, enums, extensions, functions, methods, constructors, fields, properties, operators, and type aliases. Captures `CONTAINS`, `DEPENDS_ON`, and `INVOKES` relationships. Requires the Dart SDK on `PATH`.
+    - **pubspec.yaml**: Extracts project dependencies and dev dependencies as `DEPENDS_ON` relationships.
 - **Symbol Depth**: Indexes Types (Classes, Enums, etc.) and their immediate members.
 - **Documentation & Comments**: Ingests triple-slash XML documentation and standard code comments (`//`, `/* */`) for each symbol, enabling semantic search and context for LLMs.
 - **Git Context**: Tracks file metadata including creation date, last modified date, commit hashes, git tags, and individual author statistics (name, email, first contribution, last contribution, and commit count) for each indexed file. When using incremental indexing (`--diff-base`), it also ingests detailed information for all commits in the specified range (including hashes, authors, dates, and commit messages), linking them to the modified files. Commit ingestion is parallelized and uses `--batch-size` for efficient fetching and database updates. Deleted files are marked as `deleted: true` to preserve historical context. Incremental indexing and commit history tracking require a valid Git repository and the `git` executable in the PATH.
