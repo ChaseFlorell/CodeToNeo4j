@@ -307,3 +307,7 @@ __pycache__/
 
 # Nuke
 /.nuke/temp/
+
+# Dart
+.dart_tool/
+pubspec.lock
