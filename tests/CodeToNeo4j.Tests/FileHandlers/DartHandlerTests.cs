@@ -148,6 +148,112 @@ public class DartHandlerTests
         A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).MustNotHaveHappened();
     }
 
+    [Fact]
+    public async Task GivenFileNotInAnalysisResults_WhenHandled_ThenReturnsEmptyResult()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var bridgeService = A.Fake<IDartBridgeService>();
+        var sut = new DartHandler(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+
+        fileSystem.AddFile("/project/pubspec.yaml", new MockFileData("name: test_app"));
+        fileSystem.AddFile("/project/lib/other.dart", new MockFileData("class Other {}"));
+
+        var analysisResult = new DartAnalysisResult
+        {
+            ProjectName = "test_app",
+            ProjectRoot = "/project",
+            Files = new Dictionary<string, DartFileResult>
+            {
+                ["lib/different_file.dart"] = new() { Symbols = [], Relationships = [] }
+            }
+        };
+        A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "lib/other.dart",
+            filePath: "/project/lib/other.dart",
+            relativePath: "lib/other.dart",
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.NotApplicable);
+
+        // Assert — file wasn't in analysis results, so nothing is emitted
+        symbolBuffer.ShouldBeEmpty();
+        relBuffer.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("Protected", Accessibility.Public, 0)]
+    [InlineData("Internal", Accessibility.Public, 0)]
+    [InlineData("Protected", Accessibility.Protected, 1)]
+    [InlineData("Internal", Accessibility.Internal, 1)]
+    [InlineData("UnknownAccess", Accessibility.Public, 1)]
+    public async Task GivenSymbolAccessibility_WhenMinAccessibilityFilters_ThenIncludesOrExcludesCorrectly(
+        string symbolAccessibility, Accessibility minAccessibility, int expectedCount)
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var bridgeService = A.Fake<IDartBridgeService>();
+        var sut = new DartHandler(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+
+        fileSystem.AddFile("/project/pubspec.yaml", new MockFileData("name: test_app"));
+        fileSystem.AddFile("/project/lib/foo.dart", new MockFileData("class Foo {}"));
+
+        var analysisResult = new DartAnalysisResult
+        {
+            ProjectName = "test_app",
+            ProjectRoot = "/project",
+            Files = new Dictionary<string, DartFileResult>
+            {
+                ["lib/foo.dart"] = new()
+                {
+                    Symbols =
+                    [
+                        new DartSymbolInfo
+                        {
+                            Name = "Foo",
+                            Kind = "DartClass",
+                            Class = "class",
+                            Fqn = "package:test_app/foo.dart::Foo",
+                            Accessibility = symbolAccessibility,
+                            StartLine = 1,
+                            EndLine = 1,
+                        }
+                    ],
+                    Relationships = []
+                }
+            }
+        };
+
+        A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "lib/foo.dart",
+            filePath: "/project/lib/foo.dart",
+            relativePath: "lib/foo.dart",
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: minAccessibility);
+
+        // Assert
+        symbolBuffer.Count.ShouldBe(expectedCount);
+    }
+
     [Theory]
     [InlineData(Accessibility.Public, 1)]
     [InlineData(Accessibility.Private, 1)]

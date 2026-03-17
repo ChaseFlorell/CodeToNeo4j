@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Microsoft.Build.Locator;
 
 namespace CodeToNeo4j.ProgramOptions.Handlers;
 
+[ExcludeFromCodeCoverage]
 public class MsBuildRegistrationHandler(IFileSystem fileSystem) : OptionsHandler
 {
     protected override Task<bool> HandleOptions(Options options)

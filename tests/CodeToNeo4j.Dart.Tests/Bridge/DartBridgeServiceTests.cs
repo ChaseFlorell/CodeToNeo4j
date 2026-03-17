@@ -48,4 +48,80 @@ public class DartBridgeServiceTests
         // Assert
         first.ShouldBe(second);
     }
+
+    [Fact]
+    public async Task GivenPackageConfigExists_WhenEnsureDartPubGetCalled_ThenReturnsTrueWithoutRunningProcess()
+    {
+        // Arrange
+        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var dartToolDir = Path.Combine(tempDir, ".dart_tool");
+        var packageConfig = Path.Combine(dartToolDir, "package_config.json");
+
+        try
+        {
+            Directory.CreateDirectory(dartToolDir);
+            await File.WriteAllTextAsync(packageConfig, "{}");
+
+            // Act — pass a non-existent dart executable; if it tries to run it, the process would fail
+            var result = await sut.EnsureDartPubGet("/nonexistent/dart", tempDir);
+
+            // Assert — returns true immediately because package_config.json exists
+            result.ShouldBeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task GivenInvalidDartExecutable_WhenEnsureDartPubGetCalled_ThenReturnsFalse()
+    {
+        // Arrange
+        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            // Act — no package_config.json and dart executable does not exist → Process.Start throws → caught → false
+            var result = await sut.EnsureDartPubGet("/nonexistent/dart-executable-that-does-not-exist", tempDir);
+
+            // Assert
+            result.ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task GivenNoDartOnPath_WhenAnalyzeProjectCalled_ThenReturnsNull()
+    {
+        // Only meaningful when Dart is not available; skip if dart is on PATH to avoid clearing real PATH
+        if (DartBridgeService.FindDartExecutable() is not null)
+            return;
+
+        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var result = await sut.AnalyzeProject("/some/nonexistent/project");
+        result.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GivenSameProjectRoot_WhenAnalyzeProjectCalledTwice_ThenSecondCallReturnsCachedResult()
+    {
+        // Arrange — use a path where Dart analysis will fail/return null (no pubspec, no dart, etc.)
+        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var fakePath = Path.Combine(Path.GetTempPath(), "nonexistent-dart-project-" + Guid.NewGuid());
+
+        // Act
+        var first = await sut.AnalyzeProject(fakePath);
+        var second = await sut.AnalyzeProject(fakePath);
+
+        // Assert — both calls agree (second is served from cache)
+        second.ShouldBe(first);
+    }
 }

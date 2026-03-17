@@ -303,7 +303,7 @@ public class SolutionProcessorTests
 
         // assert — workspace never created, dependencies never ingested, files still processed
         A.CallTo(() => workspaceFactory.Create()).MustNotHaveHappened();
-        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._!)).MustNotHaveHappened();
         A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb")).MustHaveHappenedOnceExactly();
     }
 
@@ -477,7 +477,7 @@ public class SolutionProcessorTests
         await sut.ProcessSolution("/repo/My.sln", "my", null, "testdb", 100, skipDependencies: true, Accessibility.Public, [".cs"]);
 
         // assert
-        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._!)).MustNotHaveHappened();
     }
 
     [Fact]

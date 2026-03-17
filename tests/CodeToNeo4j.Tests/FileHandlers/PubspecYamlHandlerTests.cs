@@ -100,6 +100,38 @@ public class PubspecYamlHandlerTests
     }
 
     [Fact]
+    public async Task GivenMalformedPubspec_WhenHandled_ThenReturnsEmptyWithoutThrowing()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new PubspecYamlHandler(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+
+        const string content = "{ this is: [not valid yaml: - broken";
+        var filePath = "/project/pubspec.yaml";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — should not throw
+        var exception = await Record.ExceptionAsync(() => sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "pubspec.yaml",
+            filePath: filePath,
+            relativePath: "pubspec.yaml",
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private));
+
+        // Assert
+        exception.ShouldBeNull();
+        symbolBuffer.ShouldBeEmpty();
+        relBuffer.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task GivenDependencyWithVersion_WhenHandled_ThenVersionIsIncluded()
     {
         // Arrange
