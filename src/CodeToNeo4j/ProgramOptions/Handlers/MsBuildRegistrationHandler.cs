@@ -4,7 +4,7 @@ using Microsoft.Build.Locator;
 
 namespace CodeToNeo4j.ProgramOptions.Handlers;
 
-[ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage(Justification = "Invokes MSBuildLocator against the real MSBuild installation; not unit testable")]
 public class MsBuildRegistrationHandler(IFileSystem fileSystem) : OptionsHandler
 {
     protected override Task<bool> HandleOptions(Options options)

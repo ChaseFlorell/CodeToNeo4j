@@ -190,6 +190,66 @@ public class DartHandlerTests
         relBuffer.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task GivenFileInRootDirectory_WhenHandled_ThenNamespaceIsNull()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var bridgeService = A.Fake<IDartBridgeService>();
+        var sut = new DartHandler(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+
+        // File at project root — no parent directory → fileNamespace is null
+        fileSystem.AddFile("/project/pubspec.yaml", new MockFileData("name: test_app"));
+        fileSystem.AddFile("/project/root.dart", new MockFileData("class Root {}"));
+
+        var analysisResult = new DartAnalysisResult
+        {
+            ProjectName = "test_app",
+            ProjectRoot = "/project",
+            Files = new Dictionary<string, DartFileResult>
+            {
+                ["root.dart"] = new()
+                {
+                    Symbols =
+                    [
+                        new DartSymbolInfo
+                        {
+                            Name = "Root",
+                            Kind = "DartClass",
+                            Class = "class",
+                            Fqn = "package:test_app/root.dart::Root",
+                            Accessibility = "Public",
+                            StartLine = 1,
+                            EndLine = 1,
+                            Namespace = null   // forces fileNamespace fallback
+                        }
+                    ],
+                    Relationships = []
+                }
+            }
+        };
+        A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — relativePath has no directory component
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "root.dart",
+            filePath: "/project/root.dart",
+            relativePath: "root.dart",
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.NotApplicable);
+
+        // Assert — symbol present; namespace falls back to null/empty fileNamespace
+        symbolBuffer.ShouldContain(s => s.Name == "Root");
+        symbolBuffer.First(s => s.Name == "Root").Namespace.ShouldBeNullOrEmpty();
+    }
+
     [Theory]
     [InlineData("Protected", Accessibility.Public, 0)]
     [InlineData("Internal", Accessibility.Public, 0)]

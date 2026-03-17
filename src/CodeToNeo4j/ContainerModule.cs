@@ -17,7 +17,7 @@ using Neo4j.Driver;
 
 namespace CodeToNeo4j;
 
-[ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage(Justification = "DI registration wiring — covered by integration/smoke tests, not unit tests")]
 public static class ContainerModule
 {
     /// <summary>

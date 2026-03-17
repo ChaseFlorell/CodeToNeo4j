@@ -298,6 +298,61 @@ public class CsprojHandlerTests
         result.UrlNodes.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task GivenXmlWithNoRootElement_WhenHandled_ThenReturnsEmptyWithoutThrowing()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+
+        // A well-formed XML document with no root element (just a processing instruction)
+        const string content = "<?xml version=\"1.0\"?>";
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act — Root is null, should skip processing gracefully
+        var exception = await Record.ExceptionAsync(() => sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private));
+
+        // Assert
+        exception.ShouldBeNull();
+        symbolBuffer.ShouldBeEmpty();
+        relBuffer.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task GivenMalformedCsproj_WhenHandled_ThenReturnsEmptyWithoutThrowing()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new CsprojHandler(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+
+        const string filePath = "test.csproj";
+        fileSystem.AddFile(filePath, new MockFileData("<<< not xml >>>"));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => sut.Handle(
+            document: null, compilation: null,
+            repoKey: "test-repo", fileKey: "test-file",
+            filePath: filePath, relativePath: filePath,
+            symbolBuffer: symbolBuffer, relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private));
+
+        // Assert
+        exception.ShouldBeNull();
+        symbolBuffer.ShouldBeEmpty();
+    }
+
     private static string NuspecPath(string name, string version)
     {
         var packagesRoot = Environment.GetEnvironmentVariable("NUGET_PACKAGES")

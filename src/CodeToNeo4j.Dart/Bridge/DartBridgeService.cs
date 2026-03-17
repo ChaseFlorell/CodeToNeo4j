@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using CodeToNeo4j.Dart.Models;
@@ -8,6 +9,7 @@ namespace CodeToNeo4j.Dart.Bridge;
 
 public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeService
 {
+    [ExcludeFromCodeCoverage(Justification = "Requires live Dart SDK and OS process execution")]
     public async Task<DartAnalysisResult?> AnalyzeProject(string projectRoot)
     {
         if (_cache.TryGetValue(projectRoot, out var cached))
@@ -194,6 +196,7 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
     /// <summary>
     /// Runs <c>dart pub get</c> in the bridge directory if dependencies haven't been resolved yet.
     /// </summary>
+    [ExcludeFromCodeCoverage(Justification = "Requires live Dart SDK and OS process execution")]
     internal async Task<bool> EnsureDartPubGet(string dartExecutable, string bridgeDir)
     {
         // .dart_tool/package_config.json is created by `dart pub get`

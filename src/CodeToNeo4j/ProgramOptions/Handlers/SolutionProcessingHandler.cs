@@ -3,7 +3,7 @@ using CodeToNeo4j.Solution;
 
 namespace CodeToNeo4j.ProgramOptions.Handlers;
 
-[ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage(Justification = "Thin CLI-to-ISolutionProcessor bridge; covered by SolutionProcessor integration tests")]
 public class SolutionProcessingHandler(ISolutionProcessor solutionProcessor) : OptionsHandler
 {
     protected override async Task<bool> HandleOptions(Options options)

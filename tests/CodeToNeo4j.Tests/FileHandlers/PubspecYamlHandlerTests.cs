@@ -100,6 +100,45 @@ public class PubspecYamlHandlerTests
     }
 
     [Fact]
+    public async Task GivenDependencyWithNoVersion_WhenHandled_ThenFqnIsJustName()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new PubspecYamlHandler(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+
+        // Dependency with no version value (empty after colon)
+        const string content = """
+            name: test_app
+            dependencies:
+              flutter:
+            """;
+
+        var filePath = "/project/pubspec.yaml";
+        fileSystem.AddFile(filePath, new MockFileData(content));
+
+        var symbolBuffer = new List<Symbol>();
+        var relBuffer = new List<Relationship>();
+
+        // Act
+        await sut.Handle(
+            document: null,
+            compilation: null,
+            repoKey: "test-repo",
+            fileKey: "pubspec.yaml",
+            filePath: filePath,
+            relativePath: "pubspec.yaml",
+            symbolBuffer: symbolBuffer,
+            relBuffer: relBuffer,
+            minAccessibility: Accessibility.Private);
+
+        // Assert — dependency is present but version is null, so Fqn is just the name
+        var flutterSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "flutter");
+        flutterSymbol.ShouldNotBeNull();
+        flutterSymbol.Version.ShouldBeNull();
+        flutterSymbol.Fqn.ShouldBe("flutter");
+    }
+
+    [Fact]
     public async Task GivenMalformedPubspec_WhenHandled_ThenReturnsEmptyWithoutThrowing()
     {
         // Arrange
