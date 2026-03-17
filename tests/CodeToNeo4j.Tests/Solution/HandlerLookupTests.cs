@@ -21,7 +21,7 @@ public class HandlerLookupTests
     {
         // Arrange
         var handler = CreateExtensionHandler(extension);
-        var sut = new SolutionProcessor.HandlerLookup([handler]);
+        var sut = new SolutionProcessor.HandlerLookup([handler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler(filePath);
@@ -39,7 +39,7 @@ public class HandlerLookupTests
         var tsHandler = CreateExtensionHandler(".ts", path =>
             path.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
             || path.EndsWith(".tsx", StringComparison.OrdinalIgnoreCase));
-        var sut = new SolutionProcessor.HandlerLookup([tsHandler]);
+        var sut = new SolutionProcessor.HandlerLookup([tsHandler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler(filePath);
@@ -54,7 +54,7 @@ public class HandlerLookupTests
         // Arrange
         var pkgHandler = CreateFileNameHandler("package.json");
         var jsonHandler = CreateExtensionHandler(".json");
-        var sut = new SolutionProcessor.HandlerLookup([pkgHandler, jsonHandler]);
+        var sut = new SolutionProcessor.HandlerLookup([pkgHandler, jsonHandler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler("/repo/package.json");
@@ -69,7 +69,7 @@ public class HandlerLookupTests
         // Arrange
         var pkgHandler = CreateFileNameHandler("package.json");
         var jsonHandler = CreateExtensionHandler(".json");
-        var sut = new SolutionProcessor.HandlerLookup([pkgHandler, jsonHandler]);
+        var sut = new SolutionProcessor.HandlerLookup([pkgHandler, jsonHandler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler("/repo/appsettings.json");
@@ -83,7 +83,7 @@ public class HandlerLookupTests
     {
         // Arrange
         var handler = CreateExtensionHandler(".cs");
-        var sut = new SolutionProcessor.HandlerLookup([handler]);
+        var sut = new SolutionProcessor.HandlerLookup([handler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler("/repo/file.unknown");
@@ -97,7 +97,7 @@ public class HandlerLookupTests
     {
         // Arrange
         var handler = CreateExtensionHandler(".cs");
-        var sut = new SolutionProcessor.HandlerLookup([handler]);
+        var sut = new SolutionProcessor.HandlerLookup([handler], new System.IO.Abstractions.FileSystem());
 
         // Act
         var result = sut.GetHandler("/repo/Program.CS");
@@ -121,7 +121,7 @@ public class HandlerLookupTests
         var handler = A.Fake<IDocumentHandler>();
         A.CallTo(() => handler.FileExtension).Returns(fileName);
         A.CallTo(() => handler.CanHandle(A<string>._))
-            .ReturnsLazily((string path) => Path.GetFileName(path).Equals(fileName, StringComparison.OrdinalIgnoreCase));
+            .ReturnsLazily((string path) => path.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
         return handler;
     }
 }

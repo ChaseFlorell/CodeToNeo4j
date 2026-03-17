@@ -574,7 +574,7 @@ public class SolutionProcessorTests
         A.CallTo(() => h2.CanHandle(A<string>.That.EndsWith("package.json", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
         // Act
-        var lookup = new SolutionProcessor.HandlerLookup([h1, h2]);
+        var lookup = new SolutionProcessor.HandlerLookup([h1, h2], new System.IO.Abstractions.FileSystem());
 
         // Assert
         lookup.GetHandler("foo.cs").ShouldBe(h1);

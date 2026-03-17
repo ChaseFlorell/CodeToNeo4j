@@ -23,7 +23,7 @@ public class SolutionProcessor(
     IWorkspaceFactory workspaceFactory,
     ILogger<SolutionProcessor> logger) : ISolutionProcessor
 {
-    private readonly HandlerLookup _handlerLookup = new(handlers);
+    private readonly HandlerLookup _handlerLookup = new(handlers, fileSystem);
     public async Task ProcessSolution(string inputPath, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies, Accessibility minAccessibility, IEnumerable<string> includeExtensions)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -330,11 +330,14 @@ public class SolutionProcessor(
 
     internal sealed class HandlerLookup
     {
+        private readonly IFileSystem _fileSystem;
         private readonly Dictionary<string, IDocumentHandler> _byFileName = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, IDocumentHandler> _byExtension = new(StringComparer.OrdinalIgnoreCase);
 
-        public HandlerLookup(IEnumerable<IDocumentHandler> handlers)
+        public HandlerLookup(IEnumerable<IDocumentHandler> handlers, IFileSystem fileSystem)
         {
+            _fileSystem = fileSystem;
+
             foreach (var handler in handlers)
             {
                 var ext = handler.FileExtension;
@@ -354,12 +357,12 @@ public class SolutionProcessor(
         public IDocumentHandler? GetHandler(string filePath)
         {
             // O(1) filename lookup (e.g. package.json)
-            var fileName = Path.GetFileName(filePath);
+            var fileName = _fileSystem.Path.GetFileName(filePath);
             if (_byFileName.TryGetValue(fileName, out var byName))
                 return byName;
 
             // O(1) extension lookup (e.g. .cs, .html)
-            var ext = Path.GetExtension(filePath);
+            var ext = _fileSystem.Path.GetExtension(filePath);
             if (!string.IsNullOrEmpty(ext) && _byExtension.TryGetValue(ext, out var byExt))
             {
                 // Verify via CanHandle for handlers that match multiple extensions (e.g. .ts/.tsx)
