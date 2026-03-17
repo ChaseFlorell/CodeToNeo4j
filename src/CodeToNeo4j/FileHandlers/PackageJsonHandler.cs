@@ -12,7 +12,7 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
     public override string FileExtension => "package.json";
 
     public override bool CanHandle(string filePath)
-        => Path.GetFileName(filePath).Equals("package.json", StringComparison.OrdinalIgnoreCase);
+        => _fileSystem.Path.GetFileName(filePath).Equals("package.json", StringComparison.OrdinalIgnoreCase);
 
     internal static string? NormalizeRepositoryUrl(string? url)
     {
@@ -52,7 +52,7 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         if (Accessibility.Public < minAccessibility)
             return new FileResult(fileNamespace, fileKey);

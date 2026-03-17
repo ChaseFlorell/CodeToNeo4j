@@ -24,7 +24,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
         var urlNodes = new List<UrlNode>();
 
         try

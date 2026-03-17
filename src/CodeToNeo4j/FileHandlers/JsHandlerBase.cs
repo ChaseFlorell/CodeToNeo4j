@@ -26,7 +26,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         ExtractFunctions(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
         ExtractImportsExports(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
@@ -190,12 +190,18 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
         => !module.StartsWith('.') && !module.StartsWith('/');
 
     // Handles: function name(...), const/let/var name = (...) => (with optional TS return type), name: function(...)
+
     [GeneratedRegex(@"(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?\(.*?\)(?:\s*:\s*[\w<>[\]|&. ?,]+)?\s*=>|([a-zA-Z0-9_$]+)\s*:\s*function)", RegexOptions.Multiline)]
     private static partial Regex FunctionRegex();
+
     [GeneratedRegex(@"import\s+.*?\s+from\s+['""](.*?)['""]", RegexOptions.Multiline)]
     private static partial Regex ImportRegex();
+
     [GeneratedRegex(@"\brequire\(['""`](.*?)['""`]\)", RegexOptions.Multiline)]
     private static partial Regex RequireRegex();
+
     [GeneratedRegex(@"\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(", RegexOptions.Multiline)]
     private static partial Regex FunctionCallRegex();
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 }

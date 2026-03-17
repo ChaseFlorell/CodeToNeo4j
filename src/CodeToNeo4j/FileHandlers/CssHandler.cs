@@ -21,7 +21,7 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
 
@@ -61,4 +61,6 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
     [GeneratedRegex(@"([^{]+)\s*\{", RegexOptions.Multiline)]
     private static partial Regex Regex();
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 }
