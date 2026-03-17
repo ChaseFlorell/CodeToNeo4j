@@ -8,8 +8,8 @@ public partial class SolutionFileDiscoveryService(
     IFileService fileService,
     IFileSystem fileSystem) : ISolutionFileDiscoveryService
 {
-    public IEnumerable<ProcessedFile> GetFilesToProcess(FileInfo sln,
-        Microsoft.CodeAnalysis.Solution solution,
+    public IEnumerable<ProcessedFile> GetFilesToProcess(string rootDirectory,
+        Microsoft.CodeAnalysis.Solution? solution,
         IEnumerable<string> includeExtensions)
     {
         var extensions = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -17,73 +17,75 @@ public partial class SolutionFileDiscoveryService(
         // allocation churn from copy-on-merge with immutable sets.
         var solutionFiles = new Dictionary<string, (ProcessedFile File, HashSet<string>? Tfms)>(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Get all documents from MSBuild
-        foreach (var project in solution.Projects)
+        // 1. Get all documents from MSBuild (when a solution/project is loaded)
+        if (solution is not null)
         {
-            // Skip outer multi-target wrapper projects (they have 0 documents and no useful data)
-            if (!project.Documents.Any() && !project.AdditionalDocuments.Any())
+            foreach (var project in solution.Projects)
             {
-                continue;
-            }
-
-            var tfm = ExtractTargetFramework(project.Name);
-
-            // Regular Documents
-            foreach (var doc in project.Documents)
-            {
-                var path = fileService.NormalizePath(doc.FilePath!);
-                if (string.IsNullOrEmpty(path)) continue;
-                if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
-
-                if (solutionFiles.TryGetValue(path, out var existing))
+                // Skip outer multi-target wrapper projects (they have 0 documents and no useful data)
+                if (!project.Documents.Any() && !project.AdditionalDocuments.Any())
                 {
-                    if (tfm is not null)
+                    continue;
+                }
+
+                var tfm = ExtractTargetFramework(project.Name);
+
+                // Regular Documents
+                foreach (var doc in project.Documents)
+                {
+                    var path = fileService.NormalizePath(doc.FilePath!);
+                    if (string.IsNullOrEmpty(path)) continue;
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+
+                    if (solutionFiles.TryGetValue(path, out var existing))
                     {
-                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        existing.Tfms.Add(tfm);
+                        if (tfm is not null)
+                        {
+                            existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            existing.Tfms.Add(tfm);
+                        }
+                    }
+                    else
+                    {
+                        HashSet<string>? tfms = null;
+                        if (tfm is not null)
+                        {
+                            tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                        }
+                        solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                     }
                 }
-                else
-                {
-                    HashSet<string>? tfms = null;
-                    if (tfm is not null)
-                    {
-                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
-                    }
-                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
-                }
-            }
 
-            // Additional Documents
-            foreach (var doc in project.AdditionalDocuments)
-            {
-                var path = fileService.NormalizePath(doc.FilePath!);
-                if (string.IsNullOrEmpty(path)) continue;
-                if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                // Additional Documents
+                foreach (var doc in project.AdditionalDocuments)
+                {
+                    var path = fileService.NormalizePath(doc.FilePath!);
+                    if (string.IsNullOrEmpty(path)) continue;
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
 
-                if (solutionFiles.TryGetValue(path, out var existing))
-                {
-                    if (tfm is not null)
+                    if (solutionFiles.TryGetValue(path, out var existing))
                     {
-                        existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        existing.Tfms.Add(tfm);
+                        if (tfm is not null)
+                        {
+                            existing.Tfms ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            existing.Tfms.Add(tfm);
+                        }
                     }
-                }
-                else
-                {
-                    HashSet<string>? tfms = null;
-                    if (tfm is not null)
+                    else
                     {
-                        tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                        HashSet<string>? tfms = null;
+                        if (tfm is not null)
+                        {
+                            tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfm };
+                        }
+                        solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                     }
-                    solutionFiles[path] = (new ProcessedFile(path, project.Id, doc.Id), tfms);
                 }
             }
         }
 
-        // 2. File system fallback for other files in the solution directory
-        var solutionDir = sln.DirectoryName!;
-        var allFilesOnDisk = fileSystem.Directory.EnumerateFiles(solutionDir, "*.*", SearchOption.AllDirectories);
+        // 2. File system fallback for other files in the directory
+        var allFilesOnDisk = fileSystem.Directory.EnumerateFiles(rootDirectory, "*.*", SearchOption.AllDirectories);
         foreach (var fileOnDisk in allFilesOnDisk)
         {
             var normalizedPath = fileService.NormalizePath(fileOnDisk);

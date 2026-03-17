@@ -19,7 +19,7 @@ public class SolutionFileDiscoveryServiceTests
         var sut = new SolutionFileDiscoveryService(fileService, fileSystem);
 
         var slnPath = "/repo/test.sln";
-        var slnFile = new FileInfo(slnPath);
+        var slnDir = "/repo";
         fileSystem.AddFile(slnPath, new MockFileData(""));
 
         // Setup Roslyn Solution
@@ -34,7 +34,7 @@ public class SolutionFileDiscoveryServiceTests
         var includeExtensions = new[] { ".cs", ".md" };
 
         // Act
-        var result = sut.GetFilesToProcess(slnFile, solution, includeExtensions);
+        var result = sut.GetFilesToProcess(slnDir, solution, includeExtensions);
 
         // Assert
         var files = result.ToList();
@@ -81,10 +81,8 @@ public class SolutionFileDiscoveryServiceTests
             .AddProject(ProjectInfo.Create(projectId2, VersionStamp.Default, "MyProject(net8.0)", "MyProject", LanguageNames.CSharp))
             .AddDocument(DocumentInfo.Create(docId2, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
 
-        var sln = new FileInfo("/solution/MySolution.sln");
-
         // Act
-        var files = sut.GetFilesToProcess(sln, solution, [".cs"]).ToArray();
+        var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
 
         // Assert
         files.Length.ShouldBe(1);
@@ -116,10 +114,8 @@ public class SolutionFileDiscoveryServiceTests
             .AddProject(ProjectInfo.Create(realId, VersionStamp.Default, "MyProject(net9.0)", "MyProject", LanguageNames.CSharp))
             .AddDocument(DocumentInfo.Create(docId, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
 
-        var sln = new FileInfo("/solution/MySolution.sln");
-
         // Act
-        var files = sut.GetFilesToProcess(sln, solution, [".cs"]).ToArray();
+        var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
 
         // Assert
         files.Length.ShouldBe(1);
@@ -149,10 +145,8 @@ public class SolutionFileDiscoveryServiceTests
             .AddProject(ProjectInfo.Create(projectId, VersionStamp.Default, "MyProject", "MyProject", LanguageNames.CSharp))
             .AddDocument(DocumentInfo.Create(docId, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
 
-        var sln = new FileInfo("/solution/MySolution.sln");
-
         // Act
-        var files = sut.GetFilesToProcess(sln, solution, [".cs"]).ToArray();
+        var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
 
         // Assert
         files.Length.ShouldBe(1);
@@ -190,10 +184,8 @@ public class SolutionFileDiscoveryServiceTests
             .AddDocument(DocumentInfo.Create(codeDocId2, "Dummy.cs", filePath: "/solution/src/Dummy.cs"))
             .AddAdditionalDocument(DocumentInfo.Create(docId2, "config.json", filePath: "/solution/data/config.json"));
 
-        var sln = new FileInfo("/solution/MySolution.sln");
-
         // Act
-        var files = sut.GetFilesToProcess(sln, solution, [".cs", ".json"]).ToArray();
+        var files = sut.GetFilesToProcess("/solution", solution, [".cs", ".json"]).ToArray();
 
         // Assert
         var configFile = files.FirstOrDefault(f => f.FilePath.EndsWith("config.json"));

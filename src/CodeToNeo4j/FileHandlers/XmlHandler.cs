@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger) : DocumentHandlerBase(fileSystem)
+public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger)
+    : DocumentHandlerBase(fileSystem)
 {
     public override string FileExtension => ".xml";
 
@@ -22,7 +23,7 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
@@ -40,7 +41,8 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
         return new FileResult(fileNamespace, fileKey);
     }
 
-    private void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+    private void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer,
+        ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (Accessibility.Public < minAccessibility) return;
 
@@ -71,4 +73,5 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
     }
 
     private readonly ILogger<XmlHandler> _logger = logger;
+    private readonly IFileSystem _fileSystem = fileSystem;
 }

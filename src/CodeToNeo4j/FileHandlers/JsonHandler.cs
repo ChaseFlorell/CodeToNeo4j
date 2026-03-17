@@ -25,7 +25,7 @@ public class JsonHandler(
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         try
         {
@@ -85,4 +85,6 @@ public class JsonHandler(
                 break;
         }
     }
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 }

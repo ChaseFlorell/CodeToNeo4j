@@ -23,11 +23,19 @@ dotnet tool install --global CodeToNeo4j
 
 ## Basic Usage
 
-Run the tool by pointing it to your solution file and providing Neo4j credentials:
+Run the tool by providing Neo4j credentials. When `--input` is omitted, the tool auto-detects the project type from the current directory:
 
 ```bash
 codetoneo4j \
-  -s ./MySolution.sln \
+  --uri bolt://localhost:7687 \
+  --password your-password
+```
+
+Or specify an explicit input:
+
+```bash
+codetoneo4j \
+  --input ./MySolution.sln \
   --uri bolt://localhost:7687 \
   --password your-password
 ```
@@ -36,7 +44,7 @@ codetoneo4j \
 
 | Option                      | Description                                                                            |
 |-----------------------------|----------------------------------------------------------------------------------------|
-| `--sln`, `-s`               | **Required**. Path to the `.sln` file to index. |
+| `--input`, `--sln`, `-s`    | Path to a `.sln`, `.slnx`, or `.csproj` file, or a directory. Auto-detects when omitted. |
 | `--no-key`                  | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository. |
 | `--password`, `-p`          | **Required**. Password for the Neo4j database.                                         |
 | `--uri`, `-u`, `--url`      | **Required**. Neo4j connection string (Default: `bolt://localhost:7687`).                            |
@@ -53,13 +61,13 @@ codetoneo4j \
 | `--include`, `-i`           | File extensions to include (Default: all supported).                                   |
 | `--purge-data`              | Purge data associated with the repository.                                         |
 
-> Note: When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> Note: When `--input` is omitted, the tool auto-detects the project type from the current directory (`.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only). When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge examples
 
 - Purge by derived repository key:
   ```bash
-  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data
+  codetoneo4j --input ./MySolution.sln --password your-pass --purge-data
   ```
 - Purge all CodeToNeo4j data (when using --no-key):
   ```bash
@@ -67,7 +75,7 @@ codetoneo4j \
   ```
 - Purge only certain file types:
   ```bash
-  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data --include .cs --include .razor
+  codetoneo4j --input ./MySolution.sln --password your-pass --purge-data --include .cs --include .razor
   ```
 
 ## Prerequisites
@@ -96,7 +104,7 @@ You can install and run `CodeToNeo4j` directly in your GitHub workflows:
 - name: Run CodeToNeo4j
   run: |
     codetoneo4j \
-      -s ./MySolution.sln \
+      --input ./MySolution.sln \
       --uri ${{ secrets.NEO4J_URL }} \
       --password ${{ secrets.NEO4J_PASS }} \
       --diff-base ${{ github.event.before }}
@@ -118,7 +126,7 @@ steps:
 
 - script: |
     codetoneo4j \
-      -s ./MySolution.sln \
+      --input ./MySolution.sln \
       --uri $(NEO4J_URL) \
       --password $(NEO4J_PASS) \
       --diff-base $(System.PullRequest.SourceCommitId)

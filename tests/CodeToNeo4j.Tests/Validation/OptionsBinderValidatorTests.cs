@@ -10,7 +10,7 @@ namespace CodeToNeo4j.Tests.Validation;
 
 public class OptionsBinderValidatorTests
 {
-    private readonly Option<FileInfo> _slnOption = new("--sln");
+    private readonly Option<string?> _inputOption = new("--input");
     private readonly Option<bool> _noKeyOption = new("--no-key");
     private readonly Option<LogLevel> _logLevelOption = new("--log-level");
     private readonly Option<bool> _debugOption = new("--debug");
@@ -26,6 +26,8 @@ public class OptionsBinderValidatorTests
 
     public OptionsBinderValidatorTests()
     {
+        _inputOption.WithAlias("--sln");
+        _inputOption.WithAlias("-s");
         _minAccessibilityOption = new Option<Accessibility>("--min-accessibility");
         _minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.Private);
     }
@@ -34,7 +36,7 @@ public class OptionsBinderValidatorTests
     {
         var root = new RootCommand
         {
-            _slnOption,
+            _inputOption,
             _noKeyOption,
             _logLevelOption,
             _debugOption,
@@ -63,7 +65,7 @@ public class OptionsBinderValidatorTests
     {
         OptionsBinderValidator.Validate(
             result,
-            _slnOption,
+            _inputOption,
             _noKeyOption,
             _logLevelOption,
             _debugOption,
@@ -82,7 +84,7 @@ public class OptionsBinderValidatorTests
     public void GivenMultipleLogOptions_WhenValidating_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--debug", "--quiet");
+        var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--debug", "--quiet");
 
         // act
         Validate(result);
@@ -95,7 +97,7 @@ public class OptionsBinderValidatorTests
     public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldNotHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies");
+        var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies");
 
         // act
         Validate(result);
@@ -108,7 +110,7 @@ public class OptionsBinderValidatorTests
     public void GivenPurgeWithMinAccessibility_WhenValidating_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public");
+        var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public");
 
         // act
         Validate(result);
@@ -121,7 +123,7 @@ public class OptionsBinderValidatorTests
     public void GivenValidOptions_WhenValidating_ThenShouldNotHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln", "--password", "pass", "--debug", "--purge-data");
+        var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--debug", "--purge-data");
 
         // act
         Validate(result);
@@ -131,7 +133,7 @@ public class OptionsBinderValidatorTests
     }
 
     [Fact]
-    public void GivenNoSln_WhenPurgeDataAndNoKey_ThenShouldNotHaveErrorMessage()
+    public void GivenNoInput_WhenPurgeDataAndNoKey_ThenShouldNotHaveErrorMessage()
     {
         // arrange
         var result = GetCommandResult("--purge-data", "--no-key", "--password", "pass");
@@ -144,36 +146,36 @@ public class OptionsBinderValidatorTests
     }
 
     [Fact]
-    public void GivenNoSln_WhenPurgeDataWithoutNoKey_ThenShouldHaveErrorMessage()
+    public void GivenNoInput_WhenPurgeDataWithoutNoKey_ThenShouldNotHaveErrorMessage()
     {
-        // arrange
+        // arrange — --input is now optional; auto-detection provides the repo key
         var result = GetCommandResult("--purge-data", "--password", "pass");
 
         // act
         Validate(result);
 
         // assert
-        result.Errors.ShouldHaveSingleItem("--sln is required when using --purge-data without --no-key");
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]
-    public void GivenNoSln_WhenNoPurgeData_ThenShouldHaveErrorMessage()
+    public void GivenNoInput_WhenNoPurgeData_ThenShouldNotHaveErrorMessage()
     {
-        // arrange
-        var result = GetCommandResult("--debug", "--password", "pass");
+        // arrange — --input is now optional; auto-detection resolves at bind time
+        var result = GetCommandResult("--password", "pass");
 
         // act
         Validate(result);
 
         // assert
-        result.Errors.ShouldHaveSingleItem("--sln is required");
+        result.Errors.ShouldBeEmpty();
     }
 
     [Fact]
     public void GivenNoPassword_WhenNoPurgeData_ThenShouldHaveErrorMessage()
     {
         // arrange
-        var result = GetCommandResult("--sln", "test.sln");
+        var result = GetCommandResult("--input", "test.sln");
 
         // act
         Validate(result);
@@ -190,6 +192,21 @@ public class OptionsBinderValidatorTests
     {
         // arrange
         var result = GetCommandResult(infoSwitch);
+
+        // act
+        Validate(result);
+
+        // assert
+        result.Errors.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("--sln")]
+    [InlineData("-s")]
+    public void GivenAlias_WhenUsedInsteadOfInput_ThenShouldNotHaveErrorMessage(string alias)
+    {
+        // arrange
+        var result = GetCommandResult(alias, "test.sln", "--password", "pass");
 
         // act
         Validate(result);

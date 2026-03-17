@@ -257,6 +257,310 @@ public class SolutionProcessorTests
         A.CallTo(() => graphService.FlushTargetFrameworks(A<IEnumerable<TargetFrameworkBatch>>._, A<string>._)).MustNotHaveHappened();
     }
 
+    // ── ProcessSolution tests ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GivenDirectoryPath_WhenProcessSolutionCalled_ThenRunsInFilesOnlyMode()
+    {
+        // arrange
+        var graphService = A.Fake<IGraphService>();
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+        var dependencyIngestor = A.Fake<IDependencyIngestor>();
+        var workspaceFactory = A.Fake<IWorkspaceFactory>();
+        var handler = A.Fake<IDocumentHandler>();
+        A.CallTo(() => handler.FileExtension).Returns(".cs");
+        A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+        A.CallTo(() => handler.NumberOfFilesHandled).Returns(1);
+
+        A.CallTo(() => fileSystem.Path.GetExtension("/repo")).Returns("");
+        A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns("repo");
+        A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => fileService.GetRelativePath("/repo", "/repo/file.cs")).Returns("file.cs");
+        A.CallTo(() => fileService.InferFileMetadata("file.cs")).Returns(("key", "ns"));
+        A.CallTo(() => fileService.ComputeSha256("/repo/file.cs")).Returns(Task.FromResult("hash"));
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => vcs.GetFileMetadata("/repo/file.cs", "/repo")).Returns(Task.FromResult(new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], [])));
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
+            .Returns(new[] { new ProcessedFile("/repo/file.cs") });
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService,
+            dependencyIngestor: dependencyIngestor,
+            workspaceFactory: workspaceFactory,
+            handlers: [handler]);
+
+        // act
+        await sut.ProcessSolution("/repo", "repo", null, "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert — workspace never created, dependencies never ingested, files still processed
+        A.CallTo(() => workspaceFactory.Create()).MustNotHaveHappened();
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb")).MustHaveHappenedOnceExactly();
+    }
+
+    [Theory]
+    [InlineData(".sln")]
+    [InlineData(".slnx")]
+    public async Task GivenSolutionFile_WhenProcessSolutionCalled_ThenOpensWorkspaceAsSolution(string ext)
+    {
+        // arrange
+        var graphService = A.Fake<IGraphService>();
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+        var workspaceFactory = A.Fake<IWorkspaceFactory>();
+        var workspace = A.Fake<IManagedWorkspace>();
+        var dependencyIngestor = A.Fake<IDependencyIngestor>();
+
+        var inputPath = $"/repo/MySolution{ext}";
+        var adhocWorkspace = new AdhocWorkspace();
+        var fakeSolution = adhocWorkspace.CurrentSolution;
+
+        A.CallTo(() => fileSystem.Path.GetExtension(inputPath)).Returns(ext);
+        A.CallTo(() => fileSystem.Path.GetDirectoryName(inputPath)).Returns("/repo");
+        A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns($"MySolution{ext}");
+        A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Directory.GetCurrentDirectory()).Returns("/repo");
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
+        A.CallTo(() => workspace.OpenSolutionAsync(inputPath)).Returns(Task.FromResult(fakeSolution));
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
+            .Returns(Enumerable.Empty<ProcessedFile>());
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService,
+            dependencyIngestor: dependencyIngestor,
+            workspaceFactory: workspaceFactory);
+
+        // act
+        await sut.ProcessSolution(inputPath, "mysolution", null, "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert
+        A.CallTo(() => workspaceFactory.Create()).MustHaveHappenedOnceExactly();
+        A.CallTo(() => workspace.OpenSolutionAsync(inputPath)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => workspace.OpenProjectAsync(A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => workspace.Dispose()).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GivenCsprojFile_WhenProcessSolutionCalled_ThenOpensWorkspaceAsProject()
+    {
+        // arrange
+        var graphService = A.Fake<IGraphService>();
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+        var workspaceFactory = A.Fake<IWorkspaceFactory>();
+        var workspace = A.Fake<IManagedWorkspace>();
+        var dependencyIngestor = A.Fake<IDependencyIngestor>();
+
+        var inputPath = "/repo/MyProject.csproj";
+        var adhocWorkspace = new AdhocWorkspace();
+        var fakeSolution = adhocWorkspace.CurrentSolution;
+
+        A.CallTo(() => fileSystem.Path.GetExtension(inputPath)).Returns(".csproj");
+        A.CallTo(() => fileSystem.Path.GetDirectoryName(inputPath)).Returns("/repo");
+        A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns("MyProject.csproj");
+        A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Directory.GetCurrentDirectory()).Returns("/repo");
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
+        A.CallTo(() => workspace.OpenProjectAsync(inputPath)).Returns(Task.FromResult(fakeSolution));
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
+            .Returns(Enumerable.Empty<ProcessedFile>());
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService,
+            dependencyIngestor: dependencyIngestor,
+            workspaceFactory: workspaceFactory);
+
+        // act
+        await sut.ProcessSolution(inputPath, "myproject", null, "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert
+        A.CallTo(() => workspace.OpenProjectAsync(inputPath)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => workspace.OpenSolutionAsync(A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => workspace.Dispose()).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GivenNoFilesDiscovered_WhenProcessSolutionCalled_ThenReturnsEarlyWithoutProcessing()
+    {
+        // arrange
+        var graphService = A.Fake<IGraphService>();
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+
+        A.CallTo(() => fileSystem.Path.GetExtension("/repo")).Returns("");
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
+            .Returns(Enumerable.Empty<ProcessedFile>());
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService);
+
+        // act
+        await sut.ProcessSolution("/repo", "repo", null, "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert — no flushing happened
+        A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, A<string>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task GivenSkipDependenciesTrue_WhenProcessSolutionCalled_ThenSkipsDependencyIngestion()
+    {
+        // arrange
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+        var workspaceFactory = A.Fake<IWorkspaceFactory>();
+        var workspace = A.Fake<IManagedWorkspace>();
+        var dependencyIngestor = A.Fake<IDependencyIngestor>();
+
+        var adhocWorkspace = new AdhocWorkspace();
+        var fakeSolution = adhocWorkspace.CurrentSolution;
+
+        A.CallTo(() => fileSystem.Path.GetExtension("/repo/My.sln")).Returns(".sln");
+        A.CallTo(() => fileSystem.Path.GetDirectoryName("/repo/My.sln")).Returns("/repo");
+        A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns("My.sln");
+        A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Directory.GetCurrentDirectory()).Returns("/repo");
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
+        A.CallTo(() => workspace.OpenSolutionAsync("/repo/My.sln")).Returns(Task.FromResult(fakeSolution));
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
+            .Returns(Enumerable.Empty<ProcessedFile>());
+
+        var sut = CreateProcessor(
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService,
+            dependencyIngestor: dependencyIngestor,
+            workspaceFactory: workspaceFactory);
+
+        // act
+        await sut.ProcessSolution("/repo/My.sln", "my", null, "testdb", 100, skipDependencies: true, Accessibility.Public, [".cs"]);
+
+        // assert
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task GivenDiffBase_WhenProcessSolutionCalled_ThenIngestsCommits()
+    {
+        // arrange
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+        var commitIngestionService = A.Fake<ICommitIngestionService>();
+        var graphService = A.Fake<IGraphService>();
+        var handler = A.Fake<IDocumentHandler>();
+        A.CallTo(() => handler.FileExtension).Returns(".cs");
+        A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+        A.CallTo(() => handler.NumberOfFilesHandled).Returns(1);
+
+        A.CallTo(() => fileSystem.Path.GetExtension("/repo")).Returns("");
+        A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns("repo");
+        A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => fileService.GetRelativePath("/repo", "/repo/file.cs")).Returns("file.cs");
+        A.CallTo(() => fileService.InferFileMetadata("file.cs")).Returns(("key", "ns"));
+        A.CallTo(() => fileService.ComputeSha256("/repo/file.cs")).Returns(Task.FromResult("hash"));
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => vcs.GetFileMetadata("/repo/file.cs", "/repo")).Returns(Task.FromResult(new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], [])));
+        A.CallTo(() => vcs.GetChangedFiles("origin/main", "/repo", A<HashSet<string>>._))
+            .Returns(Task.FromResult(new DiffResult(new HashSet<string> { "/repo/file.cs" }, new HashSet<string>(), [])));
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
+            .Returns(new[] { new ProcessedFile("/repo/file.cs") });
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService,
+            commitIngestionService: commitIngestionService,
+            handlers: [handler]);
+
+        // act
+        await sut.ProcessSolution("/repo", "repo", "origin/main", "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert
+        A.CallTo(() => commitIngestionService.IngestCommits("origin/main", "/repo", "repo", "testdb", 100)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GivenDiffBaseWithDeletedFiles_WhenProcessSolutionCalled_ThenMarksFilesAsDeleted()
+    {
+        // arrange
+        var graphService = A.Fake<IGraphService>();
+        var fileService = A.Fake<IFileService>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var vcs = A.Fake<IVersionControlService>();
+        var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+
+        A.CallTo(() => fileSystem.Path.GetExtension("/repo")).Returns("");
+        A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+        A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+        A.CallTo(() => vcs.GetChangedFiles("origin/main", "/repo", A<HashSet<string>>._))
+            .Returns(Task.FromResult(new DiffResult(new HashSet<string>(), new HashSet<string> { "/repo/deleted.cs" }, [])));
+        A.CallTo(() => fileService.GetRelativePath("/repo", "/repo/deleted.cs")).Returns("deleted.cs");
+        A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
+            .Returns(Enumerable.Empty<ProcessedFile>());
+
+        var sut = CreateProcessor(
+            graphService: graphService,
+            fileService: fileService,
+            fileSystem: fileSystem,
+            versionControlService: vcs,
+            discoveryService: discoveryService);
+
+        // act
+        await sut.ProcessSolution("/repo", "repo", "origin/main", "testdb", 100, false, Accessibility.Public, [".cs"]);
+
+        // assert
+        A.CallTo(() => graphService.MarkFileAsDeleted("deleted.cs", "testdb")).MustHaveHappenedOnceExactly();
+    }
+
+    // ── HandlerLookup tests ────────────────────────────────────────────
+
     [Fact]
     public void GivenHandlersWithExtensionsAndFilenames_WhenHandlerLookupCreated_ThenIndexesCorrectly()
     {
@@ -270,7 +574,7 @@ public class SolutionProcessorTests
         A.CallTo(() => h2.CanHandle(A<string>.That.EndsWith("package.json", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
         // Act
-        var lookup = new SolutionProcessor.HandlerLookup([h1, h2]);
+        var lookup = new SolutionProcessor.HandlerLookup([h1, h2], new System.IO.Abstractions.FileSystem());
 
         // Assert
         lookup.GetHandler("foo.cs").ShouldBe(h1);
@@ -282,18 +586,25 @@ public class SolutionProcessorTests
         IGraphService? graphService = null,
         IProgressService? progressService = null,
         IFileService? fileService = null,
-        IEnumerable<IDocumentHandler>? handlers = null)
+        IEnumerable<IDocumentHandler>? handlers = null,
+        IVersionControlService? versionControlService = null,
+        IFileSystem? fileSystem = null,
+        IDependencyIngestor? dependencyIngestor = null,
+        ISolutionFileDiscoveryService? discoveryService = null,
+        ICommitIngestionService? commitIngestionService = null,
+        IWorkspaceFactory? workspaceFactory = null)
     {
         return new SolutionProcessor(
-            A.Fake<IVersionControlService>(),
+            versionControlService ?? A.Fake<IVersionControlService>(),
             graphService ?? A.Fake<IGraphService>(),
             fileService ?? A.Fake<IFileService>(),
-            A.Fake<IFileSystem>(),
+            fileSystem ?? A.Fake<IFileSystem>(),
             progressService ?? A.Fake<IProgressService>(),
             handlers ?? [],
-            A.Fake<IDependencyIngestor>(),
-            A.Fake<ISolutionFileDiscoveryService>(),
-            A.Fake<ICommitIngestionService>(),
+            dependencyIngestor ?? A.Fake<IDependencyIngestor>(),
+            discoveryService ?? A.Fake<ISolutionFileDiscoveryService>(),
+            commitIngestionService ?? A.Fake<ICommitIngestionService>(),
+            workspaceFactory ?? A.Fake<IWorkspaceFactory>(),
             A.Fake<ILogger<SolutionProcessor>>());
     }
 }

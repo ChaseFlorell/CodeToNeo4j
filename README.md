@@ -25,7 +25,7 @@ The recommended way to use CodeToNeo4j is as a .NET Global Tool. This allows you
    ```
 2. **Run the tool**:
    ```bash
-   codetoneo4j -s ./MySolution.sln --password your-pass --database my-db --uri bolt://localhost:7687
+   codetoneo4j --input ./MySolution.sln --password your-pass --database my-db --uri bolt://localhost:7687
    ```
 
 To update the tool to the latest version:
@@ -62,23 +62,25 @@ If you are developing CodeToNeo4j and want to test changes locally as a global t
 
 ## Usage
 
-You can run the tool by pointing it to a .NET solution file (`.sln`).
+You can run the tool by pointing it to a .NET solution file (`.sln`, `.slnx`), a project file (`.csproj`), or a directory. When `--input` is omitted, the tool auto-detects the project type from the current directory.
 
 If installed as a global tool:
 ```bash
-codetoneo4j -s /path/to/YourSolution.sln --password your-neo4j-password --database my-custom-db
+codetoneo4j --password your-neo4j-password --database my-custom-db
 ```
 
-If running from the build output:
+Or with an explicit input:
 ```bash
-./CodeToNeo4j -s /path/to/YourSolution.sln --password your-neo4j-password
+codetoneo4j --input /path/to/YourSolution.sln --password your-neo4j-password
+codetoneo4j --input /path/to/Project.csproj --password your-neo4j-password
+codetoneo4j --input /path/to/project-dir --password your-neo4j-password
 ```
 
 ### Options
 
 | Option                        | Description                                                                                                                | Default |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------| --- |
-| `--sln`, `-s`                 | **Required**. Path to the `.sln` file to index. The filename (without extension) is used as the **case-insensitive** repository key. | |
+| `--input`, `--sln`, `-s`      | Path to a `.sln`, `.slnx`, or `.csproj` file, or a directory. Auto-detects when omitted. The filename or directory name (without extension) is used as the **case-insensitive** repository key. | (auto-detect) |
 | `--no-key`                    | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.                              | `false` |
 | `--password`, `-p`            | **Required**. Password for the Neo4j database.                                                                             | |
 | `--uri`, `-u`, `--url`        | **Required**. The Neo4j connection string.                                                                                               | `bolt://localhost:7687` |
@@ -95,7 +97,7 @@ If running from the build output:
 | `--include`, `-i`             | File extensions to include. Can be specified multiple times.                                                               | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj` |
 | `--purge-data`                | Purge data from Neo4j associated with the repository key (case-insensitive).                                              | `false` |
 
-> **Note**: When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the solution filename is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> **Note**: When `--input` is omitted, the tool auto-detects the project type from the current directory in priority order: `.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only mode. If multiple files of the same type exist, the tool exits with an error asking you to specify `--input` explicitly. When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the input filename or directory name is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge data
 
@@ -103,7 +105,7 @@ Purge data previously ingested by this tool.
 
 - Purge by derived repository key:
   ```bash
-  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data
+  codetoneo4j --input ./MySolution.sln --password your-pass --purge-data
   ```
 - Purge all CodeToNeo4j data (when using --no-key):
   ```bash
@@ -111,7 +113,7 @@ Purge data previously ingested by this tool.
   ```
 - Filtered purge (only specific file extensions):
   ```bash
-  codetoneo4j -s ./MySolution.sln --password your-pass --purge-data --include .cs --include .razor
+  codetoneo4j --input ./MySolution.sln --password your-pass --purge-data --include .cs --include .razor
   ```
 
 You will be prompted to confirm before deletion proceeds.
@@ -142,7 +144,7 @@ jobs:
       - name: Run CodeToNeo4j
         run: |
           codetoneo4j \
-            -s ./MySolution.sln \
+            --input ./MySolution.sln \
             --uri ${{ secrets.NEO4J_URL }} \
             --password ${{ secrets.NEO4J_PASS }} \
             --database my-database \

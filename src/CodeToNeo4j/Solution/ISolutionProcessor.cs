@@ -4,7 +4,7 @@ namespace CodeToNeo4j.Solution;
 
 public interface ISolutionProcessor
 {
-    Task ProcessSolution(FileInfo sln,
+    Task ProcessSolution(string inputPath,
         string? repoKey,
         string? diffBase,
         string databaseName,

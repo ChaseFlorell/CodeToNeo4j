@@ -137,7 +137,8 @@ public class OptionsHandlerTests
     private static Options CreateOptions(bool purgeData = false,
         bool skipDependencies = false,
         string[]? includeExtensions = null) => new(
-        new FileInfo("test.sln"),
+        "test.sln",
+        "test",
         "bolt://localhost",
         "user",
         "pass",

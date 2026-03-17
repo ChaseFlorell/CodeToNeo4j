@@ -21,7 +21,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
         Accessibility minAccessibility)
     {
         var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
+        var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         // Extract script references
         ExtractScriptReferences(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
@@ -95,4 +95,6 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 
     [GeneratedRegex(@"<script\s+.*?src=['""](.*?)['""]", RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-CA")]
     private static partial Regex ScriptRegex();
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 }
