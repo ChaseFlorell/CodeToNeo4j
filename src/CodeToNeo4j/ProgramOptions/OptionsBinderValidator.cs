@@ -9,7 +9,7 @@ public static class OptionsBinderValidator
 {
     public static void Validate(
         in CommandResult result,
-        Option<FileInfo> slnOption,
+        Option<string?> inputOption,
         Option<bool> noKeyOption,
         Option<LogLevel> logLevelOption,
         Option<bool> debugOption,
@@ -31,8 +31,6 @@ public static class OptionsBinderValidator
             return;
 
         var isPurge = result.GetValue(purgeDataOption);
-        var noKey = result.GetValue(noKeyOption);
-        var sln = result.GetValue(slnOption);
         var pass = result.GetResult(passOption);
 
         if (pass is null or { Implicit: true })
@@ -43,22 +41,10 @@ public static class OptionsBinderValidator
 
         if (isPurge)
         {
-            if (!noKey && sln is null)
-            {
-                result.AddError("--sln is required when using --purge-data without --no-key");
-            }
-
             var minAccResult = result.GetResult(minAccessibilityOption);
             if (minAccResult is not null && !minAccResult.Implicit)
             {
                 result.AddError("--min-accessibility is not allowed when using --purge-data");
-            }
-        }
-        else
-        {
-            if (sln is null)
-            {
-                result.AddError("--sln is required");
             }
         }
 

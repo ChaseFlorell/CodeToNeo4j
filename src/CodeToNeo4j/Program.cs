@@ -48,9 +48,10 @@ public class Program
             .WithDescription("The Neo4j connection string.")
             .WithAlias("-u")
             .WithAlias("--url");
-        var slnOption = new Option<FileInfo>("--sln")
+        var inputOption = new Option<string?>("--input")
+            .WithAlias("--sln")
             .WithAlias("-s")
-            .WithDescription("Path to the .sln file to index. Example: ./MySolution.sln");
+            .WithDescription("Path to a .sln, .slnx, or .csproj file, or a directory path. Auto-detects when omitted.");
         var passOption = new Option<string>("--password")
             .WithDescription("Password for the Neo4j database. Example: your-pass")
             .WithAlias("-p");
@@ -103,7 +104,8 @@ public class Program
             .WithDescription("Print the version and all supported file types, then exit.");
 
         var binder = new OptionsBinder(
-            slnOption,
+            new System.IO.Abstractions.FileSystem(),
+            inputOption,
             uriOption,
             userOption,
             passOption,
@@ -128,7 +130,16 @@ public class Program
         binder.AddToCommand(root);
         root.SetAction(async (parseResult, cancellationToken) =>
         {
-            var options = binder.Bind(parseResult);
+            Options options;
+            try
+            {
+                options = binder.Bind(parseResult);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await Console.Error.WriteLineAsync(ex.Message);
+                return 1;
+            }
 
             if (options.ShowVersion || options.ShowInfo)
             {

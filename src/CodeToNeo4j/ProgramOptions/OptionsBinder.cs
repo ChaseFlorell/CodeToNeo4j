@@ -1,11 +1,13 @@
 using System.CommandLine;
+using System.IO.Abstractions;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.ProgramOptions;
 
 public class OptionsBinder(
-    Option<FileInfo> slnOption,
+    IFileSystem fileSystem,
+    Option<string?> inputOption,
     Option<string> uriOption,
     Option<string> userOption,
     Option<string> passOption,
@@ -34,7 +36,7 @@ public class OptionsBinder(
             command.Options.Remove(builtInVersion);
         }
 
-        command.Options.Add(slnOption);
+        command.Options.Add(inputOption);
         command.Options.Add(uriOption);
         command.Options.Add(userOption);
         command.Options.Add(passOption);
@@ -56,7 +58,7 @@ public class OptionsBinder(
 
         command.Validators.Add(result => OptionsBinderValidator.Validate(
             result,
-            slnOption,
+            inputOption,
             noKeyOption,
             logLevelOption,
             debugOption,
@@ -71,13 +73,32 @@ public class OptionsBinder(
             showInfoOption));
     }
 
-    public Options Bind(ParseResult parseResult) =>
-        new(
-            parseResult.GetValue(slnOption)!,
+    public Options Bind(ParseResult parseResult)
+    {
+        var isInfo = parseResult.GetValue(showVersionOption)
+                     || parseResult.GetValue(showSupportedFilesOption)
+                     || parseResult.GetValue(showInfoOption);
+
+        var rawInput = parseResult.GetValue(inputOption);
+        var resolver = new InputPathResolver(fileSystem);
+        var inputPath = isInfo
+            ? rawInput ?? fileSystem.Directory.GetCurrentDirectory()
+            : resolver.Resolve(rawInput);
+
+        var noKey = parseResult.GetValue(noKeyOption);
+        var repoKey = noKey
+            ? null
+            : fileSystem.Path.GetFileNameWithoutExtension(
+                inputPath.TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar))
+                .ToLowerInvariant();
+
+        return new Options(
+            inputPath,
+            repoKey,
             parseResult.GetValue(uriOption)!,
             parseResult.GetValue(userOption)!,
             parseResult.GetValue(passOption),
-            parseResult.GetValue(noKeyOption),
+            noKey,
             parseResult.GetValue(diffBaseOption),
             parseResult.GetValue(batchSizeOption),
             parseResult.GetValue(databaseOption)!,
@@ -90,6 +111,7 @@ public class OptionsBinder(
             parseResult.GetValue(showSupportedFilesOption),
             parseResult.GetValue(showInfoOption)
         );
+    }
 
     private LogLevel ParseLogLevel(ParseResult parseResult)
     {

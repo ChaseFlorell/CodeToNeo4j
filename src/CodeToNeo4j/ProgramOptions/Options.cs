@@ -4,7 +4,8 @@ using Microsoft.Extensions.Logging;
 namespace CodeToNeo4j.ProgramOptions;
 
 public sealed record Options(
-    FileInfo Sln,
+    string InputPath,
+    string? RepoKey,
     string Uri,
     string User,
     string? Pass,
@@ -24,7 +25,8 @@ public sealed record Options(
     private bool PrintMembers(System.Text.StringBuilder builder)
     {
         builder.AppendLine("");
-        builder.AppendLine($"\tSln = {Sln}, ");
+        builder.AppendLine($"\tInputPath = {InputPath}, ");
+        builder.AppendLine($"\tRepoKey = {RepoKey}, ");
         builder.AppendLine($"\tUri = {Uri}, ");
         builder.AppendLine($"\tUser = {User}, ");
         builder.AppendLine($"\tPass = {Pass}, ");
@@ -42,9 +44,4 @@ public sealed record Options(
         builder.AppendLine($"\tShowInfo = {ShowInfo}");
         return true;
     }
-
-    public string? RepoKey =>
-        NoKey
-            ? null
-            : Path.GetFileNameWithoutExtension(Sln.Name).ToLowerInvariant();
 }

@@ -14,16 +14,19 @@ public class ProgramTests
         // act
         var result = sut.Parse([]);
 
-        // assert
+        // assert — --password is still required
         result.Errors.ShouldNotBeEmpty();
     }
 
-    [Fact]
-    public void GivenValidArguments_WhenParsing_ThenShouldNotHaveErrors()
+    [Theory]
+    [InlineData("--input", "test.sln")]
+    [InlineData("--sln", "test.sln")]
+    [InlineData("-s", "test.sln")]
+    public void GivenValidArguments_WhenParsing_ThenShouldNotHaveErrors(string inputSwitch, string inputValue)
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--password", "pass" };
+        var args = new[] { inputSwitch, inputValue, "--password", "pass" };
 
         // act
         var result = sut.Parse(args);
@@ -37,7 +40,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--password", "pass", "--debug", "--quiet" };
+        var args = new[] { "--input", "test.sln", "--password", "pass", "--debug", "--quiet" };
 
         // act
         var result = sut.Parse(args);
@@ -51,7 +54,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--purge-data", "--password", "pass", "--skip-dependencies" };
+        var args = new[] { "--input", "test.sln", "--purge-data", "--password", "pass", "--skip-dependencies" };
 
         // act
         var result = sut.Parse(args);
@@ -65,7 +68,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--sln", "test.sln", "--purge-data", "--password", "pass", "--min-accessibility", "Public" };
+        var args = new[] { "--input", "test.sln", "--purge-data", "--password", "pass", "--min-accessibility", "Public" };
 
         // act
         var result = sut.Parse(args);
@@ -75,9 +78,9 @@ public class ProgramTests
     }
 
     [Fact]
-    public void GivenNoSlnAndNotPurge_WhenParsing_ThenShouldHaveValidationError()
+    public void GivenNoInputWithPassword_WhenParsing_ThenShouldNotHaveErrors()
     {
-        // arrange
+        // arrange — --input is optional; auto-detection resolves at bind time
         var (sut, _) = Program.CreateRootCommand();
         var args = new[] { "--password", "pass" };
 
@@ -85,7 +88,7 @@ public class ProgramTests
         var result = sut.Parse(args);
 
         // assert
-        result.Errors.ShouldContain(e => e.Message == "--sln is required");
+        result.Errors.ShouldBeEmpty();
     }
 
     [Theory]
@@ -98,7 +101,7 @@ public class ProgramTests
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
-        var args = $"--sln test.sln --password pass {logArg}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var args = $"--input test.sln --password pass {logArg}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         // act
         var result = sut.Parse(args);
@@ -108,21 +111,7 @@ public class ProgramTests
     }
 
     [Fact]
-    public void GivenNoKeyAndNoSlnAndNotPurge_WhenParsing_ThenShouldHaveValidationError()
-    {
-        // arrange
-        var (sut, _) = Program.CreateRootCommand();
-        var args = new[] { "--no-key", "--password", "pass" };
-
-        // act
-        var result = sut.Parse(args);
-
-        // assert
-        result.Errors.ShouldContain(e => e.Message == "--sln is required");
-    }
-
-    [Fact]
-    public void GivenNoSlnAndNoKeyAndPurge_WhenParsing_ThenShouldNotHaveErrors()
+    public void GivenNoInputAndNoKeyAndPurge_WhenParsing_ThenShouldNotHaveErrors()
     {
         // arrange
         var (sut, _) = Program.CreateRootCommand();
