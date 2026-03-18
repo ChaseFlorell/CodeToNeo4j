@@ -6,7 +6,8 @@ coverage:
         threshold: 1%   # allow up to 1% drop without failing
     patch:
       default:
-        target: 80%     # new code should have ≥80% coverage
+        target: 85%     # new code should have ≥85% coverage
+        threshold: 5%   # allow up to 5% below target without failing (handles untestable lines in new files)
 comment:
   layout: "reach,diff,flags,files"
   behavior: default
