@@ -94,8 +94,12 @@ public class OptionsBinder(
                     .TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar));
         var repoKey = noKey ? null : derivedName.ToLowerInvariant();
 
+        IFileSystemInfo inputFsi = fileSystem.Directory.Exists(inputPath)
+            ? fileSystem.DirectoryInfo.New(inputPath)
+            : fileSystem.FileInfo.New(inputPath);
+
         return new Options(
-            inputPath,
+            inputFsi,
             repoKey,
             parseResult.GetValue(uriOption)!,
             parseResult.GetValue(userOption)!,

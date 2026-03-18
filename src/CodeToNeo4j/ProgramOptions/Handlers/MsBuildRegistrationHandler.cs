@@ -5,12 +5,12 @@ using Microsoft.Build.Locator;
 namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 [ExcludeFromCodeCoverage(Justification = "Invokes MSBuildLocator against the real MSBuild installation; not unit testable")]
-public class MsBuildRegistrationHandler(IFileSystem fileSystem) : OptionsHandler
+public class MsBuildRegistrationHandler : OptionsHandler
 {
     protected override Task<bool> HandleOptions(Options options)
     {
         // Skip MSBuild registration for directory/files-only mode
-        if (fileSystem.Directory.Exists(options.InputPath))
+        if (options.InputPath is IDirectoryInfo)
             return Task.FromResult(true);
 
 

@@ -9,7 +9,7 @@ public class SolutionProcessingHandler(ISolutionProcessor solutionProcessor) : O
     protected override async Task<bool> HandleOptions(Options options)
     {
         await solutionProcessor.ProcessSolution(
-            options.InputPath,
+            options.InputPath.FullName,
             options.RepoKey,
             options.DiffBase,
             options.DatabaseName,

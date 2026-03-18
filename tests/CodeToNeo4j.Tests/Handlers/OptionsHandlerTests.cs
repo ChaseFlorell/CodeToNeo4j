@@ -1,3 +1,4 @@
+using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 using FakeItEasy;
 using CodeToNeo4j.ProgramOptions;
@@ -137,7 +138,7 @@ public class OptionsHandlerTests
     private static Options CreateOptions(bool purgeData = false,
         bool skipDependencies = false,
         string[]? includeExtensions = null) => new(
-        "test.sln",
+        new MockFileSystem().FileInfo.New("test.sln"),
         "test",
         "bolt://localhost",
         "user",
