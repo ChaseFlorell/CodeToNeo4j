@@ -86,11 +86,13 @@ public class OptionsBinder(
             : resolver.Resolve(rawInput);
 
         var noKey = parseResult.GetValue(noKeyOption);
-        var repoKey = noKey
-            ? null
-            : fileSystem.Path.GetFileNameWithoutExtension(
-                inputPath.TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar))
-                .ToLowerInvariant();
+        var derivedName = fileSystem.Path.GetFileNameWithoutExtension(
+            inputPath.TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar));
+        if (string.IsNullOrEmpty(derivedName))
+            derivedName = fileSystem.Path.GetFileName(
+                fileSystem.Directory.GetCurrentDirectory()
+                    .TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar));
+        var repoKey = noKey ? null : derivedName.ToLowerInvariant();
 
         return new Options(
             inputPath,
