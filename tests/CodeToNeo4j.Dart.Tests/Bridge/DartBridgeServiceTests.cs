@@ -76,7 +76,9 @@ public class DartBridgeServiceTests
         finally
         {
             if (Directory.Exists(tempDir))
+            {
                 Directory.Delete(tempDir, recursive: true);
+            }
         }
     }
 
@@ -107,7 +109,9 @@ public class DartBridgeServiceTests
     {
         // Only meaningful when Dart is not available; skip if dart is on PATH to avoid clearing real PATH
         if (CreateSut().FindDartExecutable() is not null)
+        {
             return;
+        }
 
         var sut = CreateSut();
         var result = await sut.AnalyzeProject("/some/nonexistent/project");

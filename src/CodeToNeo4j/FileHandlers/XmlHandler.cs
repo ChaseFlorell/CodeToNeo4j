@@ -35,7 +35,7 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse XML file: {FilePath}", filePath);
+            logger.LogWarning(ex, "Failed to parse XML file: {FilePath}", filePath);
         }
 
         return new FileResult(fileNamespace, fileKey);
@@ -44,7 +44,10 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
     private void ProcessElement(XElement element, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer,
         ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (Accessibility.Public < minAccessibility) return;
+        if (Accessibility.Public < minAccessibility)
+        {
+            return;
+        }
 
         var name = element.Name.LocalName;
         System.Xml.IXmlLineInfo lineInfo = element;
@@ -72,6 +75,5 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
         }
     }
 
-    private readonly ILogger<XmlHandler> _logger = logger;
     private readonly IFileSystem _fileSystem = fileSystem;
 }

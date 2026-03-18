@@ -16,7 +16,10 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
     internal static string? NormalizeRepositoryUrl(string? url)
     {
-        if (string.IsNullOrEmpty(url)) return null;
+        if (string.IsNullOrEmpty(url))
+        {
+            return null;
+        }
 
         url = url.Trim();
 
@@ -32,11 +35,15 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
         // Strip embedded credentials (e.g. https://org@dev.azure.com/… or https://user:token@host/…)
         if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.UserInfo))
+        {
             url = url.Replace($"{uri.UserInfo}@", string.Empty, StringComparison.Ordinal);
+        }
 
         // Strip trailing .git
         if (url.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+        {
             url = url[..^4];
+        }
 
         return url;
     }
@@ -55,7 +62,9 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         if (Accessibility.Public < minAccessibility)
+        {
             return new FileResult(fileNamespace, fileKey);
+        }
 
         var content = await GetContent(document, filePath).ConfigureAwait(false);
         var packageDir = _fileSystem.Path.GetDirectoryName(filePath) ?? string.Empty;
@@ -91,14 +100,19 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
         List<UrlNode> urlNodes)
     {
         if (!root.TryGetProperty(sectionName, out var section) || section.ValueKind != JsonValueKind.Object)
+        {
             return;
+        }
 
         foreach (var prop in section.EnumerateObject())
         {
             var name = prop.Name;
             var version = prop.Value.GetString();
 
-            if (string.IsNullOrEmpty(name)) continue;
+            if (string.IsNullOrEmpty(name))
+            {
+                continue;
+            }
 
             AddDependency(name, version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
             await CollectNpmUrls(name, packageDir, urlNodes).ConfigureAwait(false);
@@ -108,7 +122,10 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
     private async Task CollectNpmUrls(string name, string packageDir, List<UrlNode> urlNodes)
     {
         var metaPath = ResolvePackageMetadataPath(name, packageDir);
-        if (metaPath is null) return;
+        if (metaPath is null)
+        {
+            return;
+        }
 
         try
         {
@@ -121,7 +138,9 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
             {
                 var url = homepage.GetString()?.Trim();
                 if (!string.IsNullOrEmpty(url))
+                {
                     urlNodes.Add(new UrlNode(depKey, $"url:{url}", url));
+                }
             }
 
             if (root.TryGetProperty("repository", out var repository))
@@ -133,7 +152,9 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
                         : null;
 
                 if (!string.IsNullOrEmpty(repoUrl))
+                {
                     urlNodes.Add(new UrlNode(depKey, $"url:{repoUrl}", repoUrl));
+                }
             }
         }
         catch (Exception ex)
@@ -146,7 +167,10 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
     {
         // npm / yarn v1: node_modules/<pkg>/package.json
         var npmPath = _fileSystem.Path.Combine(packageDir, "node_modules", name, "package.json");
-        if (_fileSystem.File.Exists(npmPath)) return npmPath;
+        if (_fileSystem.File.Exists(npmPath))
+        {
+            return npmPath;
+        }
 
         // pnpm virtual store: node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg>/package.json
         // Scoped packages (e.g. @types/node) use '+' instead of '/' in the .pnpm entry name
@@ -161,7 +185,10 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
             if (match is not null)
             {
                 var pnpmPath = _fileSystem.Path.Combine(match, "node_modules", name, "package.json");
-                if (_fileSystem.File.Exists(pnpmPath)) return pnpmPath;
+                if (_fileSystem.File.Exists(pnpmPath))
+                {
+                    return pnpmPath;
+                }
             }
         }
 

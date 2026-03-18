@@ -38,7 +38,9 @@ public class DartHandler(
 
         var analysisResult = await dartBridgeService.AnalyzeProject(projectRoot).ConfigureAwait(false);
         if (analysisResult is null)
+        {
             return new FileResult(fileNamespace, fileKey);
+        }
 
         // Find this file's results in the analysis
         var normalizedRelativePath = relativePath.Replace('\\', '/');
@@ -62,7 +64,9 @@ public class DartHandler(
         foreach (var symbolInfo in fileResult.Symbols)
         {
             if (!ShouldInclude(symbolInfo.Accessibility, minAccessibility))
+            {
                 continue;
+            }
 
             var symbolKey = textSymbolMapper.BuildKey(fileKey, symbolInfo.Kind, symbolInfo.Name, symbolInfo.StartLine);
             var symbol = textSymbolMapper.CreateSymbol(
@@ -100,7 +104,10 @@ public class DartHandler(
         while (!string.IsNullOrEmpty(dir))
         {
             if (fs.File.Exists(fs.Path.Combine(dir, "pubspec.yaml")))
+            {
                 return dir;
+            }
+
             dir = fs.Path.GetDirectoryName(dir);
         }
 
@@ -110,7 +117,9 @@ public class DartHandler(
     private static bool ShouldInclude(string accessibility, Accessibility minAccessibility)
     {
         if (minAccessibility == Accessibility.NotApplicable)
+        {
             return true;
+        }
 
         var mapped = accessibility switch
         {

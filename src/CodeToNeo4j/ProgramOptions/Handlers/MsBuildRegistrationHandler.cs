@@ -11,8 +11,9 @@ public class MsBuildRegistrationHandler : OptionsHandler
     {
         // Skip MSBuild registration for directory/files-only mode
         if (options.InputPath is IDirectoryInfo)
+        {
             return Task.FromResult(true);
-
+        }
 
         if (!MSBuildLocator.IsRegistered)
         {

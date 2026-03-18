@@ -89,9 +89,12 @@ public class OptionsBinder(
         var derivedName = fileSystem.Path.GetFileNameWithoutExtension(
             inputPath.TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar));
         if (string.IsNullOrEmpty(derivedName))
+        {
             derivedName = fileSystem.Path.GetFileName(
                 fileSystem.Directory.GetCurrentDirectory()
                     .TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar));
+        }
+
         var repoKey = noKey ? null : derivedName.ToLowerInvariant();
 
         IFileSystemInfo inputFsi = fileSystem.Directory.Exists(inputPath)

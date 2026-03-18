@@ -154,7 +154,9 @@ public class Program
             }
 
             if (options.ShowVersion || options.ShowSupportedFiles || options.ShowInfo)
+            {
                 return 0;
+            }
 
             await using var services = new ServiceCollection()
                 .AddApplicationServices(options.Uri, options.User, options.Pass!, options.LogLevel)

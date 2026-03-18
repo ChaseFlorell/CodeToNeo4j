@@ -39,7 +39,11 @@ public class RoslynSymbolProcessor(
         // Process using directives for dependencies
         foreach (var usingDirective in rootNode.DescendantNodes().OfType<UsingDirectiveSyntax>())
         {
-            if (usingDirective.Name == null) continue;
+            if (usingDirective.Name == null)
+            {
+                continue;
+            }
+
             var symbol = semanticModel.GetSymbolInfo(usingDirective.Name).Symbol;
 
             if (symbol != null)
@@ -58,7 +62,10 @@ public class RoslynSymbolProcessor(
         {
             foreach (var tree in semanticModel.Compilation.SyntaxTrees)
             {
-                if (string.Equals(tree.FilePath, syntaxTree.FilePath, StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.Equals(tree.FilePath, syntaxTree.FilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 var root = tree.GetRoot();
                 foreach (var u in root.DescendantNodes().OfType<UsingDirectiveSyntax>())

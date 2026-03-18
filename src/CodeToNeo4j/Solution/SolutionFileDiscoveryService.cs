@@ -34,8 +34,15 @@ public partial class SolutionFileDiscoveryService(
                 foreach (var doc in project.Documents)
                 {
                     var path = fileService.NormalizePath(doc.FilePath!);
-                    if (string.IsNullOrEmpty(path)) continue;
-                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        continue;
+                    }
+
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
 
                     if (solutionFiles.TryGetValue(path, out var existing))
                     {
@@ -60,8 +67,15 @@ public partial class SolutionFileDiscoveryService(
                 foreach (var doc in project.AdditionalDocuments)
                 {
                     var path = fileService.NormalizePath(doc.FilePath!);
-                    if (string.IsNullOrEmpty(path)) continue;
-                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        continue;
+                    }
+
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
 
                     if (solutionFiles.TryGetValue(path, out var existing))
                     {
@@ -89,8 +103,15 @@ public partial class SolutionFileDiscoveryService(
         foreach (var fileOnDisk in allFilesOnDisk)
         {
             var normalizedPath = fileService.NormalizePath(fileOnDisk);
-            if (IsExcluded(normalizedPath)) continue;
-            if (!extensions.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+            if (IsExcluded(normalizedPath))
+            {
+                continue;
+            }
+
+            if (!extensions.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
             if (!solutionFiles.ContainsKey(normalizedPath))
             {
@@ -115,13 +136,19 @@ public partial class SolutionFileDiscoveryService(
         foreach (var fileOnDisk in allFilesOnDisk)
         {
             var normalizedPath = fileService.NormalizePath(fileOnDisk);
-            if (IsExcluded(normalizedPath)) continue;
+            if (IsExcluded(normalizedPath))
+            {
+                continue;
+            }
 
             var fileName = Path.GetFileName(normalizedPath);
             var isFullNameMatch = extensions.Contains(fileName);
             var isExtensionMatch = extensions.Any(ext => ext.StartsWith('.') && normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
 
-            if (!isFullNameMatch && !isExtensionMatch) continue;
+            if (!isFullNameMatch && !isExtensionMatch)
+            {
+                continue;
+            }
 
             if (!files.ContainsKey(normalizedPath))
             {

@@ -30,7 +30,9 @@ public class PubspecYamlHandler(
         var fileNamespace = Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 
         if (Accessibility.Public < minAccessibility)
+        {
             return new FileResult(fileNamespace, fileKey);
+        }
 
         var content = await GetContent(document, filePath).ConfigureAwait(false);
 

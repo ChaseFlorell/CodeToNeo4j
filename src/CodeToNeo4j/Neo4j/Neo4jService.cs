@@ -64,7 +64,10 @@ public class Neo4jService(
             }).ToArray()
         }).ToArray();
 
-        if (commitBatch.Length == 0) return;
+        if (commitBatch.Length == 0)
+        {
+            return;
+        }
 
         logger.LogDebug("Upserting {Count} commits for {RepositoryKey} in database: {DatabaseName}", commitBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -81,7 +84,10 @@ public class Neo4jService(
             ["repoKey"] = repoKey
         }).ToArray();
 
-        if (depBatch.Length == 0) return;
+        if (depBatch.Length == 0)
+        {
+            return;
+        }
 
         logger.LogDebug("Upserting {Count} dependencies for {RepositoryKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -120,7 +126,11 @@ public class Neo4jService(
                 return record[0].As<long>();
             }).ConfigureAwait(false);
 
-            if (deletedInBatch == 0) break;
+            if (deletedInBatch == 0)
+            {
+                break;
+            }
+
             totalDeleted += deletedInBatch;
             logger.LogDebug("Purged {BatchCount} items... (Total: {TotalDeleted})", deletedInBatch, totalDeleted);
         }

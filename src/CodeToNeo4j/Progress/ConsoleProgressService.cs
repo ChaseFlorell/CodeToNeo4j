@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Progress;
@@ -5,6 +6,7 @@ namespace CodeToNeo4j.Progress;
 /// <summary>
 /// Default progress reporting for local command line environments.
 /// </summary>
+[ExcludeFromCodeCoverage(Justification = "Thin console output wrapper; no testable logic beyond Console.WriteLine")]
 public class ConsoleProgressService(ILogger<ConsoleProgressService> logger) : IProgressService
 {
     public void ReportProgress(int current, int total, string filePath)

@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CodeToNeo4j.ProgramOptions.Handlers;
 
+[ExcludeFromCodeCoverage(Justification = "Reads interactive Console.ReadKey — requires a live terminal, not unit testable")]
 public class PurgeConfirmationHandler : OptionsHandler
 {
     protected override Task<bool> HandleOptions(Options options)

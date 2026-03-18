@@ -14,7 +14,9 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
     public async Task<DartAnalysisResult?> AnalyzeProject(string projectRoot)
     {
         if (_cache.TryGetValue(projectRoot, out var cached))
+        {
             return cached;
+        }
 
         var dartExecutable = FindDartExecutable();
         if (dartExecutable is null)
@@ -110,9 +112,16 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 
         foreach (var dir in pathVar.Split(separator))
         {
-            if (string.IsNullOrWhiteSpace(dir)) continue;
+            if (string.IsNullOrWhiteSpace(dir))
+            {
+                continue;
+            }
+
             var candidate = fileSystem.Path.Combine(dir, exeName);
-            if (fileSystem.File.Exists(candidate)) return candidate;
+            if (fileSystem.File.Exists(candidate))
+            {
+                return candidate;
+            }
         }
 
         return null;
@@ -125,13 +134,17 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
     internal string? EnsureBridgeExtracted()
     {
         if (_bridgeDir is not null && fileSystem.Directory.Exists(_bridgeDir))
+        {
             return _bridgeDir;
+        }
 
         lock (_extractLock)
         {
             // Double-check after acquiring lock
             if (_bridgeDir is not null && fileSystem.Directory.Exists(_bridgeDir))
+            {
                 return _bridgeDir;
+            }
 
             try
             {
@@ -161,7 +174,9 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 
                 // Clean and recreate
                 if (fileSystem.Directory.Exists(cacheRoot))
+                {
                     fileSystem.Directory.Delete(cacheRoot, recursive: true);
+                }
 
                 foreach (var (resourceName, relativePath) in BridgeFiles)
                 {
@@ -203,14 +218,18 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
         // .dart_tool/package_config.json is created by `dart pub get`
         var packageConfig = fileSystem.Path.Combine(bridgeDir, ".dart_tool", "package_config.json");
         if (fileSystem.File.Exists(packageConfig))
+        {
             return true;
+        }
 
         await _pubGetLock.WaitAsync().ConfigureAwait(false);
         try
         {
             // Double-check after acquiring lock
             if (fileSystem.File.Exists(packageConfig))
+            {
                 return true;
+            }
 
             logger.LogInformation("Running dart pub get for analyzer bridge...");
 
@@ -226,7 +245,10 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
             };
 
             using var process = Process.Start(psi);
-            if (process is null) return false;
+            if (process is null)
+            {
+                return false;
+            }
 
             var stderrTask = process.StandardError.ReadToEndAsync();
             var completed = process.WaitForExit(60_000);
@@ -265,8 +287,7 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
     private static readonly SemaphoreSlim _pubGetLock = new(1, 1);
 
     // Embedded resource logical names → relative file paths inside the extracted directory.
-    private (string ResourceName, string RelativePath)[]? _bridgeFilesCache;
-    private (string ResourceName, string RelativePath)[] BridgeFiles => _bridgeFilesCache ??=
+    private (string ResourceName, string RelativePath)[] BridgeFiles => field ??=
     [
         ("dart-bridge.pubspec.yaml", "pubspec.yaml"),
         ("dart-bridge.bin.dart_analyzer_bridge.dart", fileSystem.Path.Combine("bin", "dart_analyzer_bridge.dart")),

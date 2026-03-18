@@ -39,23 +39,39 @@ public static class PubspecParser
             }
 
             // Indented entry under a section
-            if (currentSection is null) continue;
-            if (string.IsNullOrWhiteSpace(trimmed)) continue;
+            if (currentSection is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                continue;
+            }
 
             // Only process direct children (single indent level, typically 2 spaces)
             var stripped = trimmed.TrimStart();
             var indent = trimmed.Length - stripped.Length;
-            if (indent == 0) continue;
+            if (indent == 0)
+            {
+                continue;
+            }
 
             var colonIndex = stripped.IndexOf(':');
-            if (colonIndex <= 0) continue;
+            if (colonIndex <= 0)
+            {
+                continue;
+            }
 
             var depName = stripped[..colonIndex].Trim();
             var depValue = stripped[(colonIndex + 1)..].Trim();
 
             // Skip sub-keys (e.g. "path:", "git:" under a dependency)
             // These will have deeper indentation, but we only care about top-level deps
-            if (string.IsNullOrEmpty(depName)) continue;
+            if (string.IsNullOrEmpty(depName))
+            {
+                continue;
+            }
 
             // Simple version constraint (e.g. "^1.0.0") or empty
             var version = string.IsNullOrEmpty(depValue) ? null : depValue;
