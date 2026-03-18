@@ -540,6 +540,18 @@ public class Factory
             r.ToKey.Contains("Widget"));
     }
 
+    [Theory]
+    [InlineData("Program.cs", true)]
+    [InlineData("Service.CS", true)]
+    [InlineData("file.ts", false)]
+    [InlineData("file.razor", false)]
+    public void GivenFilePath_WhenCanHandleCalled_ThenMatchesCsExtensionOnly(string path, bool expected)
+    {
+        var sut = new CSharpHandler(A.Fake<IRoslynSymbolProcessor>(), A.Fake<IFileSystem>());
+        sut.CanHandle(path).ShouldBe(expected);
+        sut.FileExtension.ShouldBe(".cs");
+    }
+
     [Fact]
     public async Task GivenMethodWithNoCallsToLocalMethods_WhenHandleCalled_ThenNoInvokesRelationship()
     {

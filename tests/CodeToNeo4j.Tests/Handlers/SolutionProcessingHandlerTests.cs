@@ -1,3 +1,4 @@
+using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
 using CodeToNeo4j.Solution;
@@ -16,8 +17,9 @@ public class SolutionProcessingHandlerTests
         var solutionProcessor = A.Fake<ISolutionProcessor>();
         var handler = new SolutionProcessingHandler(solutionProcessor);
 
+        var fs = new MockFileSystem();
         var options = new Options(
-            "/repo/My.sln",
+            fs.FileInfo.New("/repo/My.sln"),
             "my",
             "bolt://localhost",
             "user",

@@ -49,7 +49,7 @@ public class XamlHandler(
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse XAML file: {FilePath}", filePath);
+            logger.LogWarning(ex, "Failed to parse XAML file: {FilePath}", filePath);
         }
 
         // Use Roslyn to extract members from generated code
@@ -173,8 +173,6 @@ public class XamlHandler(
                attrName.EndsWith("Released") ||
                attrName == "Command";
     }
-
-    private readonly ILogger<XamlHandler> _logger = logger;
 
     private static readonly string[] XamlNamespaces =
     [

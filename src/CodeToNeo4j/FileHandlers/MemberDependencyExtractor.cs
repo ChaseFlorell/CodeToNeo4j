@@ -43,7 +43,10 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
         string fromKey,
         ICollection<Relationship> relBuffer)
     {
-        if (symbol == null) return;
+        if (symbol == null)
+        {
+            return;
+        }
 
         if (symbol is INamespaceSymbol nsSymbol)
         {
@@ -77,7 +80,10 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
         ICollection<Relationship> relBuffer)
     {
         var body = (SyntaxNode?)bmds.Body ?? bmds.ExpressionBody;
-        if (body == null) return;
+        if (body == null)
+        {
+            return;
+        }
 
         var seenCallees = new HashSet<string>();
 
@@ -88,50 +94,74 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
                 // Method invocations
                 case InvocationExpressionSyntax invocation:
                     if (semanticModel.GetSymbolInfo(invocation).Symbol is IMethodSymbol calleeSymbol)
+                    {
                         AddInvokes(calleeSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Constructor invocations
                 case BaseObjectCreationExpressionSyntax objectCreation:
                     if (semanticModel.GetSymbolInfo(objectCreation).Symbol is IMethodSymbol ctorSymbol)
+                    {
                         AddInvokes(ctorSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Binary operators (==, !=, >, <, >=, <=, |, &, ^) and 'as' expressions
                 case BinaryExpressionSyntax binary:
                     if (semanticModel.GetSymbolInfo(binary).Symbol is IMethodSymbol binSymbol
                         && binSymbol.MethodKind is MethodKind.UserDefinedOperator or MethodKind.Conversion)
+                    {
                         AddInvokes(binSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Explicit cast expressions: (int)foo
                 case CastExpressionSyntax cast:
                     if (semanticModel.GetSymbolInfo(cast).Symbol is IMethodSymbol { MethodKind: MethodKind.Conversion } convSymbol)
+                    {
                         AddInvokes(convSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Unary prefix operators: !, ~, +, -, ++, --
                 case PrefixUnaryExpressionSyntax prefix:
                     if (semanticModel.GetSymbolInfo(prefix).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } prefixOp)
+                    {
                         AddInvokes(prefixOp, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Unary postfix operators: ++, --
                 case PostfixUnaryExpressionSyntax postfix:
                     if (semanticModel.GetSymbolInfo(postfix).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } postfixOp)
+                    {
                         AddInvokes(postfixOp, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 // Method groups: identifiers or member access expressions that resolve to
                 // an IMethodSymbol but are NOT the expression being invoked in an InvocationExpression.
                 case IdentifierNameSyntax id when !IsInvocationTarget(id):
                     if (semanticModel.GetSymbolInfo(id).Symbol is IMethodSymbol idMethodGroup)
+                    {
                         AddInvokes(idMethodGroup, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
 
                 case MemberAccessExpressionSyntax memberAccess when !IsInvocationTarget(memberAccess):
                     if (semanticModel.GetSymbolInfo(memberAccess).Symbol is IMethodSymbol maMethodGroup)
+                    {
                         AddInvokes(maMethodGroup, callerRec, repoKey, relBuffer, seenCallees);
+                    }
+
                     break;
             }
 
@@ -140,7 +170,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
             {
                 var conversion = semanticModel.GetConversion(expr);
                 if (conversion.IsUserDefined && conversion.MethodSymbol is { MethodKind: MethodKind.Conversion } implicitSymbol)
+                {
                     AddInvokes(implicitSymbol, callerRec, repoKey, relBuffer, seenCallees);
+                }
             }
         }
     }
@@ -149,7 +181,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
     {
         // Direct invocation target: node is the Expression of an InvocationExpressionSyntax
         if (node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node)
+        {
             return true;
+        }
 
         // Identifier is the Name part of a MemberAccessExpression that is itself an invocation target
         // e.g. `this.DoWork()` — `DoWork` is IdentifierNameSyntax, parent is MemberAccessExpressionSyntax
@@ -157,7 +191,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
             && node.Parent is MemberAccessExpressionSyntax parentMember
             && parentMember.Parent is InvocationExpressionSyntax parentInvocation
             && parentInvocation.Expression == parentMember)
+        {
             return true;
+        }
 
         return false;
     }
@@ -184,7 +220,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
     {
         var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
         if (seenCallees.Add(calleeKey))
+        {
             relBuffer.Add(new Relationship(FromKey: callerRec.Key, ToKey: calleeKey, RelType: "INVOKES"));
+        }
     }
 
     private void ExtractMethodDependencies(

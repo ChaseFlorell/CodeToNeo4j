@@ -221,7 +221,10 @@ public class SolutionProcessor(
 
     private async Task<DiffResult?> GetChangedFiles(string solutionRoot, string? diffBase, HashSet<string> includeExtensions)
     {
-        if (diffBase is null) return null;
+        if (diffBase is null)
+        {
+            return null;
+        }
 
         var result = await versionControlService.GetChangedFiles(diffBase, solutionRoot, includeExtensions).ConfigureAwait(false);
 
@@ -359,7 +362,9 @@ public class SolutionProcessor(
             // O(1) filename lookup (e.g. package.json)
             var fileName = _fileSystem.Path.GetFileName(filePath);
             if (_byFileName.TryGetValue(fileName, out var byName))
+            {
                 return byName;
+            }
 
             // O(1) extension lookup (e.g. .cs, .html)
             var ext = _fileSystem.Path.GetExtension(filePath);
@@ -367,7 +372,9 @@ public class SolutionProcessor(
             {
                 // Verify via CanHandle for handlers that match multiple extensions (e.g. .ts/.tsx)
                 if (byExt.CanHandle(filePath))
+                {
                     return byExt;
+                }
             }
 
             // Linear fallback for files that didn't match by extension or filename
@@ -375,7 +382,9 @@ public class SolutionProcessor(
             foreach (var handler in _byExtension.Values)
             {
                 if (handler.CanHandle(filePath))
+                {
                     return handler;
+                }
             }
 
             return null;

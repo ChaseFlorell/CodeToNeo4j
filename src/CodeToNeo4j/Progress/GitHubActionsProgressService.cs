@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Progress;
@@ -5,6 +6,7 @@ namespace CodeToNeo4j.Progress;
 /// <summary>
 /// Progress reporting for GitHub Actions using workflow commands.
 /// </summary>
+[ExcludeFromCodeCoverage(Justification = "Thin CI-environment logger wrapper; behaviour only meaningful inside GitHub Actions")]
 public class GitHubActionsProgressService(ILogger<GitHubActionsProgressService> logger) : IProgressService
 {
     public void ReportProgress(int current, int total, string filePath)

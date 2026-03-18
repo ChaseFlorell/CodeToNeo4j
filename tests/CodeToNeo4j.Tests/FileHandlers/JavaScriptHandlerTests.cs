@@ -493,4 +493,14 @@ function doWork() {
         // Assert
         symbolBuffer.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void GivenJavaScriptHandler_WhenFileExtensionAndCanHandleChecked_ThenMatchesJsOnly()
+    {
+        var sut = new JavaScriptHandler(new MockFileSystem(), new TextSymbolMapper());
+        sut.FileExtension.ShouldBe(".js");
+        sut.CanHandle("app.js").ShouldBeTrue();
+        sut.CanHandle("app.JS").ShouldBeTrue();
+        sut.CanHandle("app.ts").ShouldBeFalse();
+    }
 }

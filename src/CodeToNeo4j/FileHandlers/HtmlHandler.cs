@@ -64,7 +64,10 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 
     private void ExtractIdsAndClasses(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (!IsPublicAccessible(minAccessibility)) return;
+        if (!IsPublicAccessible(minAccessibility))
+        {
+            return;
+        }
 
         // Extract IDs
         var idRegex = IdRegex();

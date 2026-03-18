@@ -16,7 +16,10 @@ public class GitLogParser(
 
         foreach (var line in lines)
         {
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
 
             if (line.StartsWith("COMMIT|"))
             {
@@ -70,8 +73,15 @@ public class GitLogParser(
 
         foreach (var commit in history)
         {
-            if (commit.Date < created) created = commit.Date;
-            if (commit.Date > lastModified) lastModified = commit.Date;
+            if (commit.Date < created)
+            {
+                created = commit.Date;
+            }
+
+            if (commit.Date > lastModified)
+            {
+                lastModified = commit.Date;
+            }
 
             if (authorMap.TryGetValue(commit.Author, out var stats))
             {
@@ -116,10 +126,16 @@ public class GitLogParser(
         foreach (var line in lines)
         {
             var parts = line.Split('|');
-            if (parts.Length < 2) continue;
+            if (parts.Length < 2)
+            {
+                continue;
+            }
 
             var authorName = parts[0];
-            if (!DateTimeOffset.TryParse(parts[1], out var commitDate)) continue;
+            if (!DateTimeOffset.TryParse(parts[1], out var commitDate))
+            {
+                continue;
+            }
 
             var hash = parts.Length >= 3 ? parts[2] : "";
             var refs = parts.Length >= 4 && !string.IsNullOrWhiteSpace(parts[3]) ? parts[3] : null;

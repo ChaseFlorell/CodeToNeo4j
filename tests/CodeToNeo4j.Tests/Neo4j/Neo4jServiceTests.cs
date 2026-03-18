@@ -140,7 +140,7 @@ public class Neo4jServiceTests
         var commits = new[]
         {
             new CommitMetadata("abc", "Author", "a@b.com", DateTimeOffset.Now, "msg",
-                new[] { new FileStatus("/repo/file.cs", false) })
+                [new FileStatus("/repo/file.cs", false)])
         };
 
         // Act

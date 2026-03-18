@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 
 namespace CodeToNeo4j.Solution;
 
+[ExcludeFromCodeCoverage(Justification = "Creates MSBuildWorkspace which requires a live MSBuild installation")]
 public class MsBuildWorkspaceFactory : IWorkspaceFactory
 {
     public IManagedWorkspace Create() => new MsBuildManagedWorkspace();

@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using CodeToNeo4j.Cypher;
 using Neo4j.Driver;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Neo4j;
 
+[ExcludeFromCodeCoverage(Justification = "Requires a live Neo4j database connection")]
 public class Neo4jSchemaService(
     IDriver driver,
     ICypherService cypherService,

@@ -1,10 +1,11 @@
+using System.IO.Abstractions;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.ProgramOptions;
 
 public sealed record Options(
-    string InputPath,
+    IFileSystemInfo InputPath,
     string? RepoKey,
     string Uri,
     string User,
@@ -25,7 +26,7 @@ public sealed record Options(
     private bool PrintMembers(System.Text.StringBuilder builder)
     {
         builder.AppendLine("");
-        builder.AppendLine($"\tInputPath = {InputPath}, ");
+        builder.AppendLine($"\tInputPath = {InputPath.FullName}, ");
         builder.AppendLine($"\tRepoKey = {RepoKey}, ");
         builder.AppendLine($"\tUri = {Uri}, ");
         builder.AppendLine($"\tUser = {User}, ");

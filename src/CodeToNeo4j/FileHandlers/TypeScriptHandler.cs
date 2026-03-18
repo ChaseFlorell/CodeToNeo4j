@@ -23,7 +23,10 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
         ICollection<Relationship> relBuffer,
         Accessibility minAccessibility)
     {
-        if (!IsPublicAccessible(minAccessibility)) return;
+        if (!IsPublicAccessible(minAccessibility))
+        {
+            return;
+        }
 
         ExtractInterfaces(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
         ExtractTypeAliases(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);

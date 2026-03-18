@@ -54,7 +54,9 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
     private void ExtractFunctions(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
         if (!IsPublicAccessible(minAccessibility))
+        {
             return;
+        }
 
         var functionRegex = FunctionRegex();
         var matches = functionRegex.Matches(content);
@@ -63,10 +65,20 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
         foreach (Match match in matches)
         {
             var name = match.Groups[1].Value;
-            if (string.IsNullOrEmpty(name)) name = match.Groups[2].Value;
-            if (string.IsNullOrEmpty(name)) name = match.Groups[3].Value;
+            if (string.IsNullOrEmpty(name))
+            {
+                name = match.Groups[2].Value;
+            }
 
-            if (string.IsNullOrEmpty(name)) continue;
+            if (string.IsNullOrEmpty(name))
+            {
+                name = match.Groups[3].Value;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                continue;
+            }
 
             var startLine = GetLineNumber(content, match.Index);
             var key = TextSymbolMapper.BuildKey(fileKey, "Function", name, startLine);
@@ -87,7 +99,9 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
             var (bodyStart, bodyEnd) = FindFunctionBody(content, match.Index + match.Length);
             if (bodyStart >= 0)
+            {
                 functionDefs.Add(new FunctionDef(name, key, bodyStart, bodyEnd));
+            }
         }
 
         ExtractFunctionCallRelationships(content, functionDefs, relBuffer);
@@ -95,7 +109,10 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
     private void ExtractImportsExports(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
     {
-        if (!IsPublicAccessible(minAccessibility)) return;
+        if (!IsPublicAccessible(minAccessibility))
+        {
+            return;
+        }
 
         foreach (Match match in ImportRegex().Matches(content))
         {
@@ -146,16 +163,25 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
     private static (int bodyStart, int bodyEnd) FindFunctionBody(string content, int searchFrom)
     {
         var braceIndex = content.IndexOf('{', searchFrom);
-        if (braceIndex < 0) return (-1, -1);
+        if (braceIndex < 0)
+        {
+            return (-1, -1);
+        }
 
         var depth = 0;
         for (var i = braceIndex; i < content.Length; i++)
         {
-            if (content[i] == '{') depth++;
+            if (content[i] == '{')
+            {
+                depth++;
+            }
             else if (content[i] == '}')
             {
                 depth--;
-                if (depth == 0) return (braceIndex + 1, i);
+                if (depth == 0)
+                {
+                    return (braceIndex + 1, i);
+                }
             }
         }
 
@@ -164,7 +190,10 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
     private static void ExtractFunctionCallRelationships(string content, List<FunctionDef> functionDefs, ICollection<Relationship> relBuffer)
     {
-        if (functionDefs.Count == 0) return;
+        if (functionDefs.Count == 0)
+        {
+            return;
+        }
 
         var functionLookup = functionDefs
             .GroupBy(f => f.Name)
@@ -179,9 +208,15 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
             foreach (Match match in callRegex.Matches(body))
             {
                 var calledName = match.Groups[1].Value;
-                if (JsKeywords.Contains(calledName)) continue;
+                if (JsKeywords.Contains(calledName))
+                {
+                    continue;
+                }
+
                 if (functionLookup.TryGetValue(calledName, out var calleeKey) && seen.Add(calleeKey))
+                {
                     relBuffer.Add(new Relationship(FromKey: caller.Key, ToKey: calleeKey, RelType: "INVOKES"));
+                }
             }
         }
     }

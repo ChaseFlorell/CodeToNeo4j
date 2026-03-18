@@ -34,8 +34,15 @@ public partial class SolutionFileDiscoveryService(
                 foreach (var doc in project.Documents)
                 {
                     var path = fileService.NormalizePath(doc.FilePath!);
-                    if (string.IsNullOrEmpty(path)) continue;
-                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        continue;
+                    }
+
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
 
                     if (solutionFiles.TryGetValue(path, out var existing))
                     {
@@ -60,8 +67,15 @@ public partial class SolutionFileDiscoveryService(
                 foreach (var doc in project.AdditionalDocuments)
                 {
                     var path = fileService.NormalizePath(doc.FilePath!);
-                    if (string.IsNullOrEmpty(path)) continue;
-                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        continue;
+                    }
+
+                    if (!extensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
 
                     if (solutionFiles.TryGetValue(path, out var existing))
                     {
@@ -89,8 +103,15 @@ public partial class SolutionFileDiscoveryService(
         foreach (var fileOnDisk in allFilesOnDisk)
         {
             var normalizedPath = fileService.NormalizePath(fileOnDisk);
-            if (IsExcluded(normalizedPath)) continue;
-            if (!extensions.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))) continue;
+            if (IsExcluded(normalizedPath))
+            {
+                continue;
+            }
+
+            if (!extensions.Any(ext => normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
             if (!solutionFiles.ContainsKey(normalizedPath))
             {
@@ -105,6 +126,46 @@ public partial class SolutionFileDiscoveryService(
                 : entry.File);
     }
 
+    public IEnumerable<ProcessedFile> GetFilesToProcess(string directoryPath,
+        IEnumerable<string> includeExtensions)
+    {
+        var extensions = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, ProcessedFile>(StringComparer.OrdinalIgnoreCase);
+
+        var allFilesOnDisk = fileSystem.Directory.EnumerateFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+        foreach (var fileOnDisk in allFilesOnDisk)
+        {
+            var normalizedPath = fileService.NormalizePath(fileOnDisk);
+            if (IsExcluded(normalizedPath))
+            {
+                continue;
+            }
+
+            var fileName = Path.GetFileName(normalizedPath);
+            var isFullNameMatch = extensions.Contains(fileName);
+            var isExtensionMatch = extensions.Any(ext => ext.StartsWith('.') && normalizedPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+
+            if (!isFullNameMatch && !isExtensionMatch)
+            {
+                continue;
+            }
+
+            if (!files.ContainsKey(normalizedPath))
+            {
+                files[normalizedPath] = new ProcessedFile(normalizedPath, null, null);
+            }
+        }
+
+        // Also include pubspec.yaml if it matches
+        var pubspecPath = fileService.NormalizePath(Path.Combine(directoryPath, "pubspec.yaml"));
+        if (fileSystem.File.Exists(pubspecPath) && !files.ContainsKey(pubspecPath))
+        {
+            files[pubspecPath] = new ProcessedFile(pubspecPath, null, null);
+        }
+
+        return files.Values;
+    }
+
     internal static string? ExtractTargetFramework(string projectName)
     {
         var match = TfmRegex().Match(projectName);
@@ -117,7 +178,9 @@ public partial class SolutionFileDiscoveryService(
                       p.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
                       p.Equals(".idea", StringComparison.OrdinalIgnoreCase) ||
-                      p.Equals("node_modules", StringComparison.OrdinalIgnoreCase));
+                      p.Equals("node_modules", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals(".dart_tool", StringComparison.OrdinalIgnoreCase) ||
+                      p.Equals("build", StringComparison.OrdinalIgnoreCase));
 
     [GeneratedRegex(@"\(([^)]+)\)$")]
     private static partial Regex TfmRegex();

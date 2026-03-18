@@ -31,10 +31,22 @@ public class FileService(IFileSystem fileSystem) : IFileService
         if (isRoslyn)
         {
             var roslynNs = ns.Replace('/', '.');
-            if (roslynNs.StartsWith("src.", StringComparison.OrdinalIgnoreCase)) roslynNs = roslynNs[4..];
-            else if (roslynNs.Equals("src", StringComparison.OrdinalIgnoreCase)) roslynNs = string.Empty;
-            else if (roslynNs.StartsWith("source.", StringComparison.OrdinalIgnoreCase)) roslynNs = roslynNs[7..];
-            else if (roslynNs.Equals("source", StringComparison.OrdinalIgnoreCase)) roslynNs = string.Empty;
+            if (roslynNs.StartsWith("src.", StringComparison.OrdinalIgnoreCase))
+            {
+                roslynNs = roslynNs[4..];
+            }
+            else if (roslynNs.Equals("src", StringComparison.OrdinalIgnoreCase))
+            {
+                roslynNs = string.Empty;
+            }
+            else if (roslynNs.StartsWith("source.", StringComparison.OrdinalIgnoreCase))
+            {
+                roslynNs = roslynNs[7..];
+            }
+            else if (roslynNs.Equals("source", StringComparison.OrdinalIgnoreCase))
+            {
+                roslynNs = string.Empty;
+            }
 
             return (relativePath, roslynNs);
         }

@@ -87,7 +87,10 @@ public class Neo4jFlushService(
             .Where(x => ((string[])x["tags"]!).Length > 0)
             .ToArray();
 
-        if (symbolBatch.Length == 0 && relBatch.Length == 0) return;
+        if (symbolBatch.Length == 0 && relBatch.Length == 0)
+        {
+            return;
+        }
 
         logger.LogDebug("Flushing {SymbolCount} symbols and {RelCount} relationships to Neo4j (Database: {DatabaseName})...", symbolBatch.Length, relBatch.Length, databaseName);
 
@@ -132,7 +135,10 @@ public class Neo4jFlushService(
             ["name"] = u.Name
         }).ToArray();
 
-        if (urlBatch.Length == 0) return;
+        if (urlBatch.Length == 0)
+        {
+            return;
+        }
 
         logger.LogDebug("Upserting {Count} dependency URL nodes in database: {DatabaseName}", urlBatch.Length, databaseName);
         await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
@@ -143,7 +149,10 @@ public class Neo4jFlushService(
     public async Task FlushTargetFrameworks(IEnumerable<TargetFrameworkBatch> batches, string databaseName)
     {
         var batchArray = batches.ToArray();
-        if (batchArray.Length == 0) return;
+        if (batchArray.Length == 0)
+        {
+            return;
+        }
 
         // Pre-aggregate unique TFM names to avoid redundant MERGE operations in Neo4j
         var allTfmNames = batchArray

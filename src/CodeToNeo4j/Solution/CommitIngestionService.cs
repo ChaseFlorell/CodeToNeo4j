@@ -12,7 +12,10 @@ public class CommitIngestionService(
     public async Task IngestCommits(string diffBase, string solutionRoot, string? repoKey, string databaseName, int batchSize)
     {
         var totalCommits = await versionControlService.GetCommitCount(diffBase, solutionRoot).ConfigureAwait(false);
-        if (totalCommits <= 0) return;
+        if (totalCommits <= 0)
+        {
+            return;
+        }
 
         logger.LogInformation("Ingesting {Count} commits since {DiffBase} in parallel batches...", totalCommits, diffBase);
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount) };

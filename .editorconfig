@@ -209,16 +209,14 @@ dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
 dotnet_naming_symbols.constants.applicable_kinds = field, local
 dotnet_naming_symbols.constants.required_modifiers = const
 
-# Async methods — end with Async
-dotnet_naming_rule.async_methods_should_end_with_async.severity = suggestion
-dotnet_naming_rule.async_methods_should_end_with_async.symbols = async_methods
-dotnet_naming_rule.async_methods_should_end_with_async.style = end_in_async
+# Async methods — no Async suffix (naming rules cannot actively forbid a suffix,
+# so this rule enforces plain PascalCase and removes the suggestion to add Async)
+dotnet_naming_rule.async_methods_should_not_end_with_async.severity = warning
+dotnet_naming_rule.async_methods_should_not_end_with_async.symbols = async_methods
+dotnet_naming_rule.async_methods_should_not_end_with_async.style = pascal_case
 
 dotnet_naming_symbols.async_methods.applicable_kinds = method
 dotnet_naming_symbols.async_methods.required_modifiers = async
-
-dotnet_naming_style.end_in_async.required_suffix = Async
-dotnet_naming_style.end_in_async.capitalization = pascal_case
 
 ###############################
 # ReSharper properties (read by Rider/ReSharper, ignored by Roslyn)
@@ -238,8 +236,8 @@ resharper_place_accessorholder_attribute_on_same_line = false
 ###############################
 
 # IDE analyzers
-dotnet_diagnostic.IDE0005.severity = warning      # Remove unnecessary using
-dotnet_diagnostic.IDE0011.severity = suggestion    # Add braces
+dotnet_diagnostic.IDE0005.severity = warning       # Remove unnecessary using
+dotnet_diagnostic.IDE0011.severity = warning       # Add braces
 dotnet_diagnostic.IDE0040.severity = warning       # Add accessibility modifiers
 dotnet_diagnostic.IDE0055.severity = suggestion    # Formatting rule (incremental cleanup)
 dotnet_diagnostic.IDE0161.severity = warning       # File-scoped namespace

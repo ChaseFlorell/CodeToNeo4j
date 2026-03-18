@@ -28,14 +28,18 @@ public static class NamespaceTagParser
     public static IReadOnlyList<string> ParseTags(string? @namespace)
     {
         if (string.IsNullOrWhiteSpace(@namespace))
+        {
             return [];
+        }
 
         var tags = new List<string>();
         foreach (var segment in @namespace.Split('.', StringSplitOptions.RemoveEmptyEntries))
         {
             var tag = SegmentToTag(segment);
             if (!string.IsNullOrEmpty(tag))
+            {
                 tags.Add(tag);
+            }
         }
 
         return tags;
@@ -44,10 +48,14 @@ public static class NamespaceTagParser
     private static string SegmentToTag(string segment)
     {
         if (string.IsNullOrEmpty(segment))
+        {
             return string.Empty;
+        }
 
         if (Whitelist.Contains(segment))
+        {
             return segment;
+        }
 
         var words = new List<string>();
         var current = new StringBuilder();
@@ -81,7 +89,9 @@ public static class NamespaceTagParser
         }
 
         if (current.Length > 0)
+        {
             words.Add(current.ToString());
+        }
 
         return string.Join("_", words);
     }

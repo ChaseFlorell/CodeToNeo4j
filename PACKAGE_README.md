@@ -4,7 +4,7 @@ CodeToNeo4j is a .NET tool that analyzes .NET solutions and indexes their struct
 
 ## Features
 
-- **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, and `.csproj` files (configurable via `--include`).
+- **Multi-File Support**: Indexes `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj`, and `.dart` files (configurable via `--include`).
 - **Structural Ingestion**: Indexes Projects, Files, and Symbols (Classes, Methods, Directives, UI Elements).
 - **Semantic Metadata**: Ingests XML Documentation and code comments for every symbol.
 - **Incremental Indexing**: Only process changed files using `--diff-base`. When enabled, it also ingests detailed commit history in parallel batches (hashes, authors, dates, and messages) and links them to the modified files. Support for various git range specifications (e.g., `hash1..hash2`).
@@ -26,6 +26,7 @@ dotnet tool install --global CodeToNeo4j
 Run the tool by providing Neo4j credentials. When `--input` is omitted, the tool auto-detects the project type from the current directory:
 
 ```bash
+# .NET solution
 codetoneo4j \
   --uri bolt://localhost:7687 \
   --password your-password
@@ -36,6 +37,12 @@ Or specify an explicit input:
 ```bash
 codetoneo4j \
   --input ./MySolution.sln \
+  --uri bolt://localhost:7687 \
+  --password your-password
+
+# Dart project directory
+codetoneo4j \
+  -s ./my-dart-project/ \
   --uri bolt://localhost:7687 \
   --password your-password
 ```
@@ -58,7 +65,7 @@ codetoneo4j \
 | `--skip-dependencies`       | Skip NuGet dependency ingestion.                                                       |
 | `--min-accessibility`       | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). Default: `NotApplicable`. |
 | `--batch-size`              | Number of symbols to batch before flushing to Neo4j. Default: `500`.                   |
-| `--include`, `-i`           | File extensions to include (Default: all supported).                                   |
+| `--include`, `-i`           | File extensions to include (Default: all supported, including `.dart`).                 |
 | `--purge-data`              | Purge data associated with the repository.                                         |
 
 > Note: When `--input` is omitted, the tool auto-detects the project type from the current directory (`.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only). When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
@@ -83,6 +90,7 @@ codetoneo4j \
 - **.NET 8, 9, or 10 SDK** must be installed on the machine.
 - **Neo4j 5.0+** database.
 - **Git** (if using `--diff-base`).
+- **Dart SDK** *(optional)* — required only for analyzing Dart projects. Install from [dart.dev/get-dart](https://dart.dev/get-dart). The `dart` executable must be available on your `PATH`. If not found, `.dart` files are skipped with a warning.
 
 For more detailed documentation, visit the [GitHub Repository](https://github.com/chaseflorell/CodeToNeo4j).
 

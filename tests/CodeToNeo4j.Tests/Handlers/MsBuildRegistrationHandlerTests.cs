@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
 using FakeItEasy;
@@ -12,14 +13,12 @@ public class MsBuildRegistrationHandlerTests
     public async Task GivenDirectoryPath_WhenHandleCalled_ThenSkipsMsBuildRegistrationAndContinuesChain()
     {
         // arrange
-        var fileSystem = A.Fake<IFileSystem>();
-        A.CallTo(() => fileSystem.Directory.Exists("/repo")).Returns(true);
-
-        var handler = new MsBuildRegistrationHandler(fileSystem);
+        var handler = new MsBuildRegistrationHandler();
         var nextHandler = A.Fake<IOptionsHandler>();
         handler.SetNext(nextHandler);
 
-        var options = CreateOptions("/repo");
+        var fs = new MockFileSystem();
+        var options = CreateOptions(fs.DirectoryInfo.New("/repo"));
 
         // act
         await handler.Handle(options);
@@ -32,14 +31,12 @@ public class MsBuildRegistrationHandlerTests
     public async Task GivenFilePath_WhenHandleCalled_ThenDoesNotSkipMsBuild()
     {
         // arrange
-        var fileSystem = A.Fake<IFileSystem>();
-        A.CallTo(() => fileSystem.Directory.Exists("/repo/My.sln")).Returns(false);
-
-        var handler = new MsBuildRegistrationHandler(fileSystem);
+        var handler = new MsBuildRegistrationHandler();
         var nextHandler = A.Fake<IOptionsHandler>();
         handler.SetNext(nextHandler);
 
-        var options = CreateOptions("/repo/My.sln");
+        var fs = new MockFileSystem();
+        var options = CreateOptions(fs.FileInfo.New("/repo/My.sln"));
 
         // act
         await handler.Handle(options);
@@ -48,7 +45,7 @@ public class MsBuildRegistrationHandlerTests
         A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
     }
 
-    private static Options CreateOptions(string inputPath) => new(
+    private static Options CreateOptions(IFileSystemInfo inputPath) => new(
         inputPath,
         "test",
         "bolt://localhost",

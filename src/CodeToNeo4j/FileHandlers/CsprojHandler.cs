@@ -37,14 +37,11 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse .csproj file: {FilePath}", filePath);
+            logger.LogWarning(ex, "Failed to parse .csproj file: {FilePath}", filePath);
         }
 
         return new FileResult(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
     }
-
-    private readonly IFileSystem _fileSystem = fileSystem;
-    private readonly ILogger<CsprojHandler> _logger = logger;
 
     private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, List<UrlNode> urlNodes, Accessibility minAccessibility)
     {
@@ -62,7 +59,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             {
                 var name = property.Name.LocalName;
                 var value = property.Value;
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(value)) continue;
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
 
                 IXmlLineInfo lineInfo = property;
                 var startLine = lineInfo.HasLineInfo() ? lineInfo.LineNumber : -1;
@@ -92,7 +92,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             var include = packageRef.Attribute("Include")?.Value;
             var version = packageRef.Attribute("Version")?.Value ?? packageRef.Element(packageRef.Name.Namespace + "Version")?.Value;
 
-            if (string.IsNullOrEmpty(include)) continue;
+            if (string.IsNullOrEmpty(include))
+            {
+                continue;
+            }
 
             AddDependency(include, version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
             await CollectNuspecUrls(include, version, urlNodes).ConfigureAwait(false);
@@ -135,15 +138,22 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
         var depKey = $"pkg:{name}";
 
         if (!string.IsNullOrEmpty(projectUrl))
+        {
             urlNodes.Add(new UrlNode(depKey, $"url:{projectUrl}", projectUrl));
+        }
 
         if (!string.IsNullOrEmpty(repositoryUrl))
+        {
             urlNodes.Add(new UrlNode(depKey, $"url:{repositoryUrl}", repositoryUrl));
+        }
     }
 
     private async Task<(string? ProjectUrl, string? RepositoryUrl)> TryGetNuspecMetadataAsync(string name, string? version)
     {
-        if (string.IsNullOrEmpty(version)) return (null, null);
+        if (string.IsNullOrEmpty(version))
+        {
+            return (null, null);
+        }
 
         var packagesRoot = Environment.GetEnvironmentVariable("NUGET_PACKAGES")
             ?? _fileSystem.Path.Combine(
@@ -153,7 +163,10 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
         var nameNormalized = name.ToLowerInvariant();
         var nuspecPath = _fileSystem.Path.Combine(packagesRoot, nameNormalized, version, $"{nameNormalized}.nuspec");
 
-        if (!_fileSystem.File.Exists(nuspecPath)) return (null, null);
+        if (!_fileSystem.File.Exists(nuspecPath))
+        {
+            return (null, null);
+        }
 
         try
         {
@@ -162,18 +175,26 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
             var ns = nuspecDoc.Root?.Name.Namespace ?? XNamespace.None;
             var metadata = nuspecDoc.Root?.Element(ns + "metadata");
 
-            var projectUrl = metadata?.Element(ns + "projectUrl")?.Value?.Trim();
-            if (string.IsNullOrEmpty(projectUrl)) projectUrl = null;
+            var projectUrl = metadata?.Element(ns + "projectUrl")?.Value.Trim();
+            if (string.IsNullOrEmpty(projectUrl))
+            {
+                projectUrl = null;
+            }
 
-            var repositoryUrl = metadata?.Element(ns + "repository")?.Attribute("url")?.Value?.Trim();
-            if (string.IsNullOrEmpty(repositoryUrl)) repositoryUrl = null;
+            var repositoryUrl = metadata?.Element(ns + "repository")?.Attribute("url")?.Value.Trim();
+            if (string.IsNullOrEmpty(repositoryUrl))
+            {
+                repositoryUrl = null;
+            }
 
             return (projectUrl, repositoryUrl);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to read .nuspec metadata for package: {PackageName}", name);
+            logger.LogWarning(ex, "Failed to read .nuspec metadata for package: {PackageName}", name);
             return (null, null);
         }
     }
+
+    private readonly IFileSystem _fileSystem = fileSystem;
 }

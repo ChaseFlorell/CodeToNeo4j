@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using CodeToNeo4j.FileSystem;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.VersionControl;
 
+[ExcludeFromCodeCoverage(Justification = "All methods spawn live git processes and require a real git repository")]
 public class GitService(
     IFileService fileService,
     IFileSystem fileSystem,
@@ -47,7 +49,11 @@ public class GitService(
                 if (parts.Length >= 5)
                 {
                     currentAuthor = parts[1];
-                    if (DateTimeOffset.TryParse(parts[2], out var d)) currentDate = d;
+                    if (DateTimeOffset.TryParse(parts[2], out var d))
+                    {
+                        currentDate = d;
+                    }
+
                     currentHash = parts[3];
                     currentRefs = string.IsNullOrWhiteSpace(parts[4]) ? null : parts[4];
                 }
@@ -120,7 +126,10 @@ public class GitService(
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2) continue;
+            if (parts.Length < 2)
+            {
+                continue;
+            }
 
             var status = parts[0];
             var rel = parts[1].Trim();
@@ -165,7 +174,11 @@ public class GitService(
         var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
         await p.WaitForExitAsync().ConfigureAwait(false);
 
-        if (p.ExitCode != 0) return 0;
+        if (p.ExitCode != 0)
+        {
+            return 0;
+        }
+
         return int.TryParse(output.Trim(), out var count) ? count : 0;
     }
 
@@ -197,7 +210,10 @@ public class GitService(
         var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
         await p.WaitForExitAsync().ConfigureAwait(false);
 
-        if (p.ExitCode != 0) return [];
+        if (p.ExitCode != 0)
+        {
+            return [];
+        }
 
         return logParser.ParseCommits(output, repoRoot);
     }

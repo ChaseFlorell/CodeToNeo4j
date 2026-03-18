@@ -286,7 +286,7 @@ public class SolutionProcessorTests
         A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
         A.CallTo(() => vcs.GetFileMetadata("/repo/file.cs", "/repo")).Returns(Task.FromResult(new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], [])));
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
-            .Returns(new[] { new ProcessedFile("/repo/file.cs") });
+            .Returns([new ProcessedFile("/repo/file.cs")]);
 
         var sut = CreateProcessor(
             graphService: graphService,
@@ -303,7 +303,7 @@ public class SolutionProcessorTests
 
         // assert — workspace never created, dependencies never ingested, files still processed
         A.CallTo(() => workspaceFactory.Create()).MustNotHaveHappened();
-        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._!)).MustNotHaveHappened();
         A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb")).MustHaveHappenedOnceExactly();
     }
 
@@ -337,7 +337,7 @@ public class SolutionProcessorTests
         A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
         A.CallTo(() => workspace.OpenSolutionAsync(inputPath)).Returns(Task.FromResult(fakeSolution));
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
-            .Returns(Enumerable.Empty<ProcessedFile>());
+            .Returns([]);
 
         var sut = CreateProcessor(
             graphService: graphService,
@@ -386,7 +386,7 @@ public class SolutionProcessorTests
         A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
         A.CallTo(() => workspace.OpenProjectAsync(inputPath)).Returns(Task.FromResult(fakeSolution));
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
-            .Returns(Enumerable.Empty<ProcessedFile>());
+            .Returns([]);
 
         var sut = CreateProcessor(
             graphService: graphService,
@@ -420,7 +420,7 @@ public class SolutionProcessorTests
         A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
         A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
-            .Returns(Enumerable.Empty<ProcessedFile>());
+            .Returns([]);
 
         var sut = CreateProcessor(
             graphService: graphService,
@@ -463,7 +463,7 @@ public class SolutionProcessorTests
         A.CallTo(() => workspaceFactory.Create()).Returns(workspace);
         A.CallTo(() => workspace.OpenSolutionAsync("/repo/My.sln")).Returns(Task.FromResult(fakeSolution));
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", fakeSolution, A<IEnumerable<string>>._))
-            .Returns(Enumerable.Empty<ProcessedFile>());
+            .Returns([]);
 
         var sut = CreateProcessor(
             fileService: fileService,
@@ -477,7 +477,7 @@ public class SolutionProcessorTests
         await sut.ProcessSolution("/repo/My.sln", "my", null, "testdb", 100, skipDependencies: true, Accessibility.Public, [".cs"]);
 
         // assert
-        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._)).MustNotHaveHappened();
+        A.CallTo(() => dependencyIngestor.IngestDependencies(A<Microsoft.CodeAnalysis.Solution>._, A<string?>._, A<string>._!)).MustNotHaveHappened();
     }
 
     [Fact]
@@ -506,9 +506,9 @@ public class SolutionProcessorTests
         A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
         A.CallTo(() => vcs.GetFileMetadata("/repo/file.cs", "/repo")).Returns(Task.FromResult(new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], [])));
         A.CallTo(() => vcs.GetChangedFiles("origin/main", "/repo", A<HashSet<string>>._))
-            .Returns(Task.FromResult(new DiffResult(new HashSet<string> { "/repo/file.cs" }, new HashSet<string>(), [])));
+            .Returns(Task.FromResult(new DiffResult(["/repo/file.cs"], [], [])));
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
-            .Returns(new[] { new ProcessedFile("/repo/file.cs") });
+            .Returns([new ProcessedFile("/repo/file.cs")]);
 
         var sut = CreateProcessor(
             graphService: graphService,
@@ -540,10 +540,10 @@ public class SolutionProcessorTests
         A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
         A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
         A.CallTo(() => vcs.GetChangedFiles("origin/main", "/repo", A<HashSet<string>>._))
-            .Returns(Task.FromResult(new DiffResult(new HashSet<string>(), new HashSet<string> { "/repo/deleted.cs" }, [])));
+            .Returns(Task.FromResult(new DiffResult([], ["/repo/deleted.cs"], [])));
         A.CallTo(() => fileService.GetRelativePath("/repo", "/repo/deleted.cs")).Returns("deleted.cs");
         A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
-            .Returns(Enumerable.Empty<ProcessedFile>());
+            .Returns([]);
 
         var sut = CreateProcessor(
             graphService: graphService,

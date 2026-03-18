@@ -1,3 +1,4 @@
+using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.ProgramOptions;
 using Shouldly;
@@ -315,9 +316,15 @@ public class InputPathResolverTests
         options.RepoKey.ShouldBeNull();
     }
 
-    private static Options CreateOptions(string inputPath, string? repoKey = "test") => new(
-        inputPath,
-        repoKey,
+    private static Options CreateOptions(string inputPath, string? repoKey = "test")
+    {
+        var fs = new MockFileSystem();
+        IFileSystemInfo fsi = inputPath.Contains('.')
+            ? fs.FileInfo.New(inputPath)
+            : fs.DirectoryInfo.New(inputPath);
+        return new Options(
+            fsi,
+            repoKey,
         "bolt://localhost",
         "user",
         "pass",
@@ -333,4 +340,5 @@ public class InputPathResolverTests
         ShowVersion: false,
         ShowSupportedFiles: false,
         ShowInfo: false);
+    }
 }

@@ -22,6 +22,7 @@ x64/
 x86/
 bld/
 [Bb]in/
+!tools/dart-analyzer/bin/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
@@ -307,3 +308,7 @@ __pycache__/
 
 # Nuke
 /.nuke/temp/
+
+# Dart
+.dart_tool/
+pubspec.lock

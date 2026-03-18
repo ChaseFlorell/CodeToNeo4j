@@ -28,7 +28,9 @@ public static class OptionsBinderValidator
                      || result.GetValue(showInfoOption);
 
         if (isInfo)
+        {
             return;
+        }
 
         var isPurge = result.GetValue(purgeDataOption);
         var pass = result.GetResult(passOption);

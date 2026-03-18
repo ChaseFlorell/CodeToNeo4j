@@ -16,8 +16,8 @@ public class SymbolMapper : ISymbolMapper
         var documentation = symbol.GetDocumentationCommentXml();
         var comments = ExtractComments(node);
 
-        var @namespace = symbol is INamedTypeSymbol nts 
-            ? nts.ContainingNamespace.ToDisplayString() 
+        var @namespace = symbol is INamedTypeSymbol nts
+            ? nts.ContainingNamespace.ToDisplayString()
             : fileNamespace;
 
         return new Symbol(
@@ -46,7 +46,11 @@ public class SymbolMapper : ISymbolMapper
 
     private static (int startLine, int endLine) GetLineSpan(Location loc)
     {
-        if (!loc.IsInSource) return (-1, -1);
+        if (!loc.IsInSource)
+        {
+            return (-1, -1);
+        }
+
         var span = loc.GetMappedLineSpan();
         if (!span.IsValid)
         {

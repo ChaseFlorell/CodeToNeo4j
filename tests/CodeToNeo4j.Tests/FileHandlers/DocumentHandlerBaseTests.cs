@@ -61,6 +61,32 @@ public class DocumentHandlerBaseTests
         content.ShouldBe("file content");
     }
 
+    [Fact]
+    public async Task GivenHandlerCalledMultipleTimes_WhenNumberOfFilesHandledRead_ThenReflectsCallCount()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var sut = new TestHandler(fileSystem);
+
+        // Act
+        await sut.Handle(null, null, null, "a", "a", "a", [], [], Accessibility.NotApplicable);
+        await sut.Handle(null, null, null, "b", "b", "b", [], [], Accessibility.NotApplicable);
+
+        // Assert
+        sut.NumberOfFilesHandled.ShouldBe(2);
+    }
+
+    [Theory]
+    [InlineData("file.test", true)]
+    [InlineData("FILE.TEST", true)]
+    [InlineData("file.cs", false)]
+    [InlineData("file.test.bak", false)]
+    public void GivenFilePath_WhenCanHandleCalled_ThenReturnsExpected(string filePath, bool expected)
+    {
+        var sut = new TestHandler(new MockFileSystem());
+        sut.CanHandle(filePath).ShouldBe(expected);
+    }
+
     private sealed class TestHandler(MockFileSystem fs) : DocumentHandlerBase(fs)
     {
         public override string FileExtension => ".test";

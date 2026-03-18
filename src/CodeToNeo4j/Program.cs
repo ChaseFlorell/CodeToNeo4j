@@ -24,6 +24,8 @@ public class Program
         (".json", "JsonHandler"),
         (".css", "CssHandler"),
         (".csproj", "CsprojHandler"),
+        (".dart", "DartHandler"),
+        ("pubspec.yaml", "PubspecYamlHandler"),
     ];
 
     public static async Task<int> Main(string[] args)
@@ -41,7 +43,7 @@ public class Program
 
     public static (RootCommand root, OptionsBinder binder) CreateRootCommand()
     {
-        string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".ts", ".tsx", ".html", ".xml", ".json", ".css", ".csproj"];
+        string[] allSupportedExtensions = [".cs", ".razor", ".xaml", ".js", ".ts", ".tsx", ".html", ".xml", ".json", ".css", ".csproj", ".dart"];
         var uriOption = new Option<string>("--uri")
             .IsRequired()
             .WithDefaultValueFunc(() => "bolt://localhost:7687")
@@ -152,7 +154,9 @@ public class Program
             }
 
             if (options.ShowVersion || options.ShowSupportedFiles || options.ShowInfo)
+            {
                 return 0;
+            }
 
             await using var services = new ServiceCollection()
                 .AddApplicationServices(options.Uri, options.User, options.Pass!, options.LogLevel)

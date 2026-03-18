@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Neo4j.Driver;
 using Polly;
 using Polly.Retry;
 
 namespace CodeToNeo4j.Neo4j;
 
+[ExcludeFromCodeCoverage(Justification = "Requires live Neo4j IAsyncSession/IAsyncQueryRunner — no unit-testable seam")]
 public static class Neo4jExtensions
 {
     public static async Task<IResultCursor> RunWithRetry(this IAsyncSession session, string query, object? parameters = null) =>

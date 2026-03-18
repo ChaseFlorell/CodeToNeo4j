@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using CodeToNeo4j.Cypher;
+using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
@@ -15,6 +17,7 @@ using Neo4j.Driver;
 
 namespace CodeToNeo4j;
 
+[ExcludeFromCodeCoverage(Justification = "DI registration wiring — covered by integration/smoke tests, not unit tests")]
 public static class ContainerModule
 {
     /// <summary>
@@ -64,6 +67,10 @@ public static class ContainerModule
         services.AddSingleton<IDocumentHandler, JsonHandler>();
         services.AddSingleton<IDocumentHandler, CssHandler>();
         services.AddSingleton<IDocumentHandler, CsprojHandler>();
+        services.AddSingleton<IDocumentHandler, DartHandler>();
+        services.AddSingleton<IDocumentHandler, PubspecYamlHandler>();
+
+        services.AddSingleton<IDartBridgeService, DartBridgeService>();
 
         services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
         services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
