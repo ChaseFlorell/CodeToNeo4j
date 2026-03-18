@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using CodeToNeo4j.Dart.Models;
@@ -7,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.Dart.Bridge;
 
-public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeService
+public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService> logger) : IDartBridgeService
 {
     [ExcludeFromCodeCoverage(Justification = "Requires live Dart SDK and OS process execution")]
     public async Task<DartAnalysisResult?> AnalyzeProject(string projectRoot)
@@ -42,7 +43,7 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
 
         try
         {
-            var bridgeScript = Path.Combine(bridgeDir, "bin", "dart_analyzer_bridge.dart");
+            var bridgeScript = fileSystem.Path.Combine(bridgeDir, "bin", "dart_analyzer_bridge.dart");
             var psi = new ProcessStartInfo
             {
                 FileName = dartExecutable,
@@ -101,7 +102,7 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
         }
     }
 
-    internal static string? FindDartExecutable()
+    internal string? FindDartExecutable()
     {
         var pathVar = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
         var separator = OperatingSystem.IsWindows() ? ';' : ':';
@@ -110,8 +111,8 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
         foreach (var dir in pathVar.Split(separator))
         {
             if (string.IsNullOrWhiteSpace(dir)) continue;
-            var candidate = Path.Combine(dir, exeName);
-            if (File.Exists(candidate)) return candidate;
+            var candidate = fileSystem.Path.Combine(dir, exeName);
+            if (fileSystem.File.Exists(candidate)) return candidate;
         }
 
         return null;
@@ -123,13 +124,13 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
     /// </summary>
     internal string? EnsureBridgeExtracted()
     {
-        if (_bridgeDir is not null && Directory.Exists(_bridgeDir))
+        if (_bridgeDir is not null && fileSystem.Directory.Exists(_bridgeDir))
             return _bridgeDir;
 
         lock (_extractLock)
         {
             // Double-check after acquiring lock
-            if (_bridgeDir is not null && Directory.Exists(_bridgeDir))
+            if (_bridgeDir is not null && fileSystem.Directory.Exists(_bridgeDir))
                 return _bridgeDir;
 
             try
@@ -140,17 +141,17 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
                               ?? "0.0.0";
 
                 // Sanitize version for use as a directory name (e.g. strip +metadata)
-                var safeVersion = string.Concat(version.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+                var safeVersion = string.Concat(version.Select(c => fileSystem.Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
 
-                var cacheRoot = Path.Combine(
+                var cacheRoot = fileSystem.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                     ".codetoneo4j",
                     "dart-analyzer",
                     safeVersion);
 
                 // Check if already extracted (sentinel file)
-                var sentinel = Path.Combine(cacheRoot, ".extracted");
-                if (File.Exists(sentinel))
+                var sentinel = fileSystem.Path.Combine(cacheRoot, ".extracted");
+                if (fileSystem.File.Exists(sentinel))
                 {
                     _bridgeDir = cacheRoot;
                     return cacheRoot;
@@ -159,10 +160,10 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
                 logger.LogInformation("Extracting Dart analyzer bridge to {CacheDir}...", cacheRoot);
 
                 // Clean and recreate
-                if (Directory.Exists(cacheRoot))
-                    Directory.Delete(cacheRoot, recursive: true);
+                if (fileSystem.Directory.Exists(cacheRoot))
+                    fileSystem.Directory.Delete(cacheRoot, recursive: true);
 
-                foreach (var (resourceName, relativePath) in _bridgeFiles)
+                foreach (var (resourceName, relativePath) in BridgeFiles)
                 {
                     using var stream = assembly.GetManifestResourceStream(resourceName);
                     if (stream is null)
@@ -171,16 +172,16 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
                         return null;
                     }
 
-                    var targetPath = Path.Combine(cacheRoot, relativePath);
-                    var targetDir = Path.GetDirectoryName(targetPath)!;
-                    Directory.CreateDirectory(targetDir);
+                    var targetPath = fileSystem.Path.Combine(cacheRoot, relativePath);
+                    var targetDir = fileSystem.Path.GetDirectoryName(targetPath)!;
+                    fileSystem.Directory.CreateDirectory(targetDir);
 
-                    using var fileStream = File.Create(targetPath);
+                    using var fileStream = fileSystem.File.Create(targetPath);
                     stream.CopyTo(fileStream);
                 }
 
                 // Write sentinel so we skip extraction next time
-                File.WriteAllText(sentinel, version);
+                fileSystem.File.WriteAllText(sentinel, version);
 
                 _bridgeDir = cacheRoot;
                 return cacheRoot;
@@ -200,15 +201,15 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
     internal async Task<bool> EnsureDartPubGet(string dartExecutable, string bridgeDir)
     {
         // .dart_tool/package_config.json is created by `dart pub get`
-        var packageConfig = Path.Combine(bridgeDir, ".dart_tool", "package_config.json");
-        if (File.Exists(packageConfig))
+        var packageConfig = fileSystem.Path.Combine(bridgeDir, ".dart_tool", "package_config.json");
+        if (fileSystem.File.Exists(packageConfig))
             return true;
 
         await _pubGetLock.WaitAsync().ConfigureAwait(false);
         try
         {
             // Double-check after acquiring lock
-            if (File.Exists(packageConfig))
+            if (fileSystem.File.Exists(packageConfig))
                 return true;
 
             logger.LogInformation("Running dart pub get for analyzer bridge...");
@@ -264,13 +265,14 @@ public class DartBridgeService(ILogger<DartBridgeService> logger) : IDartBridgeS
     private static readonly SemaphoreSlim _pubGetLock = new(1, 1);
 
     // Embedded resource logical names → relative file paths inside the extracted directory.
-    private static readonly (string ResourceName, string RelativePath)[] _bridgeFiles =
+    private (string ResourceName, string RelativePath)[]? _bridgeFilesCache;
+    private (string ResourceName, string RelativePath)[] BridgeFiles => _bridgeFilesCache ??=
     [
         ("dart-bridge.pubspec.yaml", "pubspec.yaml"),
-        ("dart-bridge.bin.dart_analyzer_bridge.dart", Path.Combine("bin", "dart_analyzer_bridge.dart")),
-        ("dart-bridge.lib.src.analyzer_service.dart", Path.Combine("lib", "src", "analyzer_service.dart")),
-        ("dart-bridge.lib.src.ast_visitor.dart", Path.Combine("lib", "src", "ast_visitor.dart")),
-        ("dart-bridge.lib.src.models.dart", Path.Combine("lib", "src", "models.dart")),
-        ("dart-bridge.lib.src.json_output.dart", Path.Combine("lib", "src", "json_output.dart")),
+        ("dart-bridge.bin.dart_analyzer_bridge.dart", fileSystem.Path.Combine("bin", "dart_analyzer_bridge.dart")),
+        ("dart-bridge.lib.src.analyzer_service.dart", fileSystem.Path.Combine("lib", "src", "analyzer_service.dart")),
+        ("dart-bridge.lib.src.ast_visitor.dart", fileSystem.Path.Combine("lib", "src", "ast_visitor.dart")),
+        ("dart-bridge.lib.src.models.dart", fileSystem.Path.Combine("lib", "src", "models.dart")),
+        ("dart-bridge.lib.src.json_output.dart", fileSystem.Path.Combine("lib", "src", "json_output.dart")),
     ];
 }

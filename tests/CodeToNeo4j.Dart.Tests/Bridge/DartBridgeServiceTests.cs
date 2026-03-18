@@ -1,3 +1,4 @@
+using System.IO.Abstractions;
 using CodeToNeo4j.Dart.Bridge;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -7,10 +8,13 @@ namespace CodeToNeo4j.Dart.Tests.Bridge;
 
 public class DartBridgeServiceTests
 {
+    private static DartBridgeService CreateSut() =>
+        new(new FileSystem(), NullLogger<DartBridgeService>.Instance);
+
     [Fact]
     public void GivenDartOnPath_WhenFindDartExecutableCalled_ThenReturnsPathOrNull()
     {
-        var result = DartBridgeService.FindDartExecutable();
+        var result = CreateSut().FindDartExecutable();
         Assert.True(result is null || result.Contains("dart", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -18,7 +22,7 @@ public class DartBridgeServiceTests
     public void GivenEmbeddedResources_WhenEnsureBridgeExtractedCalled_ThenExtractsFilesToCache()
     {
         // Arrange
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
 
         // Act
         var bridgeDir = sut.EnsureBridgeExtracted();
@@ -39,7 +43,7 @@ public class DartBridgeServiceTests
     public void GivenAlreadyExtracted_WhenEnsureBridgeExtractedCalledAgain_ThenReturnsSameDir()
     {
         // Arrange
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
 
         // Act
         var first = sut.EnsureBridgeExtracted();
@@ -53,7 +57,7 @@ public class DartBridgeServiceTests
     public async Task GivenPackageConfigExists_WhenEnsureDartPubGetCalled_ThenReturnsTrueWithoutRunningProcess()
     {
         // Arrange
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var dartToolDir = Path.Combine(tempDir, ".dart_tool");
         var packageConfig = Path.Combine(dartToolDir, "package_config.json");
@@ -80,7 +84,7 @@ public class DartBridgeServiceTests
     public async Task GivenInvalidDartExecutable_WhenEnsureDartPubGetCalled_ThenReturnsFalse()
     {
         // Arrange
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
 
@@ -102,10 +106,10 @@ public class DartBridgeServiceTests
     public async Task GivenNoDartOnPath_WhenAnalyzeProjectCalled_ThenReturnsNull()
     {
         // Only meaningful when Dart is not available; skip if dart is on PATH to avoid clearing real PATH
-        if (DartBridgeService.FindDartExecutable() is not null)
+        if (CreateSut().FindDartExecutable() is not null)
             return;
 
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
         var result = await sut.AnalyzeProject("/some/nonexistent/project");
         result.ShouldBeNull();
     }
@@ -114,7 +118,7 @@ public class DartBridgeServiceTests
     public async Task GivenSameProjectRoot_WhenAnalyzeProjectCalledTwice_ThenSecondCallReturnsCachedResult()
     {
         // Arrange — use a path where Dart analysis will fail/return null (no pubspec, no dart, etc.)
-        var sut = new DartBridgeService(NullLogger<DartBridgeService>.Instance);
+        var sut = CreateSut();
         var fakePath = Path.Combine(Path.GetTempPath(), "nonexistent-dart-project-" + Guid.NewGuid());
 
         // Act
