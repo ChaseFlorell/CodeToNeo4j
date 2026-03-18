@@ -7,7 +7,7 @@
   <!-- Each ItemGroup in this file should be sorted alphabetically based on their Label -->
   <!-- Each PackageVersion within each ItemGroup should be sorted alphabetically based on their Include-->
   <ItemGroup Label="Analyzers">
-    <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
   </ItemGroup>
   <ItemGroup Label="FakeItEasy">
