@@ -1,10 +1,11 @@
 name: dart_analyzer_bridge
 description: CLI bridge for CodeToNeo4j Dart analysis
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.9.0
 dependencies:
   analyzer: 12.0.0
   path: ^1.9.0
 
 dev_dependencies:
   test: ^1.25.0
+  coverage: ^1.9.0
