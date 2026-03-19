@@ -14,58 +14,58 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 1
-        clean: true
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: true
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.41.5'
-        channel: 'stable'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: 'stable'
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        global-json-file: global.json
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
 
-    - name: Dart Test
-      working-directory: tools/dart-analyzer
-      run: ${{ github.workspace }}/.github/scripts/verify_dart-test.sh
+      - name: Dart Test
+        working-directory: tools/dart-analyzer
+        run: ${{ github.workspace }}/.github/scripts/verify_dart-test.sh
 
-    - name: .NET Restore
-      run: ./.github/scripts/verify_dotnet-restore.sh
+      - name: .NET Restore
+        run: ./.github/scripts/verify_dotnet-restore.sh
 
-    - name: .NET Build
-      run: ./.github/scripts/verify_dotnet-build.sh
+      - name: .NET Build
+        run: ./.github/scripts/verify_dotnet-build.sh
 
-    - name: .NET Test
-      run: ./.github/scripts/verify_dotnet-test.sh
+      - name: .NET Test
+        run: ./.github/scripts/verify_dotnet-test.sh
 
-    - name: Upload Dart Coverage to Codecov
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: tools/dart-analyzer/coverage/lcov.info
-        flags: dart
-        fail_ci_if_error: false
+      - name: Upload Dart Coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: tools/dart-analyzer/coverage/lcov.info
+          flags: dart
+          fail_ci_if_error: false
 
-    - name: Upload .NET Coverage to Codecov
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        directory: ./TestResults
-        flags: dotnet
-        fail_ci_if_error: false
+      - name: Upload .NET Coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./TestResults
+          flags: dotnet
+          fail_ci_if_error: false
 
-    - name: Test Summary PR Comment
-      if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v8
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const script = require('./.github/scripts/test-summary-comment.js')
-          await script({github, context})
+      - name: Test Summary PR Comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const script = require('./.github/scripts/test-summary-comment.js')
+            await script({github, context})

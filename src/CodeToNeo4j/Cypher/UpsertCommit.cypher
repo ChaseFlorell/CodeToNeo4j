@@ -3,8 +3,12 @@ MERGE (c:Commit {hash: commit.hash})
 SET c.date = datetime(commit.date), c.message = commit.message, c.author = commit.authorName, c.CodeToNeo4j = true
 WITH c, commit
 OPTIONAL MATCH (p:Project {key: commit.repoKey})
-WHERE commit.repoKey IS NOT NULL
-FOREACH (ignoreMe IN CASE WHEN p IS NOT NULL THEN [1] ELSE [] END | MERGE (c)-[:PART_OF_PROJECT]->(p))
+	WHERE commit.repoKey IS NOT NULL
+FOREACH (ignoreMe IN CASE WHEN p IS NOT NULL THEN [1]
+	ELSE []
+	END |
+	MERGE (c)-[:PART_OF_PROJECT]->(p)
+)
 WITH c, commit
 MERGE (a:Author {name: commit.authorName})
 SET a.email = commit.authorEmail, a.CodeToNeo4j = true

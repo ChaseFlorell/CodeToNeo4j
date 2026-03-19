@@ -9,76 +9,76 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class RazorHandlerTests
 {
-    [Fact]
-    public async Task GivenRazorWithNamespace_WhenHandleCalled_ThenCapturesNamespace()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
-        var content = @"@namespace MyProject.Pages
+	[Fact]
+	public async Task GivenRazorWithNamespace_WhenHandleCalled_ThenCapturesNamespace()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+		var content = @"@namespace MyProject.Pages
 <h1>Hello</h1>";
-        var filePath = "test.razor";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		var filePath = "test.razor";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        var result = await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test.razor",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		var result = await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test.razor",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        result.Namespace.ShouldBe("MyProject.Pages");
-    }
+		// Assert
+		result.Namespace.ShouldBe("MyProject.Pages");
+	}
 
-    [Fact]
-    public async Task GivenRazorWithDirectives_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
-        var content = @"
+	[Fact]
+	public async Task GivenRazorWithDirectives_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+		var content = @"
 @using System.Text
 @inject IMyService MyService
 @model MyViewModel
 @inherits MyBasePage
 <h1>Hello</h1>";
-        var filePath = "test.razor";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		var filePath = "test.razor";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test.razor",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test.razor",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        symbolBuffer.Any(s => s is { Kind: "UsingDirective", Name: "System.Text" }).ShouldBeTrue();
-        symbolBuffer.Any(s => s is { Kind: "InjectDirective", Name: "IMyService MyService" }).ShouldBeTrue();
-        symbolBuffer.Any(s => s is { Kind: "ModelDirective", Name: "MyViewModel" }).ShouldBeTrue();
-        symbolBuffer.Any(s => s is { Kind: "InheritsDirective", Name: "MyBasePage" }).ShouldBeTrue();
+		// Assert
+		symbolBuffer.Any(s => s is { Kind: "UsingDirective", Name: "System.Text" }).ShouldBeTrue();
+		symbolBuffer.Any(s => s is { Kind: "InjectDirective", Name: "IMyService MyService" }).ShouldBeTrue();
+		symbolBuffer.Any(s => s is { Kind: "ModelDirective", Name: "MyViewModel" }).ShouldBeTrue();
+		symbolBuffer.Any(s => s is { Kind: "InheritsDirective", Name: "MyBasePage" }).ShouldBeTrue();
 
-        relBuffer.Count.ShouldBe(4);
-    }
+		relBuffer.Count.ShouldBe(4);
+	}
 }

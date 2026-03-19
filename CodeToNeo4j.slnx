@@ -1,74 +1,75 @@
 <Solution>
-  <Folder Name="/.src/">
-    <File Path=".editorconfig" />
-    <File Path=".gitignore" />
-    <File Path="AGENTS.md" />
-    <File Path="codecov.yml" />
-    <File Path="Directory.Build.props" />
-    <File Path="Directory.Packages.props" />
-    <File Path="dotnet-tools.json" />
-    <File Path="global.json" />
-    <File Path="nuget.config" />
-    <File Path="package-lock.json" />
-    <File Path="package.json" />
-    <File Path="PACKAGE_README.md" />
-    <File Path="README.md" />
-    <File Path="renovate-config.js" />
-    <File Path="renovate.json" />
-    <File Path="REQUIREMENTS.md" />
-    <File Path="run.sh" />
-  </Folder>
-  <Folder Name="/.src/.agent/">
-    <File Path=".agent/INSTRUCTIONS.md" />
-    <File Path=".agent/LESSONS.md" />
-  </Folder>
-  <Folder Name="/.src/.github/">
-    <File Path=".github\pull_request_template.md" />
-    <File Path=".github\release.yml" />
-  </Folder>
-  <Folder Name="/.src/.github/markdown/">
-    <File Path=".github\markdown\release_create-github-release.md" />
-  </Folder>
-  <Folder Name="/.src/.github/ISSUE_TEMPLATE/">
-    <File Path=".github\ISSUE_TEMPLATE\bug_report.yml" />
-    <File Path=".github\ISSUE_TEMPLATE\config.yml" />
-    <File Path=".github\ISSUE_TEMPLATE\feature_request.yml" />
-  </Folder>
-  <Folder Name="/.src/.github/scripts/">
-    <File Path=".github\scripts\close-associated-issues.js" />
-    <File Path=".github\scripts\index-to-neo4j_install-codetoneo4j.sh" />
-    <File Path=".github\scripts\index-to-neo4j_run-codetoneo4j.sh" />
-    <File Path=".github\scripts\pr-requirements_check-issue-reference.sh" />
-    <File Path=".github\scripts\pr-requirements_check-label.sh" />
-    <File Path=".github\scripts\pr-requirements_check-rebased-checkbox.sh" />
-    <File Path=".github\scripts\pr-requirements_check-tests-checkbox.sh" />
-    <File Path=".github\scripts\pr-requirements_create-and-link-issue.js" />
-    <File Path=".github\scripts\release_build.sh" />
-    <File Path=".github\scripts\release_pack.sh" />
-    <File Path=".github\scripts\release_push-to-github-packages.sh" />
-    <File Path=".github\scripts\release_generate-release-notes.sh" />
-    <File Path=".github\scripts\release_push-to-nuget.sh" />
-    <File Path=".github\scripts\release_restore-dependencies.sh" />
-    <File Path=".github\scripts\release_test.sh" />
-    <File Path=".github\scripts\renovate_configure-git-user.sh" />
-    <File Path=".github\scripts\renovate_install-dependencies.sh" />
-    <File Path=".github\scripts\renovate_run-renovate.sh" />
-    <File Path=".github\scripts\test-summary-comment.js" />
-    <File Path=".github\scripts\verify_dart-test.sh" />
-    <File Path=".github\scripts\verify_dotnet-build.sh" />
-    <File Path=".github\scripts\verify_dotnet-restore.sh" />
-    <File Path=".github\scripts\verify_dotnet-test.sh" />
-  </Folder>
-  <Folder Name="/.src/.github/workflows/">
-    <File Path=".github\workflows\close-associated-issues.yml" />
-    <File Path=".github\workflows\index-to-neo4j.yml" />
-    <File Path=".github\workflows\pr-requirements.yml" />
-    <File Path=".github\workflows\release.yml" />
-    <File Path=".github\workflows\renovate.yml" />
-    <File Path=".github\workflows\verify.yml" />
-  </Folder>
-  <Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
-  <Project Path="src/CodeToNeo4j.Dart/CodeToNeo4j.Dart.csproj" />
-  <Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />
-  <Project Path="tests/CodeToNeo4j.Dart.Tests/CodeToNeo4j.Dart.Tests.csproj" />
+	<Folder Name="/.src/">
+		<File Path=".editorconfig" />
+		<File Path=".gitignore" />
+		<File Path="AGENTS.md" />
+		<File Path="codecov.yml" />
+		<File Path="Directory.Build.props" />
+		<File Path="Directory.Packages.props" />
+		<File Path="dotnet-tools.json" />
+		<File Path="global.json" />
+		<File Path="LICENSE.md" />
+		<File Path="nuget.config" />
+		<File Path="package-lock.json" />
+		<File Path="package.json" />
+		<File Path="PACKAGE_README.md" />
+		<File Path="README.md" />
+		<File Path="renovate-config.js" />
+		<File Path="renovate.json" />
+		<File Path="REQUIREMENTS.md" />
+		<File Path="run.sh" />
+	</Folder>
+	<Folder Name="/.src/.agent/">
+		<File Path=".agent/INSTRUCTIONS.md" />
+		<File Path=".agent/LESSONS.md" />
+	</Folder>
+	<Folder Name="/.src/.github/">
+		<File Path=".github\pull_request_template.md" />
+		<File Path=".github\release.yml" />
+	</Folder>
+	<Folder Name="/.src/.github/markdown/">
+		<File Path=".github\markdown\release_create-github-release.md" />
+	</Folder>
+	<Folder Name="/.src/.github/ISSUE_TEMPLATE/">
+		<File Path=".github\ISSUE_TEMPLATE\bug_report.yml" />
+		<File Path=".github\ISSUE_TEMPLATE\config.yml" />
+		<File Path=".github\ISSUE_TEMPLATE\feature_request.yml" />
+	</Folder>
+	<Folder Name="/.src/.github/scripts/">
+		<File Path=".github\scripts\close-associated-issues.js" />
+		<File Path=".github\scripts\index-to-neo4j_install-codetoneo4j.sh" />
+		<File Path=".github\scripts\index-to-neo4j_run-codetoneo4j.sh" />
+		<File Path=".github\scripts\pr-requirements_check-issue-reference.sh" />
+		<File Path=".github\scripts\pr-requirements_check-label.sh" />
+		<File Path=".github\scripts\pr-requirements_check-rebased-checkbox.sh" />
+		<File Path=".github\scripts\pr-requirements_check-tests-checkbox.sh" />
+		<File Path=".github\scripts\pr-requirements_create-and-link-issue.js" />
+		<File Path=".github\scripts\release_build.sh" />
+		<File Path=".github\scripts\release_pack.sh" />
+		<File Path=".github\scripts\release_push-to-github-packages.sh" />
+		<File Path=".github\scripts\release_generate-release-notes.sh" />
+		<File Path=".github\scripts\release_push-to-nuget.sh" />
+		<File Path=".github\scripts\release_restore-dependencies.sh" />
+		<File Path=".github\scripts\release_test.sh" />
+		<File Path=".github\scripts\renovate_configure-git-user.sh" />
+		<File Path=".github\scripts\renovate_install-dependencies.sh" />
+		<File Path=".github\scripts\renovate_run-renovate.sh" />
+		<File Path=".github\scripts\test-summary-comment.js" />
+		<File Path=".github\scripts\verify_dart-test.sh" />
+		<File Path=".github\scripts\verify_dotnet-build.sh" />
+		<File Path=".github\scripts\verify_dotnet-restore.sh" />
+		<File Path=".github\scripts\verify_dotnet-test.sh" />
+	</Folder>
+	<Folder Name="/.src/.github/workflows/">
+		<File Path=".github\workflows\close-associated-issues.yml" />
+		<File Path=".github\workflows\index-to-neo4j.yml" />
+		<File Path=".github\workflows\pr-requirements.yml" />
+		<File Path=".github\workflows\release.yml" />
+		<File Path=".github\workflows\renovate.yml" />
+		<File Path=".github\workflows\verify.yml" />
+	</Folder>
+	<Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
+	<Project Path="src/CodeToNeo4j.Dart/CodeToNeo4j.Dart.csproj" />
+	<Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />
+	<Project Path="tests/CodeToNeo4j.Dart.Tests/CodeToNeo4j.Dart.Tests.csproj" />
 </Solution>

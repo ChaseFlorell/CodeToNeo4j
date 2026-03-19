@@ -1,125 +1,125 @@
 {
-  "configMigration": true,
-  "extends": [
-    "config:recommended"
-  ],
-  "ignorePresets": [
-    ":disableRateLimiting"
-  ],
-  "prConcurrentLimit": 0,
-  "prHourlyLimit": 0,
-  "labels": [
-    "dependencies",
-    "renovate"
-  ],
-  "prBodyNotes": [
-    "## Checklist",
-    "",
-    "- [x] This PR resolves the linked issue",
-    "- [ ] Tests have been added or updated",
-    "- [x] Rebased on top of main"
-  ],
-  "packageRules": [
-    {
-      "description": "Label major updates as breaking changes",
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "addLabels": [
-        "breaking-change"
-      ],
-      "prBodyNotes": [
-        "- [x] This is a breaking change"
-      ]
-    },
-    {
-      "description": "Automerge non-major updates",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "autoApprove": true,
-      "automerge": true,
-      "prBodyNotes": [
-        "- [ ] This is a breaking change"
-      ]
-    },
-    {
-      "description": "Skip pinned versions",
-      "matchManagers": [
-        "nuget"
-      ],
-      "matchCurrentValue": "/^\\[[^,]+\\]$/",
-      "enabled": false
-    },
-    {
-      "groupName": "Analyzers",
-      "matchPackageNames": [
-        "coverlet.collector",
-        "Roslynator.Analyzers"
-      ]
-    },
-    {
-      "groupName": "FakeItEasy",
-      "matchPackageNames": [
-        "/^FakeItEasy/"
-      ]
-    },
-    {
-      "groupName": "Microsoft and System",
-      "matchPackageNames": [
-        "/^Microsoft\\./",
-        "/^System\\./",
-        "!System.IO.Abstractions",
-        "!System.IO.Abstractions.TestingHelpers"
-      ]
-    },
-    {
-      "groupName": "Neo4j.Driver",
-      "matchPackageNames": [
-        "/^Neo4j\\.Driver/"
-      ]
-    },
-    {
-      "groupName": "Polly",
-      "matchPackageNames": [
-        "/^Polly/"
-      ]
-    },
-    {
-      "groupName": "Shouldly",
-      "matchPackageNames": [
-        "/^Shouldly/"
-      ]
-    },
-    {
-      "groupName": "Spectre.Console",
-      "matchPackageNames": [
-        "/^Spectre\\.Console/"
-      ]
-    },
-    {
-      "groupName": "System.IO.Abstractions",
-      "matchPackageNames": [
-        "/^System\\.IO\\.Abstractions/"
-      ]
-    },
-    {
-      "groupName": "xunit",
-      "matchPackageNames": [
-        "/^xunit/"
-      ]
-    },
-    {
-      "description": "Keep Renovate up to date (self-managed)",
-      "groupName": "Renovate",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchPackageNames": [
-        "renovate"
-      ],
-      "automerge": true
-    }
-  ]
+	"configMigration": true,
+	"extends": [
+		"config:recommended"
+	],
+	"ignorePresets": [
+		":disableRateLimiting"
+	],
+	"prConcurrentLimit": 0,
+	"prHourlyLimit": 0,
+	"labels": [
+		"dependencies",
+		"renovate"
+	],
+	"prBodyNotes": [
+		"## Checklist",
+		"",
+		"- [x] This PR resolves the linked issue",
+		"- [ ] Tests have been added or updated",
+		"- [x] Rebased on top of main"
+	],
+	"packageRules": [
+		{
+			"description": "Label major updates as breaking changes",
+			"matchUpdateTypes": [
+				"major"
+			],
+			"addLabels": [
+				"breaking-change"
+			],
+			"prBodyNotes": [
+				"- [x] This is a breaking change"
+			]
+		},
+		{
+			"description": "Automerge non-major updates",
+			"matchUpdateTypes": [
+				"minor",
+				"patch"
+			],
+			"autoApprove": true,
+			"automerge": true,
+			"prBodyNotes": [
+				"- [ ] This is a breaking change"
+			]
+		},
+		{
+			"description": "Skip pinned versions",
+			"matchManagers": [
+				"nuget"
+			],
+			"matchCurrentValue": "/^\\[[^,]+\\]$/",
+			"enabled": false
+		},
+		{
+			"groupName": "Analyzers",
+			"matchPackageNames": [
+				"coverlet.collector",
+				"Roslynator.Analyzers"
+			]
+		},
+		{
+			"groupName": "FakeItEasy",
+			"matchPackageNames": [
+				"/^FakeItEasy/"
+			]
+		},
+		{
+			"groupName": "Microsoft and System",
+			"matchPackageNames": [
+				"/^Microsoft\\./",
+				"/^System\\./",
+				"!System.IO.Abstractions",
+				"!System.IO.Abstractions.TestingHelpers"
+			]
+		},
+		{
+			"groupName": "Neo4j.Driver",
+			"matchPackageNames": [
+				"/^Neo4j\\.Driver/"
+			]
+		},
+		{
+			"groupName": "Polly",
+			"matchPackageNames": [
+				"/^Polly/"
+			]
+		},
+		{
+			"groupName": "Shouldly",
+			"matchPackageNames": [
+				"/^Shouldly/"
+			]
+		},
+		{
+			"groupName": "Spectre.Console",
+			"matchPackageNames": [
+				"/^Spectre\\.Console/"
+			]
+		},
+		{
+			"groupName": "System.IO.Abstractions",
+			"matchPackageNames": [
+				"/^System\\.IO\\.Abstractions/"
+			]
+		},
+		{
+			"groupName": "xunit",
+			"matchPackageNames": [
+				"/^xunit/"
+			]
+		},
+		{
+			"description": "Keep Renovate up to date (self-managed)",
+			"groupName": "Renovate",
+			"matchManagers": [
+				"npm"
+			],
+			"matchPackageNames": [
+				"renovate"
+			],
+			"automerge": true
+		}
+	]
 }

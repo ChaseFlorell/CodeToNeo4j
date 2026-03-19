@@ -49,26 +49,27 @@ codetoneo4j \
 
 ## Key Options
 
-| Option                      | Description                                                                            |
-|-----------------------------|----------------------------------------------------------------------------------------|
-| `--input`, `--sln`, `-s`    | Path to a `.sln`, `.slnx`, or `.csproj` file, or a directory. Auto-detects when omitted. |
-| `--no-key`                  | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository. |
-| `--password`, `-p`          | **Required**. Password for the Neo4j database.                                         |
-| `--uri`, `-u`, `--url`      | **Required**. Neo4j connection string (Default: `bolt://localhost:7687`).                            |
-| `--user`                    | Neo4j username (Default: `neo4j`).                                                     |
-| `--database`, `-db`         | Neo4j database name (Default: `neo4j`).                                                |
-| `--diff-base`               | Optional git base ref (e.g., `origin/main`) for incremental indexing.                  |
-| `--log-level`, `-l`         | Logging verbosity (`Information`, `Debug`, etc.).                                      |
-| `--debug`, `-d`             | Turn on debug logging.                                                                 |
-| `--verbose`, `-v`           | Turn on trace logging.                                                                 |
-| `--quiet`, `-q`             | Mute all logging output.                                                               |
-| `--skip-dependencies`       | Skip NuGet dependency ingestion.                                                       |
-| `--min-accessibility`       | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). Default: `NotApplicable`. |
-| `--batch-size`              | Number of symbols to batch before flushing to Neo4j. Default: `500`.                   |
-| `--include`, `-i`           | File extensions to include (Default: all supported, including `.dart`).                 |
-| `--purge-data`              | Purge data associated with the repository.                                         |
+| Option                   | Description                                                                                    |
+|--------------------------|------------------------------------------------------------------------------------------------|
+| `--input`, `--sln`, `-s` | Path to a `.sln`, `.slnx`, or `.csproj` file, or a directory. Auto-detects when omitted.       |
+| `--no-key`               | Do not use a repository key. Use this if the Neo4j instance is dedicated to this repository.   |
+| `--password`, `-p`       | **Required**. Password for the Neo4j database.                                                 |
+| `--uri`, `-u`, `--url`   | **Required**. Neo4j connection string (Default: `bolt://localhost:7687`).                      |
+| `--user`                 | Neo4j username (Default: `neo4j`).                                                             |
+| `--database`, `-db`      | Neo4j database name (Default: `neo4j`).                                                        |
+| `--diff-base`            | Optional git base ref (e.g., `origin/main`) for incremental indexing.                          |
+| `--log-level`, `-l`      | Logging verbosity (`Information`, `Debug`, etc.).                                              |
+| `--debug`, `-d`          | Turn on debug logging.                                                                         |
+| `--verbose`, `-v`        | Turn on trace logging.                                                                         |
+| `--quiet`, `-q`          | Mute all logging output.                                                                       |
+| `--skip-dependencies`    | Skip NuGet dependency ingestion.                                                               |
+| `--min-accessibility`    | Minimum accessibility level (e.g., `Public`, `Internal`, `Private`). Default: `NotApplicable`. |
+| `--batch-size`           | Number of symbols to batch before flushing to Neo4j. Default: `500`.                           |
+| `--include`, `-i`        | File extensions to include (Default: all supported, including `.dart`).                        |
+| `--purge-data`           | Purge data associated with the repository.                                                     |
 
-> Note: When `--input` is omitted, the tool auto-detects the project type from the current directory (`.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only). When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> Note: When `--input` is omitted, the tool auto-detects the project type from the current directory (`.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only). When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are
+> purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge examples
 

@@ -2,7 +2,7 @@ name: Close Associated Issues
 
 on:
   pull_request:
-    types: [closed]
+    types: [ closed ]
 
 permissions:
   contents: read

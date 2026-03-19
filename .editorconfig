@@ -5,15 +5,15 @@ root = true
 # Core formatting
 ###############################
 [*]
-indent_style = space
+indent_style = tab
 indent_size = 4
 tab_width = 4
 end_of_line = lf
-charset = utf-8-bom
+charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{xml,csproj,props,targets,json,yml,yaml}]
+[*.{xml,csproj,props,targets,json,yml,yaml,config}]
 indent_size = 2
 
 [*.md]
@@ -26,14 +26,14 @@ trim_trailing_whitespace = false
 
 # Using directives
 dotnet_sort_system_directives_first = true
-csharp_using_directive_placement = outside_namespace:suggestion
+csharp_using_directive_placement = outside_namespace:warning
 
 # Namespace preferences
 csharp_style_namespace_declarations = file_scoped:warning
 
 # var preferences
 csharp_style_var_for_built_in_types = true:suggestion
-csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_when_type_is_apparent = false:warning
 csharp_style_var_elsewhere = true:suggestion
 
 # Expression-bodied members
@@ -47,22 +47,22 @@ csharp_style_expression_bodied_lambdas = true:suggestion
 csharp_style_expression_bodied_local_functions = when_on_single_line:suggestion
 
 # Pattern matching
-csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
-csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
-csharp_style_prefer_not_pattern = true:suggestion
-csharp_style_prefer_pattern_matching = true:suggestion
-csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+csharp_style_prefer_not_pattern = true:warning
+csharp_style_prefer_pattern_matching = true:warning
+csharp_style_prefer_switch_expression = true:warning
 
 # Null checking
-dotnet_style_coalesce_expression = true:suggestion
-dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:warning
+dotnet_style_null_propagation = true:warning
 csharp_style_throw_expression = true:suggestion
 csharp_style_conditional_delegate_call = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 
 # Modifier preferences
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
-csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:suggestion
+csharp_preferred_modifier_order = public, private, protected, internal, file, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, required, volatile, async:suggestion
 
 # this. and Me. preferences
 dotnet_style_qualification_for_field = false:suggestion
@@ -85,7 +85,7 @@ csharp_style_prefer_local_over_anonymous_function = true:suggestion
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_style_prefer_index_operator = true:suggestion
 csharp_style_prefer_range_operator = true:suggestion
-csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+csharp_style_implicit_object_creation_when_type_is_apparent = true:warning
 csharp_style_prefer_tuple_swap = true:suggestion
 csharp_style_prefer_utf8_string_literals = true:suggestion
 csharp_style_deconstructed_variable_declaration = true:suggestion
@@ -236,57 +236,58 @@ resharper_place_accessorholder_attribute_on_same_line = false
 ###############################
 
 # IDE analyzers
-dotnet_diagnostic.IDE0005.severity = warning       # Remove unnecessary using
-dotnet_diagnostic.IDE0011.severity = warning       # Add braces
-dotnet_diagnostic.IDE0040.severity = warning       # Add accessibility modifiers
-dotnet_diagnostic.IDE0055.severity = suggestion    # Formatting rule (incremental cleanup)
-dotnet_diagnostic.IDE0161.severity = warning       # File-scoped namespace
+dotnet_diagnostic.IDE0005.severity = warning # Remove unnecessary using
+dotnet_diagnostic.IDE0011.severity = warning # Add braces
+dotnet_diagnostic.IDE0040.severity = warning # Add accessibility modifiers
+dotnet_diagnostic.IDE0055.severity = warning # Formatting rule
+dotnet_diagnostic.IDE0090.severity = warning # Use target-typed new
+dotnet_diagnostic.IDE0161.severity = warning # File-scoped namespace
 
 # .NET code analysis — suggestion level (incremental cleanup)
-dotnet_diagnostic.CA1304.severity = suggestion     # Specify CultureInfo
-dotnet_diagnostic.CA1305.severity = suggestion     # Specify IFormatProvider
-dotnet_diagnostic.CA1310.severity = suggestion     # Specify StringComparison
-dotnet_diagnostic.CA1311.severity = suggestion     # Specify culture or use invariant
-dotnet_diagnostic.CA1716.severity = suggestion     # Avoid reserved keyword names
-dotnet_diagnostic.CA1725.severity = suggestion     # Parameter names should match base
-dotnet_diagnostic.CA1806.severity = suggestion     # Do not ignore method results
-dotnet_diagnostic.CA1848.severity = suggestion     # Use LoggerMessage delegates
-dotnet_diagnostic.CA1860.severity = suggestion     # Prefer Length/Count check over Any()
-dotnet_diagnostic.CA1866.severity = suggestion     # Use char overload
-dotnet_diagnostic.CA1873.severity = suggestion     # Avoid expensive log argument evaluation
-dotnet_diagnostic.CA2201.severity = suggestion     # Do not raise reserved exception types
+dotnet_diagnostic.CA1304.severity = suggestion # Specify CultureInfo
+dotnet_diagnostic.CA1305.severity = suggestion # Specify IFormatProvider
+dotnet_diagnostic.CA1310.severity = suggestion # Specify StringComparison
+dotnet_diagnostic.CA1311.severity = suggestion # Specify culture or use invariant
+dotnet_diagnostic.CA1716.severity = suggestion # Avoid reserved keyword names
+dotnet_diagnostic.CA1725.severity = suggestion # Parameter names should match base
+dotnet_diagnostic.CA1806.severity = suggestion # Do not ignore method results
+dotnet_diagnostic.CA1848.severity = suggestion # Use LoggerMessage delegates
+dotnet_diagnostic.CA1860.severity = suggestion # Prefer Length/Count check over Any()
+dotnet_diagnostic.CA1866.severity = suggestion # Use char overload
+dotnet_diagnostic.CA1873.severity = suggestion # Avoid expensive log argument evaluation
+dotnet_diagnostic.CA2201.severity = suggestion # Do not raise reserved exception types
 
 # Roslynator — promoted to warning (code already complies)
-dotnet_diagnostic.RCS1085.severity = warning       # Use auto-implemented property
-dotnet_diagnostic.RCS1118.severity = warning       # Mark local variable as const
-dotnet_diagnostic.RCS1194.severity = warning       # Implement exception constructors
-dotnet_diagnostic.RCS1211.severity = warning       # Remove unnecessary else clause
+dotnet_diagnostic.RCS1085.severity = warning # Use auto-implemented property
+dotnet_diagnostic.RCS1118.severity = warning # Mark local variable as const
+dotnet_diagnostic.RCS1194.severity = warning # Implement exception constructors
+dotnet_diagnostic.RCS1211.severity = warning # Remove unnecessary else clause
 
 # Roslynator — suggestion level (may require incremental cleanup)
-dotnet_diagnostic.RCS1021.severity = suggestion    # Convert lambda expression body to expression body
-dotnet_diagnostic.RCS1036.severity = suggestion    # Remove unnecessary blank line
-dotnet_diagnostic.RCS1037.severity = suggestion    # Remove trailing white-space
-dotnet_diagnostic.RCS1049.severity = suggestion    # Simplify boolean comparison
-dotnet_diagnostic.RCS1061.severity = suggestion    # Merge if statement with nested if statement
-dotnet_diagnostic.RCS1068.severity = suggestion    # Simplify logical negation
-dotnet_diagnostic.RCS1077.severity = suggestion    # Optimize LINQ method call
-dotnet_diagnostic.RCS1080.severity = suggestion    # Use Count/Length property instead of Any()
-dotnet_diagnostic.RCS1123.severity = suggestion    # Add parentheses when necessary
-dotnet_diagnostic.RCS1138.severity = suggestion    # Add summary to documentation comment
-dotnet_diagnostic.RCS1139.severity = suggestion    # Add summary element to documentation comment
-dotnet_diagnostic.RCS1141.severity = suggestion    # Add param element to documentation comment
-dotnet_diagnostic.RCS1163.severity = suggestion    # Unused parameter
-dotnet_diagnostic.RCS1169.severity = suggestion    # Make field read-only
-dotnet_diagnostic.RCS1170.severity = suggestion    # Use read-only auto-implemented property
-dotnet_diagnostic.RCS1181.severity = suggestion    # Convert comment to documentation comment
-dotnet_diagnostic.RCS1186.severity = suggestion    # Use Regex instance instead of static method
-dotnet_diagnostic.RCS1197.severity = suggestion    # Optimize StringBuilder.Append call
-dotnet_diagnostic.RCS1241.severity = suggestion    # Implement non-generic counterpart
-dotnet_diagnostic.RCS1246.severity = suggestion    # Use element access
+dotnet_diagnostic.RCS1021.severity = suggestion # Convert lambda expression body to expression body
+dotnet_diagnostic.RCS1036.severity = suggestion # Remove unnecessary blank line
+dotnet_diagnostic.RCS1037.severity = suggestion # Remove trailing white-space
+dotnet_diagnostic.RCS1049.severity = suggestion # Simplify boolean comparison
+dotnet_diagnostic.RCS1061.severity = suggestion # Merge if statement with nested if statement
+dotnet_diagnostic.RCS1068.severity = suggestion # Simplify logical negation
+dotnet_diagnostic.RCS1077.severity = suggestion # Optimize LINQ method call
+dotnet_diagnostic.RCS1080.severity = suggestion # Use Count/Length property instead of Any()
+dotnet_diagnostic.RCS1123.severity = suggestion # Add parentheses when necessary
+dotnet_diagnostic.RCS1138.severity = suggestion # Add summary to documentation comment
+dotnet_diagnostic.RCS1139.severity = suggestion # Add summary element to documentation comment
+dotnet_diagnostic.RCS1141.severity = suggestion # Add param element to documentation comment
+dotnet_diagnostic.RCS1163.severity = suggestion # Unused parameter
+dotnet_diagnostic.RCS1169.severity = suggestion # Make field read-only
+dotnet_diagnostic.RCS1170.severity = suggestion # Use read-only auto-implemented property
+dotnet_diagnostic.RCS1181.severity = suggestion # Convert comment to documentation comment
+dotnet_diagnostic.RCS1186.severity = suggestion # Use Regex instance instead of static method
+dotnet_diagnostic.RCS1197.severity = suggestion # Optimize StringBuilder.Append call
+dotnet_diagnostic.RCS1241.severity = suggestion # Implement non-generic counterpart
+dotnet_diagnostic.RCS1246.severity = suggestion # Use element access
 
 ###############################
 # Test project overrides
 ###############################
 [tests/**/*.cs]
-dotnet_diagnostic.CA1707.severity = none           # Allow underscores in test method names
-dotnet_diagnostic.RCS1118.severity = suggestion    # Mark local variable as const (many test string literals)
+dotnet_diagnostic.CA1707.severity = none # Allow underscores in test method names
+dotnet_diagnostic.RCS1118.severity = suggestion # Mark local variable as const (many test string literals)

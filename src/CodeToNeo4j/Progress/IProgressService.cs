@@ -5,13 +5,13 @@ namespace CodeToNeo4j.Progress;
 /// </summary>
 public interface IProgressService
 {
-    /// <summary>
-    /// Reports progress for a specific file being processed.
-    /// </summary>
-    /// <param name="current">The current file count being processed.</param>
-    /// <param name="total">The total number of files to be processed.</param>
-    /// <param name="filePath">The path of the file being processed.</param>
-    void ReportProgress(int current, int total, string filePath);
+	/// <summary>
+	/// Reports progress for a specific file being processed.
+	/// </summary>
+	/// <param name="current">The current file count being processed.</param>
+	/// <param name="total">The total number of files to be processed.</param>
+	/// <param name="filePath">The path of the file being processed.</param>
+	void ReportProgress(int current, int total, string filePath);
 
-    void ProgressComplete();
+	void ProgressComplete();
 }

@@ -14,72 +14,72 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 1
-        clean: true
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: true
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.41.5'
-        channel: 'stable'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: 'stable'
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        global-json-file: global.json
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
 
-    - name: Restore dependencies
-      run: ./.github/scripts/release_restore-dependencies.sh
+      - name: Restore dependencies
+        run: ./.github/scripts/release_restore-dependencies.sh
 
-    - name: Build
-      env:
-        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-      run: ./.github/scripts/release_build.sh
+      - name: Build
+        env:
+          VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+        run: ./.github/scripts/release_build.sh
 
-    - name: Test
-      run: ./.github/scripts/release_test.sh
+      - name: Test
+        run: ./.github/scripts/release_test.sh
 
-    - name: Pack
-      env:
-        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-      run: ./.github/scripts/release_pack.sh
+      - name: Pack
+        env:
+          VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+        run: ./.github/scripts/release_pack.sh
 
-    - name: Attest build provenance
-      uses: actions/attest-build-provenance@v4
-      with:
-        subject-path: out/*.nupkg
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: out/*.nupkg
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: CodeToNeo4j.nupkg
-        path: out/*.nupkg
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: CodeToNeo4j.nupkg
+          path: out/*.nupkg
 
-    - name: Push to NuGet.org
-      env:
-        NUGET_KEY: ${{ secrets.NUGET_KEY }}
-      run: ./.github/scripts/release_push-to-nuget.sh
+      - name: Push to NuGet.org
+        env:
+          NUGET_KEY: ${{ secrets.NUGET_KEY }}
+        run: ./.github/scripts/release_push-to-nuget.sh
 
-    - name: Push to GitHub Packages
-      env:
-        REPOSITORY_OWNER: ${{ github.repository_owner }}
-      run: ./.github/scripts/release_push-to-github-packages.sh
+      - name: Push to GitHub Packages
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: ./.github/scripts/release_push-to-github-packages.sh
 
-    - name: Generate Release Notes
-      env:
-        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-        SHA: ${{ github.sha }}
-        REPOSITORY: ${{ github.repository }}
-        RUN_ID: ${{ github.run_id }}
-      run: ./.github/scripts/release_generate-release-notes.sh
+      - name: Generate Release Notes
+        env:
+          VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+          SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: ./.github/scripts/release_generate-release-notes.sh
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-        name: Release v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-        body_path: ${{ runner.temp }}/release-notes.md
-        generate_release_notes: true
-        files: out/*.nupkg
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+          name: Release v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+          body_path: ${{ runner.temp }}/release-notes.md
+          generate_release_notes: true
+          files: out/*.nupkg

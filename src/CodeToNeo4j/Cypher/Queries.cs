@@ -2,18 +2,18 @@ namespace CodeToNeo4j.Cypher;
 
 public static class Queries
 {
-    public const string MarkFileAsDeleted = "MarkFileAsDeleted";
-    public const string DeletePriorSymbols = "DeletePriorSymbols";
-    public const string GetNeo4jVersion = "GetNeo4jVersion";
-    public const string MergeRelationships = "MergeRelationships";
-    public const string Schema = "Schema";
-    public const string UpsertFile = "UpsertFile";
-    public const string UpsertProject = "UpsertProject";
-    public const string UpsertSymbols = "UpsertSymbols";
-    public const string UpsertCommit = "UpsertCommit";
-    public const string UpsertDependencies = "UpsertDependencies";
-    public const string PurgeData = "PurgeData";
-    public const string UpsertTags = "UpsertTags";
-    public const string UpsertDependencyUrls = "UpsertDependencyUrls";
-    public const string UpsertTargetFrameworks = "UpsertTargetFrameworks";
+	public const string MarkFileAsDeleted = "MarkFileAsDeleted";
+	public const string DeletePriorSymbols = "DeletePriorSymbols";
+	public const string GetNeo4jVersion = "GetNeo4jVersion";
+	public const string MergeRelationships = "MergeRelationships";
+	public const string Schema = "Schema";
+	public const string UpsertFile = "UpsertFile";
+	public const string UpsertProject = "UpsertProject";
+	public const string UpsertSymbols = "UpsertSymbols";
+	public const string UpsertCommit = "UpsertCommit";
+	public const string UpsertDependencies = "UpsertDependencies";
+	public const string PurgeData = "PurgeData";
+	public const string UpsertTags = "UpsertTags";
+	public const string UpsertDependencyUrls = "UpsertDependencyUrls";
+	public const string UpsertTargetFrameworks = "UpsertTargetFrameworks";
 }

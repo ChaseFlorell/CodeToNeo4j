@@ -9,35 +9,35 @@ namespace CodeToNeo4j.FileHandlers;
 /// <c>pkg:{packageName}</c> with <c>DEPENDS_ON</c> relationships.
 /// </summary>
 public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
-    : DocumentHandlerBase(fileSystem)
+	: DocumentHandlerBase(fileSystem)
 {
-    protected ITextSymbolMapper SymbolMapper { get; } = textSymbolMapper;
+	protected ITextSymbolMapper SymbolMapper { get; } = textSymbolMapper;
 
-    protected void AddDependency(
-        string name,
-        string? version,
-        string fileKey,
-        string relativePath,
-        string? fileNamespace,
-        ICollection<Symbol> symbolBuffer,
-        ICollection<Relationship> relBuffer)
-    {
-        var key = $"pkg:{name}";
+	protected void AddDependency(
+		string name,
+		string? version,
+		string fileKey,
+		string relativePath,
+		string? fileNamespace,
+		ICollection<Symbol> symbolBuffer,
+		ICollection<Relationship> relBuffer)
+	{
+		var key = $"pkg:{name}";
 
-        var record = SymbolMapper.CreateSymbol(
-            key: key,
-            name: name,
-            kind: "Dependency",
-            @class: name,
-            fqn: version is not null ? $"{name} ({version})" : name,
-            fileKey: fileKey,
-            relativePath: relativePath,
-            fileNamespace: fileNamespace,
-            startLine: -1,
-            documentation: version,
-            version: version);
+		var record = SymbolMapper.CreateSymbol(
+			key,
+			name,
+			"Dependency",
+			name,
+			version is not null ? $"{name} ({version})" : name,
+			fileKey,
+			relativePath,
+			fileNamespace,
+			-1,
+			documentation: version,
+			version: version);
 
-        symbolBuffer.Add(record);
-        relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "DEPENDS_ON"));
-    }
+		symbolBuffer.Add(record);
+		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
+	}
 }

@@ -10,128 +10,128 @@ namespace CodeToNeo4j.Tests.ProgramOptions;
 
 public class OptionsBinderTests
 {
-    // ── repoKey fallback when --input resolves to a root-like path ────────────
+	// ── repoKey fallback when --input resolves to a root-like path ────────────
 
-    [Theory]
-    [InlineData("/")]
-    [InlineData(".")]
-    [InlineData(null)]
-    public void GivenRootOrRelativeInput_WhenBinding_ThenRepoKeyFallsBackToCurrentDirectoryName(string? inputArg)
-    {
-        // Arrange — CWD is /home/user/myproject; no .sln/.csproj so auto-detect returns the directory
-        var fs = new MockFileSystem();
-        fs.AddDirectory("/home/user/myproject");
-        fs.Directory.SetCurrentDirectory("/home/user/myproject");
+	[Theory]
+	[InlineData("/")]
+	[InlineData(".")]
+	[InlineData(null)]
+	public void GivenRootOrRelativeInput_WhenBinding_ThenRepoKeyFallsBackToCurrentDirectoryName(string? inputArg)
+	{
+		// Arrange — CWD is /home/user/myproject; no .sln/.csproj so auto-detect returns the directory
+		MockFileSystem fs = new();
+		fs.AddDirectory("/home/user/myproject");
+		fs.Directory.SetCurrentDirectory("/home/user/myproject");
 
-        var (binder, root, inputOption) = CreateBinderAndCommand(fs);
+		var (binder, root, inputOption) = CreateBinderAndCommand(fs);
 
-        var args = inputArg is null
-            ? Array.Empty<string>()
-            : new[] { "--input", inputArg };
+		var args = inputArg is null
+			? Array.Empty<string>()
+			: new[] { "--input", inputArg };
 
-        var parseResult = root.Parse(args);
+		var parseResult = root.Parse(args);
 
-        // Act
-        var options = binder.Bind(parseResult);
+		// Act
+		var options = binder.Bind(parseResult);
 
-        // Assert
-        options.RepoKey.ShouldBe("myproject");
-    }
+		// Assert
+		options.RepoKey.ShouldBe("myproject");
+	}
 
-    [Fact]
-    public void GivenExplicitSlnInput_WhenBinding_ThenRepoKeyDerivedFromSlnName()
-    {
-        // Arrange
-        var fs = new MockFileSystem();
-        fs.AddFile("/repo/MySolution.sln", new MockFileData(""));
+	[Fact]
+	public void GivenExplicitSlnInput_WhenBinding_ThenRepoKeyDerivedFromSlnName()
+	{
+		// Arrange
+		MockFileSystem fs = new();
+		fs.AddFile("/repo/MySolution.sln", new(""));
 
-        var (binder, root, _) = CreateBinderAndCommand(fs);
+		var (binder, root, _) = CreateBinderAndCommand(fs);
 
-        var parseResult = root.Parse(["--input", "/repo/MySolution.sln"]);
+		var parseResult = root.Parse(["--input", "/repo/MySolution.sln"]);
 
-        // Act
-        var options = binder.Bind(parseResult);
+		// Act
+		var options = binder.Bind(parseResult);
 
-        // Assert
-        options.RepoKey.ShouldBe("mysolution");
-    }
+		// Assert
+		options.RepoKey.ShouldBe("mysolution");
+	}
 
-    [Fact]
-    public void GivenDirectoryInput_WhenBinding_ThenRepoKeyDerivedFromDirectoryName()
-    {
-        // Arrange
-        var fs = new MockFileSystem();
-        fs.AddDirectory("/projects/my-app");
+	[Fact]
+	public void GivenDirectoryInput_WhenBinding_ThenRepoKeyDerivedFromDirectoryName()
+	{
+		// Arrange
+		MockFileSystem fs = new();
+		fs.AddDirectory("/projects/my-app");
 
-        var (binder, root, _) = CreateBinderAndCommand(fs);
+		var (binder, root, _) = CreateBinderAndCommand(fs);
 
-        var parseResult = root.Parse(["--input", "/projects/my-app"]);
+		var parseResult = root.Parse(["--input", "/projects/my-app"]);
 
-        // Act
-        var options = binder.Bind(parseResult);
+		// Act
+		var options = binder.Bind(parseResult);
 
-        // Assert
-        options.RepoKey.ShouldBe("my-app");
-    }
+		// Assert
+		options.RepoKey.ShouldBe("my-app");
+	}
 
-    // ── helpers ───────────────────────────────────────────────────────────────
+	// ── helpers ───────────────────────────────────────────────────────────────
 
-    private static (OptionsBinder binder, RootCommand root, Option<string?> inputOption) CreateBinderAndCommand(
-        MockFileSystem fs)
-    {
-        var inputOption = new Option<string?>("--input");
-        var uriOption = new Option<string>("--uri");
-        uriOption.WithDefaultValueFunc(() => "bolt://localhost:7687");
-        var userOption = new Option<string>("--user");
-        userOption.WithDefaultValueFunc(() => "neo4j");
-        var passOption = new Option<string>("--password");
-        passOption.WithDefaultValueFunc(() => "password");
-        var noKeyOption = new Option<bool>("--no-key");
-        var diffBaseOption = new Option<string?>("--diff-base");
-        var batchSizeOption = new Option<int>("--batch-size");
-        batchSizeOption.WithDefaultValueFunc(() => 500);
-        var databaseOption = new Option<string>("--database");
-        databaseOption.WithDefaultValueFunc(() => "neo4j");
-        var minAccessibilityOption = new Option<Accessibility>("--min-accessibility");
-        minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.NotApplicable);
-        var logLevelOption = new Option<LogLevel>("--log-level");
-        logLevelOption.WithDefaultValueFunc(() => LogLevel.Information);
-        var debugOption = new Option<bool>("--debug");
-        var verboseOption = new Option<bool>("--verbose");
-        var quietOption = new Option<bool>("--quiet");
-        var skipDependenciesOption = new Option<bool>("--skip-dependencies");
-        var purgeDataOption = new Option<bool>("--purge-data");
-        var includeExtensionsOption = new Option<string[]>("--include");
-        includeExtensionsOption.WithDefaultValueFunc(() => []);
-        var showVersionOption = new Option<bool>("--version");
-        var showSupportedFilesOption = new Option<bool>("--supported-files");
-        var showInfoOption = new Option<bool>("--info");
+	private static (OptionsBinder binder, RootCommand root, Option<string?> inputOption) CreateBinderAndCommand(
+		MockFileSystem fs)
+	{
+		Option<string?> inputOption = new("--input");
+		Option<string> uriOption = new("--uri");
+		uriOption.WithDefaultValueFunc(() => "bolt://localhost:7687");
+		Option<string> userOption = new("--user");
+		userOption.WithDefaultValueFunc(() => "neo4j");
+		Option<string> passOption = new("--password");
+		passOption.WithDefaultValueFunc(() => "password");
+		Option<bool> noKeyOption = new("--no-key");
+		Option<string?> diffBaseOption = new("--diff-base");
+		Option<int> batchSizeOption = new("--batch-size");
+		batchSizeOption.WithDefaultValueFunc(() => 500);
+		Option<string> databaseOption = new("--database");
+		databaseOption.WithDefaultValueFunc(() => "neo4j");
+		Option<Accessibility> minAccessibilityOption = new("--min-accessibility");
+		minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.NotApplicable);
+		Option<LogLevel> logLevelOption = new("--log-level");
+		logLevelOption.WithDefaultValueFunc(() => LogLevel.Information);
+		Option<bool> debugOption = new("--debug");
+		Option<bool> verboseOption = new("--verbose");
+		Option<bool> quietOption = new("--quiet");
+		Option<bool> skipDependenciesOption = new("--skip-dependencies");
+		Option<bool> purgeDataOption = new("--purge-data");
+		Option<string[]> includeExtensionsOption = new("--include");
+		includeExtensionsOption.WithDefaultValueFunc(() => []);
+		Option<bool> showVersionOption = new("--version");
+		Option<bool> showSupportedFilesOption = new("--supported-files");
+		Option<bool> showInfoOption = new("--info");
 
-        var binder = new OptionsBinder(
-            fs,
-            inputOption,
-            uriOption,
-            userOption,
-            passOption,
-            noKeyOption,
-            diffBaseOption,
-            batchSizeOption,
-            databaseOption,
-            minAccessibilityOption,
-            logLevelOption,
-            debugOption,
-            verboseOption,
-            quietOption,
-            skipDependenciesOption,
-            purgeDataOption,
-            includeExtensionsOption,
-            showVersionOption,
-            showSupportedFilesOption,
-            showInfoOption);
+		OptionsBinder binder = new(
+			fs,
+			inputOption,
+			uriOption,
+			userOption,
+			passOption,
+			noKeyOption,
+			diffBaseOption,
+			batchSizeOption,
+			databaseOption,
+			minAccessibilityOption,
+			logLevelOption,
+			debugOption,
+			verboseOption,
+			quietOption,
+			skipDependenciesOption,
+			purgeDataOption,
+			includeExtensionsOption,
+			showVersionOption,
+			showSupportedFilesOption,
+			showInfoOption);
 
-        var root = new RootCommand();
-        binder.AddToCommand(root);
+		RootCommand root = new();
+		binder.AddToCommand(root);
 
-        return (binder, root, inputOption);
-    }
+		return (binder, root, inputOption);
+	}
 }

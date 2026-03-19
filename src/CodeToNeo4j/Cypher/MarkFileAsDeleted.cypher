@@ -1,4 +1,4 @@
-MATCH (f:File {path:$filePath})
+MATCH (f:File {path: $filePath})
 SET f.deleted = true, f.deletedAt = datetime()
 WITH f
 OPTIONAL MATCH (f)-[:DECLARES]->(s:Symbol)

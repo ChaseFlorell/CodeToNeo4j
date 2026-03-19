@@ -9,11 +9,11 @@ namespace CodeToNeo4j.Progress;
 [ExcludeFromCodeCoverage(Justification = "Thin console output wrapper; no testable logic beyond Console.WriteLine")]
 public class ConsoleProgressService(ILogger<ConsoleProgressService> logger) : IProgressService
 {
-    public void ReportProgress(int current, int total, string filePath)
-    {
-        var progress = (double)current / total;
-        logger.LogInformation("[Progress: {Percentage:p2}] ({Current}/{Total})", progress, current, total);
-    }
+	public void ReportProgress(int current, int total, string filePath)
+	{
+		var progress = (double)current / total;
+		logger.LogInformation("[Progress: {Percentage:p2}] ({Current}/{Total})", progress, current, total);
+	}
 
-    public void ProgressComplete() => Console.WriteLine();
+	public void ProgressComplete() => Console.WriteLine();
 }

@@ -34,15 +34,15 @@ FOR (s:Symbol) ON (s.documentation);
 
 CREATE INDEX symbol_comments IF NOT EXISTS
 FOR (s:Symbol) ON (s.comments);
-  
+
 CREATE CONSTRAINT author_name IF NOT EXISTS
 FOR (a:Author) REQUIRE a.name IS UNIQUE;
 
 CREATE CONSTRAINT commit_hash IF NOT EXISTS
-FOR (c:Commit) REQUIRE c.hash IS UNIQUE;
+FOR (c:COMMIT) REQUIRE c.hash IS UNIQUE;
 
 CREATE INDEX commit_date IF NOT EXISTS
-FOR (c:Commit) ON (c.date);
+FOR (c:COMMIT) ON (c.date);
 
 CREATE CONSTRAINT tag_name IF NOT EXISTS
 FOR (t:Tag) REQUIRE t.name IS UNIQUE;
