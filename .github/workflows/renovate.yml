@@ -23,7 +23,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: 1
-          clean: false
+          clean: true
 
       - name: Setup .NET (use global.json)
         uses: actions/setup-dotnet@v5
