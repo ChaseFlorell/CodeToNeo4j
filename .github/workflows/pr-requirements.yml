@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   create-and-link-issue:
+    name: Create issue and update PR body
     if: contains(github.event.pull_request.labels.*.name, 'renovate')
     runs-on: self-hosted
     steps:
