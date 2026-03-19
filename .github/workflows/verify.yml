@@ -1,4 +1,4 @@
-name: Verify Build and Test
+name: Build, Test, and Cover
 
 on:
   push:
@@ -30,20 +30,20 @@ jobs:
       with:
         global-json-file: global.json
 
-    - name: Dart Analyzer Bridge Tests
+    - name: Dart Test
       working-directory: tools/dart-analyzer
       run: |
         dart pub get
         dart test --coverage=coverage --reporter=compact
         dart pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
 
-    - name: Restore dependencies
+    - name: .NET Restore
       run: dotnet restore
 
-    - name: Build
+    - name: .NET Build
       run: dotnet build --no-restore -c Release
 
-    - name: Test
+    - name: .NET Test
       run: |
         rm -rf ./TestResults
         dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover

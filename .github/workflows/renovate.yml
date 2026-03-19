@@ -1,4 +1,4 @@
-name: github-pipelines.renovate
+name: Renovate Dependencies
 
 on:
   schedule:
