@@ -123,6 +123,8 @@
 
 ## GitHub Tooling
 - **GitHub CLI (gh)**: Available and authenticated for repository management, PR creation, and workflow checks.
+- **Solution file (.slnx) tracking**: Any time a new file is added under `.github/` (scripts, workflows, markdown, etc.), it must also be linked in `CodeToNeo4j.slnx` under the appropriate folder group.
+- **`actions/github-script@v8` limitation**: The `script:` input is required and there is no `script-path` support. Inline `require()` wrappers (2 lines) are the minimum necessary when delegating to external `.js` files. If zero inline content is required, rewrite the step to use `gh` CLI or bash instead.
 
 ## Pull Request Requirements
 - All PRs must follow the template in `.github/pull_request_template.md`.

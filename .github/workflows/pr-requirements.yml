@@ -50,12 +50,10 @@ jobs:
           clean: true
 
       - name: Check for issue number in Resolves field
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const script = require('./.github/scripts/pr-requirements_check-issue-reference.js')
-            await script({github, context, core})
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: ./.github/scripts/pr-requirements_check-issue-reference.sh
 
   check-tests-checkbox:
     name: Check that tests checkbox is checked
