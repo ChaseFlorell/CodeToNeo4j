@@ -1,50 +1,99 @@
 module.exports = async ({ github, context }) => {
   const fs = require('fs');
   const path = require('path');
+
+  // ── .NET results ────────────────────────────────────────────────────────────
+
   const resultsDir = path.join(process.cwd(), 'TestResults');
-
-  if (!fs.existsSync(resultsDir)) {
-    console.log('No TestResults directory found.');
-    return;
-  }
-
-  // Parse TRX test results
-  const trxFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('.trx'));
-  let total = 0, passed = 0, failed = 0, skipped = 0;
-  let startTime, finishTime;
+  let dotnetTotal = 0, dotnetPassed = 0, dotnetFailed = 0, dotnetSkipped = 0;
+  let dotnetStartTime, dotnetFinishTime;
 
   const getAttr = (line, attr) => {
     const match = line.match(new RegExp(`${attr}="(\\d+)"`));
     return match ? parseInt(match[1]) : 0;
   };
 
-  for (const file of trxFiles) {
-    const content = fs.readFileSync(path.join(resultsDir, file), 'utf8');
-
-    const countersMatch = content.match(/<Counters [^>]*\/>/);
-    if (countersMatch) {
-      const countersLine = countersMatch[0];
-      total += getAttr(countersLine, 'total');
-      passed += getAttr(countersLine, 'passed');
-      failed += getAttr(countersLine, 'failed') + getAttr(countersLine, 'error') + getAttr(countersLine, 'timeout') + getAttr(countersLine, 'aborted');
-      skipped += getAttr(countersLine, 'notExecuted');
-    }
-
-    const timesMatch = content.match(/<Times [^>]*start="([^"]+)" [^>]*finish="([^"]+)"/);
-    if (timesMatch) {
-      if (!startTime || new Date(timesMatch[1]) < new Date(startTime)) startTime = timesMatch[1];
-      if (!finishTime || new Date(timesMatch[2]) > new Date(finishTime)) finishTime = timesMatch[2];
+  if (fs.existsSync(resultsDir)) {
+    const trxFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('.trx'));
+    for (const file of trxFiles) {
+      const content = fs.readFileSync(path.join(resultsDir, file), 'utf8');
+      const countersMatch = content.match(/<Counters [^>]*\/>/);
+      if (countersMatch) {
+        const cl = countersMatch[0];
+        dotnetTotal   += getAttr(cl, 'total');
+        dotnetPassed  += getAttr(cl, 'passed');
+        dotnetFailed  += getAttr(cl, 'failed') + getAttr(cl, 'error') + getAttr(cl, 'timeout') + getAttr(cl, 'aborted');
+        dotnetSkipped += getAttr(cl, 'notExecuted');
+      }
+      const timesMatch = content.match(/<Times [^>]*start="([^"]+)" [^>]*finish="([^"]+)"/);
+      if (timesMatch) {
+        if (!dotnetStartTime  || new Date(timesMatch[1]) < new Date(dotnetStartTime))  dotnetStartTime  = timesMatch[1];
+        if (!dotnetFinishTime || new Date(timesMatch[2]) > new Date(dotnetFinishTime)) dotnetFinishTime = timesMatch[2];
+      }
     }
   }
 
-  let durationStr = 'N/A';
-  if (startTime && finishTime) {
-    const durationMs = new Date(finishTime) - new Date(startTime);
-    durationStr = `${(durationMs / 1000).toFixed(2)}s`;
+  let dotnetDurationStr = 'N/A';
+  if (dotnetStartTime && dotnetFinishTime) {
+    const ms = new Date(dotnetFinishTime) - new Date(dotnetStartTime);
+    dotnetDurationStr = `${(ms / 1000).toFixed(2)}s`;
   }
 
-  // Parse Cobertura coverage reports
-  // Coverage files are in subdirectories: TestResults/<guid>/coverage.cobertura.xml
+  // ── Dart results ─────────────────────────────────────────────────────────────
+
+  const dartResultsFile = path.join(process.cwd(), 'tools', 'dart-analyzer', 'dart-test-results.json');
+  let dartTotal = 0, dartPassed = 0, dartFailed = 0, dartSkipped = 0, dartDurationMs = 0;
+  let dartHasResults = false;
+
+  if (fs.existsSync(dartResultsFile)) {
+    dartHasResults = true;
+    const lines = fs.readFileSync(dartResultsFile, 'utf8').split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      try {
+        const event = JSON.parse(line);
+        if (event.type === 'testDone' && !event.hidden) {
+          dartTotal++;
+          if (event.skipped) {
+            dartSkipped++;
+          } else if (event.result === 'success') {
+            dartPassed++;
+          } else {
+            dartFailed++;
+          }
+        } else if (event.type === 'done') {
+          dartDurationMs = event.time || 0;
+        }
+      } catch { /* skip malformed lines */ }
+    }
+  }
+
+  const dartDurationStr = dartHasResults ? `${(dartDurationMs / 1000).toFixed(2)}s` : 'N/A';
+
+  // ── Combined table ────────────────────────────────────────────────────────────
+
+  const suiteRow = (label, passed, failed, skipped, total, duration) => {
+    const status = failed > 0 ? '❌ Failed' : '✅ Passed';
+    return `| ${label} | ${status} | ${total} | ${passed} | ${failed} | ${skipped} | ${duration} |`;
+  };
+
+  const totalPassed  = dotnetPassed  + dartPassed;
+  const totalFailed  = dotnetFailed  + dartFailed;
+  const totalSkipped = dotnetSkipped + dartSkipped;
+  const totalTests   = dotnetTotal   + dartTotal;
+  const overallStatus = totalFailed > 0 ? '❌ Failed' : '✅ Passed';
+
+  const tableRows = [
+    '| Suite | Status | Total | Passed | Failed | Skipped | Duration |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    suiteRow('.NET',         dotnetPassed, dotnetFailed, dotnetSkipped, dotnetTotal, dotnetDurationStr),
+  ];
+  if (dartHasResults) {
+    tableRows.push(suiteRow('Dart', dartPassed, dartFailed, dartSkipped, dartTotal, dartDurationStr));
+  }
+  tableRows.push(`| **Total** | **${overallStatus}** | **${totalTests}** | **${totalPassed}** | **${totalFailed}** | **${totalSkipped}** | — |`);
+
+  // ── .NET code coverage ────────────────────────────────────────────────────────
+
   const findCoverageFiles = (dir) => {
     const results = [];
     if (!fs.existsSync(dir)) return results;
@@ -68,8 +117,6 @@ module.exports = async ({ github, context }) => {
 
     for (const file of coverageFiles) {
       const content = fs.readFileSync(file, 'utf8');
-
-      // Parse overall coverage from <coverage> element
       const coverageMatch = content.match(/<coverage[^>]*>/);
       if (coverageMatch) {
         const el = coverageMatch[0];
@@ -77,30 +124,24 @@ module.exports = async ({ github, context }) => {
         const lc = el.match(/lines-covered="(\d+)"/);
         const bv = el.match(/branches-valid="(\d+)"/);
         const bc = el.match(/branches-covered="(\d+)"/);
-        if (lv) totalLines += parseInt(lv[1]);
-        if (lc) coveredLines += parseInt(lc[1]);
-        if (bv) totalBranches += parseInt(bv[1]);
+        if (lv) totalLines     += parseInt(lv[1]);
+        if (lc) coveredLines   += parseInt(lc[1]);
+        if (bv) totalBranches  += parseInt(bv[1]);
         if (bc) coveredBranches += parseInt(bc[1]);
       }
-
-      // Parse per-package (namespace) coverage
       const packageRegex = /<package[^>]*name="([^"]*)"[^>]*line-rate="([^"]*)"[^>]*branch-rate="([^"]*)"[^>]*>/g;
       let pkgMatch;
       while ((pkgMatch = packageRegex.exec(content)) !== null) {
-        packageStats.push({
-          name: pkgMatch[1],
-          lineRate: parseFloat(pkgMatch[2]),
-          branchRate: parseFloat(pkgMatch[3])
-        });
+        packageStats.push({ name: pkgMatch[1], lineRate: parseFloat(pkgMatch[2]), branchRate: parseFloat(pkgMatch[3]) });
       }
     }
 
-    const lineRate = totalLines > 0 ? (coveredLines / totalLines * 100).toFixed(1) : 'N/A';
+    const lineRate   = totalLines    > 0 ? (coveredLines    / totalLines    * 100).toFixed(1) : 'N/A';
     const branchRate = totalBranches > 0 ? (coveredBranches / totalBranches * 100).toFixed(1) : 'N/A';
 
     const coverageRows = [
       '',
-      '### Code Coverage',
+      '### .NET Code Coverage',
       '',
       '| Metric | Value |',
       '| --- | --- |',
@@ -109,7 +150,6 @@ module.exports = async ({ github, context }) => {
     ];
 
     if (packageStats.length > 0) {
-      // Sort by name and deduplicate
       const seen = new Set();
       const uniquePackages = packageStats.filter(p => {
         if (seen.has(p.name)) return false;
@@ -134,20 +174,13 @@ module.exports = async ({ github, context }) => {
     coverageSection = coverageRows.join('\n');
   }
 
-  const status = failed > 0 ? '❌ Failed' : '✅ Passed';
-  const header = '### Test Results Summary';
+  // ── Compose comment ───────────────────────────────────────────────────────────
+
   const marker = '<!-- test-results-summary -->';
   const body = [
-    header,
+    '### Test Results Summary',
     '',
-    '| Metric | Count |',
-    '| --- | --- |',
-    `| **Status** | ${status} |`,
-    `| **Total** | ${total} |`,
-    `| **Passed** | ${passed} |`,
-    `| **Failed** | ${failed} |`,
-    `| **Skipped** | ${skipped} |`,
-    `| **Duration** | ${durationStr} |`,
+    ...tableRows,
     coverageSection,
     '',
     `*Workflow run: [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*`,
@@ -162,7 +195,7 @@ module.exports = async ({ github, context }) => {
     per_page: 100
   });
 
-  const botComment = comments.slice().reverse().find(comment => comment.body.includes(marker));
+  const botComment = comments.slice().reverse().find(c => c.body.includes(marker));
 
   if (botComment) {
     await github.rest.issues.updateComment({
