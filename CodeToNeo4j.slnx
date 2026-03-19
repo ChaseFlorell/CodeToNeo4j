@@ -3,11 +3,18 @@
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
+    <File Path="codecov.yml" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+    <File Path="dotnet-tools.json" />
     <File Path="global.json" />
     <File Path="nuget.config" />
+    <File Path="package-lock.json" />
+    <File Path="package.json" />
+    <File Path="PACKAGE_README.md" />
     <File Path="README.md" />
+    <File Path="renovate-config.js" />
+    <File Path="renovate.json" />
     <File Path="REQUIREMENTS.md" />
     <File Path="run.sh" />
   </Folder>
