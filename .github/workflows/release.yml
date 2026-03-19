@@ -31,16 +31,20 @@ jobs:
         global-json-file: global.json
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: ./.github/scripts/release_restore-dependencies.sh
 
     - name: Build
-      run: dotnet build --no-restore -c Release /p:Version=${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+      env:
+        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+      run: ./.github/scripts/release_build.sh
 
     - name: Test
-      run: dotnet test --no-build -c Release --verbosity normal
+      run: ./.github/scripts/release_test.sh
 
     - name: Pack
-      run: dotnet pack src/CodeToNeo4j/CodeToNeo4j.csproj --no-restore -c Release -o out /p:Version=${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+      env:
+        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+      run: ./.github/scripts/release_pack.sh
 
     - name: Attest build provenance
       uses: actions/attest-build-provenance@v4
@@ -54,10 +58,14 @@ jobs:
         path: out/*.nupkg
 
     - name: Push to NuGet.org
-      run: dotnet nuget push out/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_KEY }}
+      env:
+        NUGET_KEY: ${{ secrets.NUGET_KEY }}
+      run: ./.github/scripts/release_push-to-nuget.sh
 
     - name: Push to GitHub Packages
-      run: dotnet nuget push out/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }}
+      env:
+        REPOSITORY_OWNER: ${{ github.repository_owner }}
+      run: ./.github/scripts/release_push-to-github-packages.sh
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

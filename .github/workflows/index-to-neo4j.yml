@@ -20,16 +20,10 @@ jobs:
           global-json-file: global.json
 
       - name: Install CodeToNeo4j
-        run: |
-          dotnet tool update --global CodeToNeo4j
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+        run: ./.github/scripts/index-to-neo4j_install-codetoneo4j.sh
 
       - name: Run CodeToNeo4j
-        run: |
-          codetoneo4j \
-            --sln ./CodeToNeo4j.slnx \
-            --uri bolt://192.168.4.135:7689 \
-            --user neo4j \
-            --database CodeToNeo4j \
-            --password ${{ secrets.NEO4J_PASSWORD }} \
-            --diff-base ${{ github.event.before }}
+        env:
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          DIFF_BASE: ${{ github.event.before }}
+        run: ./.github/scripts/index-to-neo4j_run-codetoneo4j.sh

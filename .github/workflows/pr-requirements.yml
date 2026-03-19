@@ -15,75 +15,19 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'renovate')
     runs-on: self-hosted
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: true
+
       - name: Create issue and update PR body
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           retries: 3
           script: |
-            const prNumber = context.payload.pull_request.number;
-
-            // Always fetch the latest PR body from the API to avoid stale payload data
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-
-            // Determine labels for the tracking issue (mirror breaking-change from PR)
-            const issueLabels = ['dependencies', 'renovate'];
-            const prLabels = pr.labels.map(l => l.name);
-            if (prLabels.includes('breaking-change')) {
-              issueLabels.push('breaking-change');
-            }
-
-            // Search for an existing tracking issue for this PR
-            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:issue label:renovate "Tracking issue for Renovate PR #${prNumber}"`;
-            const searchResult = await github.rest.search.issuesAndPullRequests({ q: searchQuery });
-
-            let issueNumber;
-            if (searchResult.data.total_count > 0) {
-              issueNumber = searchResult.data.items[0].number;
-              core.info(`Found existing tracking issue #${issueNumber} for PR #${prNumber}`);
-
-              // Ensure breaking-change label is synced to existing issue
-              if (prLabels.includes('breaking-change')) {
-                const existingIssue = searchResult.data.items[0];
-                const existingLabels = existingIssue.labels.map(l => l.name);
-                if (!existingLabels.includes('breaking-change')) {
-                  await github.rest.issues.addLabels({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    labels: ['breaking-change']
-                  });
-                  core.info(`Added breaking-change label to existing issue #${issueNumber}`);
-                }
-              }
-            } else {
-              const issue = await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: pr.title,
-                body: `Tracking issue for Renovate PR #${prNumber}.`,
-                labels: issueLabels
-              });
-              issueNumber = issue.data.number;
-              core.info(`Created tracking issue #${issueNumber} for PR #${prNumber}`);
-            }
-
-            // Strip any existing Resolves line, then always prepend the correct one
-            const body = (pr.body || '').replace(/^Resolves #\d+\s*/m, '').trimStart();
-            const updatedBody = `Resolves #${issueNumber}\n\n${body}`;
-
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              body: updatedBody
-            });
-
-            core.info(`Linked PR #${prNumber} to issue #${issueNumber}`);
+            const script = require('./.github/scripts/pr-requirements_create-and-link-issue.js')
+            await script({github, context, core})
 
   check-label:
     name: Check for at least one label
@@ -92,13 +36,7 @@ jobs:
       - name: Check for at least one label
         env:
           LABELS: ${{ toJson(github.event.pull_request.labels) }}
-        run: |
-          label_count=$(echo "$LABELS" | jq 'length')
-          if [ "$label_count" -eq 0 ]; then
-            echo "::error::This PR requires at least one label before it can be merged."
-            exit 1
-          fi
-          echo "Labels found: $(echo "$LABELS" | jq -r '[.[].name] | join(", ")')"
+        run: ./.github/scripts/pr-requirements_check-label.sh
 
   check-issue-reference:
     name: Check for issue reference in PR body
@@ -106,23 +44,18 @@ jobs:
     if: always() && !cancelled()
     runs-on: self-hosted
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: true
+
       - name: Check for issue number in Resolves field
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number
-            });
-
-            const body = pr.body || '';
-            if (!/^Resolves #[0-9]+/m.test(body)) {
-              core.setFailed("PR body must contain 'Resolves #<issue-number>' (e.g. 'Resolves #42').");
-              return;
-            }
-            core.info('Issue reference found.');
+            const script = require('./.github/scripts/pr-requirements_check-issue-reference.js')
+            await script({github, context, core})
 
   check-tests-checkbox:
     name: Check that tests checkbox is checked
@@ -133,30 +66,7 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
           LABELS: ${{ toJson(github.event.pull_request.labels) }}
           SENDER: ${{ github.event.pull_request.user.login }}
-        run: |
-          exempt_senders="renovate dependabot"
-          exempt_labels="breaking-change build chore ci dependencies dependency skip-changelog"
-
-          for s in $exempt_senders; do
-            if [ "$SENDER" = "$s" ] || echo "$SENDER" | grep -qi "^${s}"; then
-              echo "Sender '$SENDER' is exempt from tests checkbox. Skipping."
-              exit 0
-            fi
-          done
-
-          label_names=$(echo "$LABELS" | jq -r '[.[].name] | join(" ")')
-          for l in $exempt_labels; do
-            if echo " $label_names " | grep -qF " $l "; then
-              echo "Label '$l' is exempt from tests checkbox. Skipping."
-              exit 0
-            fi
-          done
-
-          if ! echo "$BODY" | grep -qF -- '- [x] Tests have been added or updated'; then
-            echo "::error::The 'Tests have been added or updated' checkbox must be checked before merging."
-            exit 1
-          fi
-          echo "Tests checkbox is checked."
+        run: ./.github/scripts/pr-requirements_check-tests-checkbox.sh
 
   check-rebased-checkbox:
     name: Check that rebased checkbox is checked
@@ -166,18 +76,4 @@ jobs:
         env:
           BODY: ${{ github.event.pull_request.body }}
           SENDER: ${{ github.event.pull_request.user.login }}
-        run: |
-          exempt_senders="dependabot"
-
-          for s in $exempt_senders; do
-            if [ "$SENDER" = "$s" ] || echo "$SENDER" | grep -qi "^${s}"; then
-              echo "Sender '$SENDER' is exempt from rebased checkbox. Skipping."
-              exit 0
-            fi
-          done
-
-          if ! echo "$BODY" | grep -qF -- '- [x] Rebased on top of main'; then
-            echo "::error::The 'Rebased on top of main' checkbox must be checked before merging."
-            exit 1
-          fi
-          echo "Rebased checkbox is checked."
+        run: ./.github/scripts/pr-requirements_check-rebased-checkbox.sh

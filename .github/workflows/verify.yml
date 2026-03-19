@@ -32,21 +32,16 @@ jobs:
 
     - name: Dart Test
       working-directory: tools/dart-analyzer
-      run: |
-        dart pub get
-        dart test --coverage=coverage --reporter=compact --file-reporter=json:dart-test-results.json
-        dart pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+      run: ${{ github.workspace }}/.github/scripts/verify_dart-test.sh
 
     - name: .NET Restore
-      run: dotnet restore
+      run: ./.github/scripts/verify_dotnet-restore.sh
 
     - name: .NET Build
-      run: dotnet build --no-restore -c Release
+      run: ./.github/scripts/verify_dotnet-build.sh
 
     - name: .NET Test
-      run: |
-        rm -rf ./TestResults
-        dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      run: ./.github/scripts/verify_dotnet-test.sh
 
     - name: Upload Dart Coverage to Codecov
       if: always()
