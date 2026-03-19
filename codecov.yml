@@ -2,12 +2,9 @@ coverage:
   status:
     project:
       default:
-        target: auto    # fail if coverage drops from baseline
-        threshold: 1%   # allow up to 1% drop without failing
+        target: auto      # must not drop below current project coverage
+        threshold: 1%     # allow up to 1% drop before failing
     patch:
       default:
-        target: 85%     # new code should have ≥85% coverage
-        threshold: 5%   # allow up to 5% below target without failing (handles untestable lines in new files)
-comment:
-  layout: "reach,diff,flags,files"
-  behavior: default
+        target: 90%       # new/changed lines must be at least 90% covered
+        threshold: 0%

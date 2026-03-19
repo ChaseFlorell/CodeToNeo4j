@@ -129,6 +129,15 @@
 - The `pr-requirements.yml` workflow enforces labels and `^Resolves #[0-9]+` in the body.
 - Always apply the same label(s) to a PR as the issue it resolves.
 
+## Dart Analyzer Bridge and CI
+
+- **analyzer 12.x API changes**: `ClassDeclaration.name` and `EnumDeclaration.name` were removed; use `namePart.typeName.lexeme` instead. `ExtensionTypeDeclaration.name` was removed; use `primaryConstructor.typeName.lexeme`. `NamedType.name2` was removed; use `NamedType.name` (now a `Token` directly).
+- **Dart installed via Flutter**: On macOS with a self-hosted runner, Dart ships inside the Flutter SDK cask. Use `subosito/flutter-action@v2` (not a standalone Dart action) to install the correct version on any agent.
+- **Unresolved AST parsing and instance creation**: `parseString` performs heuristic (unresolved) parsing. `Foo()` without the `new` keyword is parsed as a `MethodInvocation`, not an `InstanceCreationExpression`. Use `new Foo()` in unit tests to exercise `visitInstanceCreationExpression`.
+- **Dart coverage with lcov**: Generate coverage using `dart test --coverage=coverage`, then convert with `dart pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib`. Upload the lcov file to Codecov with a `flags: dart` tag alongside the .NET opencover reports.
+- **Codecov patch vs project coverage**: Patch coverage only counts lines changed in the diff. Uncovered visitor methods (e.g., `visitExtensionTypeDeclaration`) only appear in patch coverage when their lines were modified. Use `codecov.yml` to set `patch.target` (e.g., 90%) and `project.threshold` (e.g., 1%) to prevent regressions.
+- **Flutter SDK version pinning**: Pin `flutter-version` in `subosito/flutter-action` to guarantee a specific Dart SDK version, analogous to `global-json-file` for .NET. This ensures any fresh agent produces a reproducible build.
+
 ## Unit Testing and Coverage
 - **Mocking Neo4j Driver**: Match the full signature including optional `Action<TransactionConfigBuilder>` parameter.
 - **Extension Methods**: Mock the underlying interface methods, not the static extension methods.

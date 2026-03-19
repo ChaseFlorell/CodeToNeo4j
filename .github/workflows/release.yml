@@ -1,4 +1,4 @@
-name: Release
+name: Create Release
 on:
   workflow_dispatch:
 
@@ -18,6 +18,12 @@ jobs:
       with:
         fetch-depth: 1
         clean: false
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.41.5'
+        channel: 'stable'
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v5

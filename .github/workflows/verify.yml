@@ -1,4 +1,4 @@
-name: Verify Build and Test
+name: Build, Test, and Cover
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  
+
 jobs:
   build:
     runs-on: self-hosted
@@ -19,35 +19,51 @@ jobs:
         fetch-depth: 1
         clean: false
 
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.41.5'
+        channel: 'stable'
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         global-json-file: global.json
 
-    - name: Restore dependencies
+    - name: Dart Test
+      working-directory: tools/dart-analyzer
+      run: |
+        dart pub get
+        dart test --coverage=coverage --reporter=compact
+        dart pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+
+    - name: .NET Restore
       run: dotnet restore
 
-    - name: Build
+    - name: .NET Build
       run: dotnet build --no-restore -c Release
 
-    - name: Test
+    - name: .NET Test
       run: |
         rm -rf ./TestResults
         dotnet test --no-build -c Release --verbosity normal --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
-    - name: Upload coverage reports to Codecov
+    - name: Upload Dart Coverage to Codecov
+      if: always()
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: tools/dart-analyzer/coverage/lcov.info
+        flags: dart
+        fail_ci_if_error: false
+
+    - name: Upload .NET Coverage to Codecov
       if: always()
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./TestResults
-        fail_ci_if_error: false
-
-    - name: Upload Coverage to Codecov
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        directory: ./TestResults
+        flags: dotnet
         fail_ci_if_error: false
 
     - name: Test Summary PR Comment

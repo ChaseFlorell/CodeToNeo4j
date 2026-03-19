@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   create-and-link-issue:
+    name: Create issue and update PR body
     if: contains(github.event.pull_request.labels.*.name, 'renovate')
     runs-on: self-hosted
     steps:
@@ -85,6 +86,7 @@ jobs:
             core.info(`Linked PR #${prNumber} to issue #${issueNumber}`);
 
   check-label:
+    name: Check for at least one label
     runs-on: self-hosted
     steps:
       - name: Check for at least one label
@@ -99,6 +101,7 @@ jobs:
           echo "Labels found: $(echo "$LABELS" | jq -r '[.[].name] | join(", ")')"
 
   check-issue-reference:
+    name: Check for issue reference in PR body
     needs: [create-and-link-issue]
     if: always() && !cancelled()
     runs-on: self-hosted
@@ -122,6 +125,7 @@ jobs:
             core.info('Issue reference found.');
 
   check-tests-checkbox:
+    name: Check that tests checkbox is checked
     runs-on: self-hosted
     steps:
       - name: Check that tests checkbox is checked
@@ -155,6 +159,7 @@ jobs:
           echo "Tests checkbox is checked."
 
   check-rebased-checkbox:
+    name: Check that rebased checkbox is checked
     runs-on: self-hosted
     steps:
       - name: Check that rebased checkbox is checked
