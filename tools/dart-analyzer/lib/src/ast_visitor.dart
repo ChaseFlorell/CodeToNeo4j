@@ -48,7 +48,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    final name = node.name.lexeme;
+    final name = node.namePart.typeName.lexeme;
     final isAbstract = node.abstractKeyword != null;
     symbols.add(SymbolInfo(
       name: name,
@@ -64,7 +64,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
 
     // extends
     if (node.extendsClause != null) {
-      final superName = node.extendsClause!.superclass.name2.lexeme;
+      final superName = node.extendsClause!.superclass.name.lexeme;
       relationships.add(RelationshipInfo(
         fromSymbol: name,
         fromKind: 'class',
@@ -82,7 +82,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromSymbol: name,
           fromKind: 'class',
           fromLine: _lineNumber(node.offset),
-          toSymbol: iface.name2.lexeme,
+          toSymbol: iface.name.lexeme,
           toKind: 'class',
           relType: 'DEPENDS_ON',
         ));
@@ -96,7 +96,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromSymbol: name,
           fromKind: 'class',
           fromLine: _lineNumber(node.offset),
-          toSymbol: mixin.name2.lexeme,
+          toSymbol: mixin.name.lexeme,
           toKind: 'mixin',
           relType: 'DEPENDS_ON',
         ));
@@ -134,7 +134,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitEnumDeclaration(EnumDeclaration node) {
-    final name = node.name.lexeme;
+    final name = node.namePart.typeName.lexeme;
     symbols.add(SymbolInfo(
       name: name,
       kind: 'DartEnum',
@@ -178,7 +178,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitExtensionTypeDeclaration(ExtensionTypeDeclaration node) {
-    final name = node.name.lexeme;
+    final name = node.primaryConstructor.typeName.lexeme;
     symbols.add(SymbolInfo(
       name: name,
       kind: 'DartExtensionType',
@@ -447,7 +447,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
     final fromSymbol = _currentClass ?? _relativePath;
     final fromKind = _currentClass != null ? _currentClassKind! : 'file';
 

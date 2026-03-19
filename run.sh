@@ -7,7 +7,7 @@ TOOL_NAME="codetoneo4j"
 VERSION="0.0.1"
 
 # Ensure we're in the project root
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 echo "Cleaning up..."
 rm -rf "$ARTIFACTS_DIR"

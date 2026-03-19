@@ -19,6 +19,12 @@ jobs:
         fetch-depth: 1
         clean: false
 
+    - name: Dart Analyzer Bridge Tests
+      working-directory: tools/dart-analyzer
+      run: |
+        dart pub get
+        dart test --reporter=compact
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
