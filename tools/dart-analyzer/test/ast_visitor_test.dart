@@ -228,8 +228,90 @@ void main() {
 
   group('instance creation', () {
     test('new expression produces INVOKES relationship', () {
-      final v = _visit('class Foo {} void run() { var f = Foo(); }');
+      final v = _visit('class Foo {} void run() { var f = new Foo(); }');
       expect(_rels(v, to: 'Foo', type: 'INVOKES'), hasLength(1));
+    });
+  });
+
+  group('function expression invocations', () {
+    test('simple identifier call produces INVOKES relationship', () {
+      final v = _visit('void run() { final fn = () {}; fn(); }');
+      expect(_rels(v, to: 'fn', type: 'INVOKES'), hasLength(1));
+    });
+  });
+
+  group('extension type declarations', () {
+    test('extracts extension type as DartExtensionType', () {
+      final v = _visit('extension type Meters(int value) {}');
+      final s = _symbol(v, 'Meters');
+      expect(s.kind, 'DartExtensionType');
+      expect(s.symbolClass, 'extensiontype');
+    });
+
+    test('private extension type has Private accessibility', () {
+      final v = _visit('extension type _Internal(int value) {}');
+      expect(_symbol(v, '_Internal').accessibility, 'Private');
+    });
+  });
+
+  group('type alias declarations', () {
+    test('typedef produces DartTypeAlias symbol', () {
+      final v = _visit('typedef MyFunc = void Function(int);');
+      final s = _symbol(v, 'MyFunc');
+      expect(s.kind, 'DartTypeAlias');
+      expect(s.symbolClass, 'type');
+    });
+
+    test('private typedef has Private accessibility', () {
+      final v = _visit('typedef _Internal = void Function();');
+      expect(_symbol(v, '_Internal').accessibility, 'Private');
+    });
+  });
+
+  group('accessibility annotations', () {
+    test('@protected annotation yields Protected accessibility', () {
+      final v = _visit('''
+import 'package:meta/meta.dart';
+class C {
+  @protected
+  void doThing() {}
+}
+''');
+      final s = _symbol(v, 'doThing');
+      expect(s.accessibility, 'Protected');
+    });
+
+    test('@visibleForTesting annotation yields Internal accessibility', () {
+      final v = _visit('''
+import 'package:meta/meta.dart';
+class C {
+  @visibleForTesting
+  void doThing() {}
+}
+''');
+      final s = _symbol(v, 'doThing');
+      expect(s.accessibility, 'Internal');
+    });
+  });
+
+  group('getLine helper', () {
+    test('returns offset when no resolver set', () {
+      final visitor = DartAstVisitor(
+        filePath: '/proj/lib/foo.dart',
+        projectRoot: '/proj',
+        packageName: 'pkg',
+      );
+      expect(visitor.getLine(42), 42);
+    });
+
+    test('delegates to resolver when set', () {
+      final visitor = DartAstVisitor(
+        filePath: '/proj/lib/foo.dart',
+        projectRoot: '/proj',
+        packageName: 'pkg',
+      );
+      visitor.lineInfoResolver = (offset) => offset + 10;
+      expect(visitor.getLine(5), 15);
     });
   });
 
