@@ -67,28 +67,19 @@ jobs:
         REPOSITORY_OWNER: ${{ github.repository_owner }}
       run: ./.github/scripts/release_push-to-github-packages.sh
 
+    - name: Generate Release Notes
+      env:
+        VERSION: ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
+        SHA: ${{ github.sha }}
+        REPOSITORY: ${{ github.repository }}
+        RUN_ID: ${{ github.run_id }}
+      run: ./.github/scripts/release_generate-release-notes.sh
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
         name: Release v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-        body: |
-          ## Installation
-          Install from Nuget:
-          [![NuGet](https://img.shields.io/badge/nuget-v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}-blue)](https://www.nuget.org/packages/CodeToNeo4j/${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }})
-
-          Install from CLI:
-          ```bash
-          dotnet tool install --global CodeToNeo4j --version ${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
-          ```
-          ## Provenance
-          | Commit | Build |
-          | -- | -- |
-          | [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) | [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-
-          Verify package attestation:
-          ```bash
-          gh attestation verify <path-to-nupkg> --repo ${{ github.repository }}
-          ```
+        body_path: ${{ runner.temp }}/release-notes.md
         generate_release_notes: true
         files: out/*.nupkg
