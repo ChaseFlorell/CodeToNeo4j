@@ -1,6 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.Dart.Bridge;
@@ -13,6 +11,8 @@ using CodeToNeo4j.ProgramOptions.Handlers;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
 
 namespace CodeToNeo4j;
@@ -20,85 +20,85 @@ namespace CodeToNeo4j;
 [ExcludeFromCodeCoverage(Justification = "DI registration wiring — covered by integration/smoke tests, not unit tests")]
 public static class ContainerModule
 {
-    /// <summary>
-    /// Configures and registers application services into the provided <see cref="IServiceCollection"/>.
-    /// </summary>
-    /// <param name="services">The service collection to which the application services will be added.</param>
-    /// <param name="neo4jUri">The URI of the Neo4j database to connect to.</param>
-    /// <param name="user">The username for authenticating with the Neo4j database.</param>
-    /// <param name="pass">The password for authenticating with the Neo4j database.</param>
-    /// <param name="minLogLevel">The minimum log level for the application's logging configuration.</param>
-    /// <returns>The updated <see cref="IServiceCollection"/> containing the registered application services.</returns>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services,
-        string neo4jUri,
-        string user,
-        string pass,
-        LogLevel minLogLevel)
-    {
-        services.AddLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddProvider(new ConsoleLoggerProvider(minLogLevel));
-            builder.SetMinimumLevel(minLogLevel);
-        });
+	/// <summary>
+	/// Configures and registers application services into the provided <see cref="IServiceCollection"/>.
+	/// </summary>
+	/// <param name="services">The service collection to which the application services will be added.</param>
+	/// <param name="neo4jUri">The URI of the Neo4j database to connect to.</param>
+	/// <param name="user">The username for authenticating with the Neo4j database.</param>
+	/// <param name="pass">The password for authenticating with the Neo4j database.</param>
+	/// <param name="minLogLevel">The minimum log level for the application's logging configuration.</param>
+	/// <returns>The updated <see cref="IServiceCollection"/> containing the registered application services.</returns>
+	public static IServiceCollection AddApplicationServices(this IServiceCollection services,
+		string neo4jUri,
+		string user,
+		string pass,
+		LogLevel minLogLevel)
+	{
+		services.AddLogging(builder =>
+		{
+			builder.ClearProviders();
+			builder.AddProvider(new ConsoleLoggerProvider(minLogLevel));
+			builder.SetMinimumLevel(minLogLevel);
+		});
 
-        services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
-        services.AddSingleton<ICypherService, CypherService>();
-        services.AddSingleton<IFileService, FileService>();
-        services.AddSingleton<IGitLogParser, GitLogParser>();
-        services.AddSingleton<IGitMetadataCache, GitMetadataCache>();
-        services.AddSingleton<IVersionControlService, GitService>();
-        services.AddSingleton<ISymbolMapper, SymbolMapper>();
-        services.AddSingleton<ITextSymbolMapper, TextSymbolMapper>();
-        services.AddSingleton<IMemberDependencyExtractor, MemberDependencyExtractor>();
-        services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
-        services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
-        services.AddSingleton<IRoslynSymbolProcessor, RoslynSymbolProcessor>();
-        services.AddSingleton<ICommitIngestionService, CommitIngestionService>();
+		services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
+		services.AddSingleton<ICypherService, CypherService>();
+		services.AddSingleton<IFileService, FileService>();
+		services.AddSingleton<IGitLogParser, GitLogParser>();
+		services.AddSingleton<IGitMetadataCache, GitMetadataCache>();
+		services.AddSingleton<IVersionControlService, GitService>();
+		services.AddSingleton<ISymbolMapper, SymbolMapper>();
+		services.AddSingleton<ITextSymbolMapper, TextSymbolMapper>();
+		services.AddSingleton<IMemberDependencyExtractor, MemberDependencyExtractor>();
+		services.AddSingleton<IDependencyIngestor, DependencyIngestor>();
+		services.AddSingleton<ISolutionFileDiscoveryService, SolutionFileDiscoveryService>();
+		services.AddSingleton<IRoslynSymbolProcessor, RoslynSymbolProcessor>();
+		services.AddSingleton<ICommitIngestionService, CommitIngestionService>();
 
-        services.AddSingleton<IDocumentHandler, CSharpHandler>();
-        services.AddSingleton<IDocumentHandler, RazorHandler>();
-        services.AddSingleton<IDocumentHandler, XamlHandler>();
-        services.AddSingleton<IDocumentHandler, JavaScriptHandler>();
-        services.AddSingleton<IDocumentHandler, TypeScriptHandler>();
-        services.AddSingleton<IDocumentHandler, HtmlHandler>();
-        services.AddSingleton<IDocumentHandler, XmlHandler>();
-        services.AddSingleton<IDocumentHandler, PackageJsonHandler>();
-        services.AddSingleton<IDocumentHandler, JsonHandler>();
-        services.AddSingleton<IDocumentHandler, CssHandler>();
-        services.AddSingleton<IDocumentHandler, CsprojHandler>();
-        services.AddSingleton<IDocumentHandler, DartHandler>();
-        services.AddSingleton<IDocumentHandler, PubspecYamlHandler>();
+		services.AddSingleton<IDocumentHandler, CSharpHandler>();
+		services.AddSingleton<IDocumentHandler, RazorHandler>();
+		services.AddSingleton<IDocumentHandler, XamlHandler>();
+		services.AddSingleton<IDocumentHandler, JavaScriptHandler>();
+		services.AddSingleton<IDocumentHandler, TypeScriptHandler>();
+		services.AddSingleton<IDocumentHandler, HtmlHandler>();
+		services.AddSingleton<IDocumentHandler, XmlHandler>();
+		services.AddSingleton<IDocumentHandler, PackageJsonHandler>();
+		services.AddSingleton<IDocumentHandler, JsonHandler>();
+		services.AddSingleton<IDocumentHandler, CssHandler>();
+		services.AddSingleton<IDocumentHandler, CsprojHandler>();
+		services.AddSingleton<IDocumentHandler, DartHandler>();
+		services.AddSingleton<IDocumentHandler, PubspecYamlHandler>();
 
-        services.AddSingleton<IDartBridgeService, DartBridgeService>();
+		services.AddSingleton<IDartBridgeService, DartBridgeService>();
 
-        services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
-        services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
-        services.AddTransient<IOptionsHandler, MsBuildRegistrationHandler>();
-        services.AddTransient<IOptionsHandler, EnvironmentSetupHandler>();
-        services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
+		services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
+		services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
+		services.AddTransient<IOptionsHandler, MsBuildRegistrationHandler>();
+		services.AddTransient<IOptionsHandler, EnvironmentSetupHandler>();
+		services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
 
-        services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
-        services.AddSingleton<INeo4jSchemaService, Neo4jSchemaService>();
-        services.AddSingleton<INeo4jFlushService, Neo4jFlushService>();
-        services.AddSingleton<IGraphService, Neo4jService>();
+		services.AddSingleton<IDriver>(_ => GraphDatabase.Driver(new Uri(neo4jUri), AuthTokens.Basic(user, pass)));
+		services.AddSingleton<INeo4jSchemaService, Neo4jSchemaService>();
+		services.AddSingleton<INeo4jFlushService, Neo4jFlushService>();
+		services.AddSingleton<IGraphService, Neo4jService>();
 
-        services.AddSingleton<IWorkspaceFactory, MsBuildWorkspaceFactory>();
-        services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
+		services.AddSingleton<IWorkspaceFactory, MsBuildWorkspaceFactory>();
+		services.AddSingleton<ISolutionProcessor, SolutionProcessor>();
 
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
-        {
-            services.AddSingleton<IProgressService, GitHubActionsProgressService>();
-        }
-        else if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TF_BUILD")))
-        {
-            services.AddSingleton<IProgressService, AzureDevOpsProgressService>();
-        }
-        else
-        {
-            services.AddSingleton<IProgressService, ConsoleProgressService>();
-        }
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+		{
+			services.AddSingleton<IProgressService, GitHubActionsProgressService>();
+		}
+		else if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TF_BUILD")))
+		{
+			services.AddSingleton<IProgressService, AzureDevOpsProgressService>();
+		}
+		else
+		{
+			services.AddSingleton<IProgressService, ConsoleProgressService>();
+		}
 
-        return services;
-    }
+		return services;
+	}
 }

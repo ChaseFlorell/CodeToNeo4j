@@ -2,7 +2,7 @@ name: PR Requirements
 
 on:
   pull_request:
-    types: [opened, labeled, unlabeled, synchronize, reopened, edited]
+    types: [ opened, labeled, unlabeled, synchronize, reopened, edited ]
 
 permissions:
   contents: read
@@ -40,7 +40,7 @@ jobs:
 
   check-issue-reference:
     name: Check for issue reference in PR body
-    needs: [create-and-link-issue]
+    needs: [ create-and-link-issue ]
     if: always() && !cancelled()
     runs-on: self-hosted
     steps:

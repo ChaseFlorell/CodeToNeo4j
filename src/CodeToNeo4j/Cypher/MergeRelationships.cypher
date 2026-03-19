@@ -1,5 +1,5 @@
 UNWIND $rels AS r
-MATCH (a:Symbol {key:r.fromKey})
-MATCH (b:Symbol {key:r.toKey})
+MATCH (a:Symbol {key: r.fromKey})
+MATCH (b:Symbol {key: r.toKey})
 CALL apoc.merge.relationship(a, r.relType, {}, {}, b, {}) YIELD rel
-RETURN count(*) AS created
+RETURN COUNT(*) AS created

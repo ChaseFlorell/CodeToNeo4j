@@ -9,93 +9,93 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class CssHandlerTests
 {
-    [Fact]
-    public async Task GivenCssWithSelectors_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var sut = new CssHandler(fileSystem, new TextSymbolMapper());
-        var content = @"body { color: black; }";
-        var filePath = "test.css";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+	[Fact]
+	public async Task GivenCssWithSelectors_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		var content = @"body { color: black; }";
+		var filePath = "test.css";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        var symbol = symbolBuffer.FirstOrDefault(s => s.Name == "body");
-        symbol.ShouldNotBeNull();
-        symbol.Kind.ShouldBe("CssSelector");
+		// Assert
+		var symbol = symbolBuffer.FirstOrDefault(s => s.Name == "body");
+		symbol.ShouldNotBeNull();
+		symbol.Kind.ShouldBe("CssSelector");
 
-        relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == symbol.Key && r.RelType == "CONTAINS");
-    }
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == symbol.Key && r.RelType == "CONTAINS");
+	}
 
-    [Fact]
-    public async Task GivenCssWithAtRules_WhenHandleCalled_ThenSkipsAtRules()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var sut = new CssHandler(fileSystem, new TextSymbolMapper());
-        var content = @"@import ""foo.css""; @media screen { .foo { color: red; } }";
-        var filePath = "test.css";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+	[Fact]
+	public async Task GivenCssWithAtRules_WhenHandleCalled_ThenSkipsAtRules()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		var content = @"@import ""foo.css""; @media screen { .foo { color: red; } }";
+		var filePath = "test.css";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        symbolBuffer.ShouldNotContain(s => s.Name.StartsWith("@"));
-        symbolBuffer.ShouldContain(s => s.Name == ".foo");
-    }
+		// Assert
+		symbolBuffer.ShouldNotContain(s => s.Name.StartsWith("@"));
+		symbolBuffer.ShouldContain(s => s.Name == ".foo");
+	}
 
-    [Fact]
-    public async Task GivenMinAccessibilityNotApplicable_WhenHandleCalled_ThenDoesNotAddSymbols()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var sut = new CssHandler(fileSystem, new TextSymbolMapper());
-        var content = @".foo { color: red; }";
-        var filePath = "test.css";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+	[Fact]
+	public async Task GivenMinAccessibilityNotApplicable_WhenHandleCalled_ThenDoesNotAddSymbols()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		var content = @".foo { color: red; }";
+		var filePath = "test.css";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.NotApplicable);
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.NotApplicable);
 
-        // Assert
-        symbolBuffer.ShouldBeEmpty();
-        relBuffer.ShouldBeEmpty();
-    }
+		// Assert
+		symbolBuffer.ShouldBeEmpty();
+		relBuffer.ShouldBeEmpty();
+	}
 }

@@ -1,35 +1,35 @@
+using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
-using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class RazorRoslynTests
 {
-    [Fact]
-    public async Task GivenRazorWithGeneratedCode_WhenHandleCalled_ThenExtractsMembersViaRoslyn()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new RazorHandler(symbolProcessor, fileSystem, new TextSymbolMapper());
-        
-        var razorFilePath = "Pages/Index.razor";
-        var razorContent = @"@page ""/""
+	[Fact]
+	public async Task GivenRazorWithGeneratedCode_WhenHandleCalled_ThenExtractsMembersViaRoslyn()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+
+		var razorFilePath = "Pages/Index.razor";
+		var razorContent = @"@page ""/""
 @namespace MyProject.Pages
 @code {
     public void MyMethod() { }
 }";
-        fileSystem.AddFile(razorFilePath, new MockFileData(razorContent));
+		fileSystem.AddFile(razorFilePath, new(razorContent));
 
-        // Simulate generated C# code from Razor
-        var generatedCode = @"
+		// Simulate generated C# code from Razor
+		var generatedCode = @"
 namespace MyProject.Pages
 {
 #line 4 ""Pages/Index.razor""
@@ -40,40 +40,40 @@ namespace MyProject.Pages
 #line default
     }
 }";
-        var workspace = new AdhocWorkspace();
-        var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
-        
-        // Add the generated document to the compilation
-        var generatedDoc = workspace.AddDocument(project.Id, "Index.razor.g.cs", SourceText.From(generatedCode));
-        var compilation = await generatedDoc.Project.GetCompilationAsync();
+		AdhocWorkspace workspace = new();
+		var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+			.AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		// Add the generated document to the compilation
+		var generatedDoc = workspace.AddDocument(project.Id, "Index.razor.g.cs", SourceText.From(generatedCode));
+		var compilation = await generatedDoc.Project.GetCompilationAsync();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: compilation,
-            repoKey: "test-repo",
-            fileKey: "Index.razor",
-            filePath: razorFilePath,
-            relativePath: razorFilePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Assert
-        // Should find the class and the method
-        var classSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "Index", Kind: "NamedType" });
-        classSymbol.ShouldNotBeNull();
-        classSymbol.Namespace.ShouldBe("MyProject.Pages");
-        classSymbol.StartLine.ShouldBe(4); // Mapped line
+		// Act
+		await sut.Handle(
+			null,
+			compilation,
+			"test-repo",
+			"Index.razor",
+			razorFilePath,
+			razorFilePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        var methodSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "MyMethod", Kind: "Method" });
-        methodSymbol.ShouldNotBeNull();
-        methodSymbol.StartLine.ShouldBe(4); // Mapped line
-        
-        relBuffer.ShouldContain(r => r.FromKey == classSymbol.Key && r.ToKey == methodSymbol.Key && r.RelType == "CONTAINS");
-    }
+		// Assert
+		// Should find the class and the method
+		var classSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "Index", Kind: "NamedType" });
+		classSymbol.ShouldNotBeNull();
+		classSymbol.Namespace.ShouldBe("MyProject.Pages");
+		classSymbol.StartLine.ShouldBe(4); // Mapped line
+
+		var methodSymbol = symbolBuffer.FirstOrDefault(s => s is { Name: "MyMethod", Kind: "Method" });
+		methodSymbol.ShouldNotBeNull();
+		methodSymbol.StartLine.ShouldBe(4); // Mapped line
+
+		relBuffer.ShouldContain(r => r.FromKey == classSymbol.Key && r.ToKey == methodSymbol.Key && r.RelType == "CONTAINS");
+	}
 }

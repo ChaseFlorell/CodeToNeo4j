@@ -7,122 +7,126 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace CodeToNeo4j.FileHandlers;
 
 public partial class RazorHandler(
-    IRoslynSymbolProcessor symbolProcessor,
-    IFileSystem fileSystem,
-    ITextSymbolMapper textSymbolMapper)
-    : DocumentHandlerBase(fileSystem)
+	IRoslynSymbolProcessor symbolProcessor,
+	IFileSystem fileSystem,
+	ITextSymbolMapper textSymbolMapper)
+	: DocumentHandlerBase(fileSystem)
 {
-    public override string FileExtension => ".razor";
+	public override string FileExtension => ".razor";
 
-    protected override async Task<FileResult> HandleFile(
-        TextDocument? document,
-        Compilation? compilation,
-        string? repoKey,
-        string fileKey,
-        string filePath,
-        string relativePath,
-        ICollection<Symbol> symbolBuffer,
-        ICollection<Relationship> relBuffer,
-        Accessibility minAccessibility)
-    {
-        var content = await GetContent(document, filePath).ConfigureAwait(false);
-        var fileNamespace = ExtractNamespace(content);
+	protected override async Task<FileResult> HandleFile(
+		TextDocument? document,
+		Compilation? compilation,
+		string? repoKey,
+		string fileKey,
+		string filePath,
+		string relativePath,
+		ICollection<Symbol> symbolBuffer,
+		ICollection<Relationship> relBuffer,
+		Accessibility minAccessibility)
+	{
+		var content = await GetContent(document, filePath).ConfigureAwait(false);
+		var fileNamespace = ExtractNamespace(content);
 
-        // Use Roslyn to extract members from generated code
-        if (compilation is not null)
-        {
-            foreach (var tree in compilation.SyntaxTrees)
-            {
-                // Razor generated files use #line directives to map back to the .razor file.
-                // We'll check if any type declared in this tree maps back to our file.
-                var isMappedToThisFile = string.Equals(tree.FilePath, filePath, StringComparison.OrdinalIgnoreCase);
-                if (!isMappedToThisFile)
-                {
-                    var root = await tree.GetRootAsync();
-                    var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
-                    if (firstType != null)
-                    {
-                        var mappedSpan = firstType.GetLocation().GetMappedLineSpan();
-                        isMappedToThisFile = mappedSpan.IsValid && string.Equals(mappedSpan.Path, filePath, StringComparison.OrdinalIgnoreCase);
-                    }
-                }
+		// Use Roslyn to extract members from generated code
+		if (compilation is not null)
+		{
+			foreach (var tree in compilation.SyntaxTrees)
+			{
+				// Razor generated files use #line directives to map back to the .razor file.
+				// We'll check if any type declared in this tree maps back to our file.
+				var isMappedToThisFile = string.Equals(tree.FilePath, filePath, StringComparison.OrdinalIgnoreCase);
+				if (!isMappedToThisFile)
+				{
+					var root = await tree.GetRootAsync();
+					var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+					if (firstType != null)
+					{
+						var mappedSpan = firstType.GetLocation().GetMappedLineSpan();
+						isMappedToThisFile = mappedSpan.IsValid && string.Equals(mappedSpan.Path, filePath, StringComparison.OrdinalIgnoreCase);
+					}
+				}
 
-                if (isMappedToThisFile)
-                {
-                    var semanticModel = compilation.GetSemanticModel(tree, ignoreAccessibility: true);
-                    var root = await tree.GetRootAsync().ConfigureAwait(false);
-                    var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
-                    if (firstType != null)
-                    {
-                        var symbol = semanticModel.GetDeclaredSymbol(firstType);
-                        var fqn = symbol?.ToDisplayString();
-                        if (!string.IsNullOrEmpty(fqn))
-                        {
-                            fileKey = fqn;
-                        }
-                        var ns = symbol?.ContainingNamespace?.ToDisplayString();
-                        if (!string.IsNullOrEmpty(ns))
-                        {
-                            fileNamespace = ns;
-                        }
-                    }
-                    symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
-                }
-            }
-        }
+				if (isMappedToThisFile)
+				{
+					var semanticModel = compilation.GetSemanticModel(tree, true);
+					var root = await tree.GetRootAsync().ConfigureAwait(false);
+					var firstType = root.DescendantNodes().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+					if (firstType != null)
+					{
+						var symbol = semanticModel.GetDeclaredSymbol(firstType);
+						var fqn = symbol?.ToDisplayString();
+						if (!string.IsNullOrEmpty(fqn))
+						{
+							fileKey = fqn;
+						}
 
-        // Extract directives via Regex as a fallback/complement
-        ExtractDirectives(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
+						var ns = symbol?.ContainingNamespace?.ToDisplayString();
+						if (!string.IsNullOrEmpty(ns))
+						{
+							fileNamespace = ns;
+						}
+					}
 
-        return new FileResult(fileNamespace, fileKey);
-    }
+					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
+						minAccessibility);
+				}
+			}
+		}
 
-    private static string? ExtractNamespace(string content)
-    {
-        var match = NamespaceRegex().Match(content);
-        return match.Success ? match.Groups[1].Value.Trim() : null;
-    }
+		// Extract directives via Regex as a fallback/complement
+		ExtractDirectives(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
-    private void ExtractDirectives(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, Accessibility minAccessibility)
-    {
-        if (!IsPublicAccessible(minAccessibility))
-        {
-            return;
-        }
+		return new(fileNamespace, fileKey);
+	}
 
-        // Simple regex-based extraction for common Razor directives
-        var matches = DirectivesRegex().Matches(content);
+	private static string? ExtractNamespace(string content)
+	{
+		var match = NamespaceRegex().Match(content);
+		return match.Success ? match.Groups[1].Value.Trim() : null;
+	}
 
-        foreach (Match match in matches)
-        {
-            var line = match.Value.Trim();
-            var kind = line.StartsWith("@using") ? "UsingDirective" :
-                line.StartsWith("@inject") ? "InjectDirective" :
-                line.StartsWith("@model") ? "ModelDirective" : "InheritsDirective";
+	private void ExtractDirectives(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer,
+		ICollection<Relationship> relBuffer, Accessibility minAccessibility)
+	{
+		if (!IsPublicAccessible(minAccessibility))
+		{
+			return;
+		}
 
-            var name = match.Groups[1].Value.Trim();
-            var key = textSymbolMapper.BuildKey(fileKey, kind, name);
-            var startLine = GetLineNumber(content, match.Index);
+		// Simple regex-based extraction for common Razor directives
+		var matches = DirectivesRegex().Matches(content);
 
-            var record = textSymbolMapper.CreateSymbol(
-                key: key,
-                name: name,
-                kind: kind,
-                @class: "component",
-                fqn: name,
-                fileKey: fileKey,
-                relativePath: relativePath,
-                fileNamespace: fileNamespace,
-                startLine: startLine);
+		foreach (Match match in matches)
+		{
+			var line = match.Value.Trim();
+			var kind = line.StartsWith("@using") ? "UsingDirective" :
+				line.StartsWith("@inject") ? "InjectDirective" :
+				line.StartsWith("@model") ? "ModelDirective" : "InheritsDirective";
 
-            symbolBuffer.Add(record);
-            relBuffer.Add(new Relationship(FromKey: fileKey, ToKey: key, RelType: "CONTAINS"));
-        }
-    }
+			var name = match.Groups[1].Value.Trim();
+			var key = textSymbolMapper.BuildKey(fileKey, kind, name);
+			var startLine = GetLineNumber(content, match.Index);
 
-    [GeneratedRegex(@"^@namespace\s+(.+)$", RegexOptions.Multiline)]
-    private static partial Regex NamespaceRegex();
+			var record = textSymbolMapper.CreateSymbol(
+				key,
+				name,
+				kind,
+				"component",
+				name,
+				fileKey,
+				relativePath,
+				fileNamespace,
+				startLine);
 
-    [GeneratedRegex(@"^@(?:using|inject|model|inherits)\s+(.+)$", RegexOptions.Multiline)]
-    private static partial Regex DirectivesRegex();
+			symbolBuffer.Add(record);
+			relBuffer.Add(new(fileKey, key, "CONTAINS"));
+		}
+	}
+
+	[GeneratedRegex(@"^@namespace\s+(.+)$", RegexOptions.Multiline)]
+	private static partial Regex NamespaceRegex();
+
+	[GeneratedRegex(@"^@(?:using|inject|model|inherits)\s+(.+)$", RegexOptions.Multiline)]
+	private static partial Regex DirectivesRegex();
 }

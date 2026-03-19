@@ -10,45 +10,45 @@ namespace CodeToNeo4j.Tests.Handlers;
 
 public class SolutionProcessingHandlerTests
 {
-    [Fact]
-    public async Task GivenOptions_WhenHandleCalled_ThenDelegatesToSolutionProcessor()
-    {
-        // arrange
-        var solutionProcessor = A.Fake<ISolutionProcessor>();
-        var handler = new SolutionProcessingHandler(solutionProcessor);
+	[Fact]
+	public async Task GivenOptions_WhenHandleCalled_ThenDelegatesToSolutionProcessor()
+	{
+		// arrange
+		var solutionProcessor = A.Fake<ISolutionProcessor>();
+		SolutionProcessingHandler handler = new(solutionProcessor);
 
-        var fs = new MockFileSystem();
-        var options = new Options(
-            fs.FileInfo.New("/repo/My.sln"),
-            "my",
-            "bolt://localhost",
-            "user",
-            "pass",
-            false,
-            "origin/main",
-            500,
-            "neo4j",
-            Microsoft.Extensions.Logging.LogLevel.Information,
-            false,
-            Accessibility.Public,
-            [".cs"],
-            false,
-            ShowVersion: false,
-            ShowSupportedFiles: false,
-            ShowInfo: false);
+		MockFileSystem fs = new();
+		Options options = new(
+			fs.FileInfo.New("/repo/My.sln"),
+			"my",
+			"bolt://localhost",
+			"user",
+			"pass",
+			false,
+			"origin/main",
+			500,
+			"neo4j",
+			Microsoft.Extensions.Logging.LogLevel.Information,
+			false,
+			Accessibility.Public,
+			[".cs"],
+			false,
+			false,
+			false,
+			false);
 
-        // act
-        await handler.Handle(options);
+		// act
+		await handler.Handle(options);
 
-        // assert
-        A.CallTo(() => solutionProcessor.ProcessSolution(
-            "/repo/My.sln",
-            "my",
-            "origin/main",
-            "neo4j",
-            500,
-            false,
-            Accessibility.Public,
-            A<IEnumerable<string>>._)).MustHaveHappenedOnceExactly();
-    }
+		// assert
+		A.CallTo(() => solutionProcessor.ProcessSolution(
+			"/repo/My.sln",
+			"my",
+			"origin/main",
+			"neo4j",
+			500,
+			false,
+			Accessibility.Public,
+			A<IEnumerable<string>>._)).MustHaveHappenedOnceExactly();
+	}
 }

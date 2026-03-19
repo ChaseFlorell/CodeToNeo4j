@@ -6,47 +6,47 @@ namespace CodeToNeo4j.Tests.Cypher;
 
 public class CypherServiceTests
 {
-    [Theory]
-    [InlineData(Queries.Schema)]
-    [InlineData(Queries.UpsertFile)]
-    [InlineData(Queries.UpsertSymbols)]
-    [InlineData(Queries.MergeRelationships)]
-    [InlineData(Queries.UpsertProject)]
-    [InlineData(Queries.MarkFileAsDeleted)]
-    [InlineData(Queries.PurgeData)]
-    public void GivenKnownQueryName_WhenGetCypherCalled_ThenReturnsNonEmptyContent(string queryName)
-    {
-        // Arrange
-        var sut = new CypherService();
+	[Theory]
+	[InlineData(Queries.Schema)]
+	[InlineData(Queries.UpsertFile)]
+	[InlineData(Queries.UpsertSymbols)]
+	[InlineData(Queries.MergeRelationships)]
+	[InlineData(Queries.UpsertProject)]
+	[InlineData(Queries.MarkFileAsDeleted)]
+	[InlineData(Queries.PurgeData)]
+	public void GivenKnownQueryName_WhenGetCypherCalled_ThenReturnsNonEmptyContent(string queryName)
+	{
+		// Arrange
+		CypherService sut = new();
 
-        // Act
-        var result = sut.GetCypher(queryName);
+		// Act
+		var result = sut.GetCypher(queryName);
 
-        // Assert
-        result.ShouldNotBeNullOrWhiteSpace();
-    }
+		// Assert
+		result.ShouldNotBeNullOrWhiteSpace();
+	}
 
-    [Fact]
-    public void GivenUnknownQueryName_WhenGetCypherCalled_ThenThrowsFileNotFoundException()
-    {
-        // Arrange
-        var sut = new CypherService();
+	[Fact]
+	public void GivenUnknownQueryName_WhenGetCypherCalled_ThenThrowsFileNotFoundException()
+	{
+		// Arrange
+		CypherService sut = new();
 
-        // Act & Assert
-        Should.Throw<FileNotFoundException>(() => sut.GetCypher("NonExistentQuery"));
-    }
+		// Act & Assert
+		Should.Throw<FileNotFoundException>(() => sut.GetCypher("NonExistentQuery"));
+	}
 
-    [Fact]
-    public void GivenSameQueryName_WhenGetCypherCalledTwice_ThenReturnsSameContent()
-    {
-        // Arrange
-        var sut = new CypherService();
+	[Fact]
+	public void GivenSameQueryName_WhenGetCypherCalledTwice_ThenReturnsSameContent()
+	{
+		// Arrange
+		CypherService sut = new();
 
-        // Act
-        var first = sut.GetCypher(Queries.Schema);
-        var second = sut.GetCypher(Queries.Schema);
+		// Act
+		var first = sut.GetCypher(Queries.Schema);
+		var second = sut.GetCypher(Queries.Schema);
 
-        // Assert
-        first.ShouldBe(second);
-    }
+		// Assert
+		first.ShouldBe(second);
+	}
 }

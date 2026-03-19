@@ -9,13 +9,13 @@ namespace CodeToNeo4j.Progress;
 [ExcludeFromCodeCoverage(Justification = "Thin CI-environment logger wrapper; behaviour only meaningful inside GitHub Actions")]
 public class GitHubActionsProgressService(ILogger<GitHubActionsProgressService> logger) : IProgressService
 {
-    public void ReportProgress(int current, int total, string filePath)
-    {
-        var progress = (double)current / total;
-        // GitHub Actions doesn't have a direct progress bar command, but we can print specifically formatted lines.
-        // Some users use notice commands, but we'll stick to clear info logs for now.
-        logger.LogInformation("::notice::[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", progress, filePath, current, total);
-    }
+	public void ReportProgress(int current, int total, string filePath)
+	{
+		var progress = (double)current / total;
+		// GitHub Actions doesn't have a direct progress bar command, but we can print specifically formatted lines.
+		// Some users use notice commands, but we'll stick to clear info logs for now.
+		logger.LogInformation("::notice::[Progress: {Percentage:p2}] Processing {FilePath} ({Current}/{Total})", progress, filePath, current, total);
+	}
 
-    public void ProgressComplete() { }
+	public void ProgressComplete() { }
 }

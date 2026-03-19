@@ -9,58 +9,58 @@ namespace CodeToNeo4j.Tests.Handlers;
 
 public class MsBuildRegistrationHandlerTests
 {
-    [Fact]
-    public async Task GivenDirectoryPath_WhenHandleCalled_ThenSkipsMsBuildRegistrationAndContinuesChain()
-    {
-        // arrange
-        var handler = new MsBuildRegistrationHandler();
-        var nextHandler = A.Fake<IOptionsHandler>();
-        handler.SetNext(nextHandler);
+	[Fact]
+	public async Task GivenDirectoryPath_WhenHandleCalled_ThenSkipsMsBuildRegistrationAndContinuesChain()
+	{
+		// arrange
+		MsBuildRegistrationHandler handler = new();
+		var nextHandler = A.Fake<IOptionsHandler>();
+		handler.SetNext(nextHandler);
 
-        var fs = new MockFileSystem();
-        var options = CreateOptions(fs.DirectoryInfo.New("/repo"));
+		MockFileSystem fs = new();
+		var options = CreateOptions(fs.DirectoryInfo.New("/repo"));
 
-        // act
-        await handler.Handle(options);
+		// act
+		await handler.Handle(options);
 
-        // assert
-        A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
-    }
+		// assert
+		A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
+	}
 
-    [Fact]
-    public async Task GivenFilePath_WhenHandleCalled_ThenDoesNotSkipMsBuild()
-    {
-        // arrange
-        var handler = new MsBuildRegistrationHandler();
-        var nextHandler = A.Fake<IOptionsHandler>();
-        handler.SetNext(nextHandler);
+	[Fact]
+	public async Task GivenFilePath_WhenHandleCalled_ThenDoesNotSkipMsBuild()
+	{
+		// arrange
+		MsBuildRegistrationHandler handler = new();
+		var nextHandler = A.Fake<IOptionsHandler>();
+		handler.SetNext(nextHandler);
 
-        var fs = new MockFileSystem();
-        var options = CreateOptions(fs.FileInfo.New("/repo/My.sln"));
+		MockFileSystem fs = new();
+		var options = CreateOptions(fs.FileInfo.New("/repo/My.sln"));
 
-        // act
-        await handler.Handle(options);
+		// act
+		await handler.Handle(options);
 
-        // assert — chain still continues
-        A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
-    }
+		// assert — chain still continues
+		A.CallTo(() => nextHandler.Handle(options)).MustHaveHappenedOnceExactly();
+	}
 
-    private static Options CreateOptions(IFileSystemInfo inputPath) => new(
-        inputPath,
-        "test",
-        "bolt://localhost",
-        "user",
-        "pass",
-        false,
-        null,
-        100,
-        "neo4j",
-        Microsoft.Extensions.Logging.LogLevel.Information,
-        false,
-        Microsoft.CodeAnalysis.Accessibility.Private,
-        [],
-        false,
-        ShowVersion: false,
-        ShowSupportedFiles: false,
-        ShowInfo: false);
+	private static Options CreateOptions(IFileSystemInfo inputPath) => new(
+		inputPath,
+		"test",
+		"bolt://localhost",
+		"user",
+		"pass",
+		false,
+		null,
+		100,
+		"neo4j",
+		Microsoft.Extensions.Logging.LogLevel.Information,
+		false,
+		Microsoft.CodeAnalysis.Accessibility.Private,
+		[],
+		false,
+		false,
+		false,
+		false);
 }

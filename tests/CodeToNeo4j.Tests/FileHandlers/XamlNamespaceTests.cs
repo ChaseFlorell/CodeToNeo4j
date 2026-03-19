@@ -10,155 +10,155 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class XamlNamespaceTests
 {
-    [Theory]
-    [InlineData("http://schemas.microsoft.com/winfx/2006/xaml")]
-    [InlineData("http://schemas.microsoft.com/winfx/2009/xaml")]
-    public async Task GivenXamlWithDifferentXNamespaces_WhenHandleCalled_ThenCorrectNamespaceExtracted(string xNamespace)
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
-        var content = $@"
+	[Theory]
+	[InlineData("http://schemas.microsoft.com/winfx/2006/xaml")]
+	[InlineData("http://schemas.microsoft.com/winfx/2009/xaml")]
+	public async Task GivenXamlWithDifferentXNamespaces_WhenHandleCalled_ThenCorrectNamespaceExtracted(string xNamespace)
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		var content = $@"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
         xmlns:x=""{xNamespace}"">
     <StackPanel x:Name=""MainPanel"">
     </StackPanel>
 </Window>";
-        const string filePath = "test.xaml";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		const string filePath = "test.xaml";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        var resultNamespace = await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		var resultNamespace = await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        resultNamespace.Namespace.ShouldBe("MyApp");
-        var panelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MainPanel");
-        panelSymbol.ShouldNotBeNull();
-    }
+		// Assert
+		resultNamespace.Namespace.ShouldBe("MyApp");
+		var panelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "MainPanel");
+		panelSymbol.ShouldNotBeNull();
+	}
 
-    [Fact]
-    public async Task GivenMauiXaml_WhenHandleCalled_ThenCorrectNamespaceExtracted()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
-        var content = @"
+	[Fact]
+	public async Task GivenMauiXaml_WhenHandleCalled_ThenCorrectNamespaceExtracted()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
              x:Class=""MauiApp.MainPage"">
     <Label x:Name=""WelcomeLabel"" Text=""Welcome to .NET MAUI!"" />
 </ContentPage>";
-        const string filePath = "MainPage.xaml";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		const string filePath = "MainPage.xaml";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        var resultNamespace = await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		var resultNamespace = await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        resultNamespace.Namespace.ShouldBe("MauiApp");
-        var labelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "WelcomeLabel");
-        labelSymbol.ShouldNotBeNull();
-    }
+		// Assert
+		resultNamespace.Namespace.ShouldBe("MauiApp");
+		var labelSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "WelcomeLabel");
+		labelSymbol.ShouldNotBeNull();
+	}
 
-    [Fact]
-    public async Task GivenXamarinFormsXaml_WhenHandleCalled_ThenCorrectNamespaceExtracted()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
-        var content = @"
+	[Fact]
+	public async Task GivenXamarinFormsXaml_WhenHandleCalled_ThenCorrectNamespaceExtracted()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
              x:Class=""FormsApp.MainPage"">
     <Button x:Name=""ClickMe"" />
 </ContentPage>";
-        const string filePath = "MainPage.xaml";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		const string filePath = "MainPage.xaml";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        var resultNamespace = await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		var resultNamespace = await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        resultNamespace.Namespace.ShouldBe("FormsApp");
-        var buttonSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "ClickMe");
-        buttonSymbol.ShouldNotBeNull();
-    }
+		// Assert
+		resultNamespace.Namespace.ShouldBe("FormsApp");
+		var buttonSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "ClickMe");
+		buttonSymbol.ShouldNotBeNull();
+	}
 
-    [Fact]
-    public async Task GivenXamlWithUnprefixedName_WhenHandleCalled_ThenCorrectSymbolNameExtracted()
-    {
-        // Arrange
-        var fileSystem = new MockFileSystem();
-        var symbolMapper = new SymbolMapper();
-        var dependencyExtractor = new MemberDependencyExtractor(symbolMapper);
-        var symbolProcessor = new RoslynSymbolProcessor(symbolMapper, dependencyExtractor);
-        var sut = new XamlHandler(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
-        var content = @"
+	[Fact]
+	public async Task GivenXamlWithUnprefixedName_WhenHandleCalled_ThenCorrectSymbolNameExtracted()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />
 </Window>";
-        const string filePath = "test.xaml";
-        fileSystem.AddFile(filePath, new MockFileData(content));
+		const string filePath = "test.xaml";
+		fileSystem.AddFile(filePath, new(content));
 
-        var symbolBuffer = new List<Symbol>();
-        var relBuffer = new List<Relationship>();
+		List<Symbol> symbolBuffer = new();
+		List<Relationship> relBuffer = new();
 
-        // Act
-        await sut.Handle(
-            document: null,
-            compilation: null,
-            repoKey: "test-repo",
-            fileKey: "test-file",
-            filePath: filePath, relativePath: filePath,
-            symbolBuffer: symbolBuffer,
-            relBuffer: relBuffer,
-            minAccessibility: Accessibility.Private);
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"test-file",
+			filePath, filePath,
+			symbolBuffer,
+			relBuffer,
+			Accessibility.Private);
 
-        // Assert
-        var buttonSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "UnprefixedButton");
-        buttonSymbol.ShouldNotBeNull();
-    }
+		// Assert
+		var buttonSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "UnprefixedButton");
+		buttonSymbol.ShouldNotBeNull();
+	}
 }
