@@ -36,12 +36,10 @@ jobs:
           node-version: '24'
 
       - name: Configure git user for Renovate
-        run: |
-          git config --global user.email 'chase.florell@gmail.com'
-          git config --global user.name 'Chase Florell'
+        run: ./.github/scripts/renovate_configure-git-user.sh
 
       - name: Install dependencies
-        run: npm ci --loglevel=error
+        run: ./.github/scripts/renovate_install-dependencies.sh
 
       - name: Run Renovate
         env:
@@ -49,4 +47,4 @@ jobs:
           TOKEN: ${{ secrets.RENOVATE_TOKEN }}
           RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
           GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
-        run: npx renovate
+        run: ./.github/scripts/renovate_run-renovate.sh
