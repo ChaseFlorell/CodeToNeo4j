@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -7,14 +8,14 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XamlHandler(
+public partial class XamlHandler(
 	IRoslynSymbolProcessor symbolProcessor,
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
-	ILogger<XamlHandler> logger)
-	: DocumentHandlerBase(fileSystem)
+	ILogger<XamlHandler> logger,
+	IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".xaml";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -29,10 +30,11 @@ public class XamlHandler(
 	{
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 		string? fileNamespace = null;
+		XDocument? xdoc = null;
 
 		try
 		{
-			XDocument xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
+			xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
 			if (xdoc.Root != null)
 			{
 				var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
@@ -75,12 +77,61 @@ public class XamlHandler(
 				{
 					var semanticModel = compilation.GetSemanticModel(tree, true);
 					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-						minAccessibility);
+						minAccessibility, Language);
 				}
 			}
 		}
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: xdoc is not null ? DetectXamlFramework(xdoc) : null);
+	}
+
+	internal static IReadOnlySet<string>? DetectXamlFramework(XDocument xdoc)
+	{
+		if (xdoc.Root is null)
+		{
+			return null;
+		}
+
+		// Collect all namespace URIs declared in the root element
+		HashSet<string> namespaces = xdoc.Root.Attributes()
+			.Where(a => a.IsNamespaceDeclaration)
+			.Select(a => a.Value)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+		// Also include the root element's own namespace
+		string rootNs = xdoc.Root.Name.NamespaceName;
+		if (!string.IsNullOrEmpty(rootNs))
+		{
+			namespaces.Add(rootNs);
+		}
+
+		if (namespaces.Contains("http://schemas.microsoft.com/dotnet/2021/maui"))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "maui" };
+		}
+
+		if (namespaces.Contains("https://github.com/avaloniaui"))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "avalonia" };
+		}
+
+		if (namespaces.Contains("http://xamarin.com/schemas/2014/forms"))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "xamarin.forms" };
+		}
+
+		if (namespaces.Contains("http://schemas.microsoft.com/client/2007") ||
+			namespaces.Contains("http://schemas.microsoft.com/winfx/2009/xaml"))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "silverlight" };
+		}
+
+		if (namespaces.Contains("http://schemas.microsoft.com/winfx/2006/xaml/presentation"))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "wpf" };
+		}
+
+		return null;
 	}
 
 	private void ProcessElement(XElement element, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer,
@@ -118,7 +169,8 @@ public class XamlHandler(
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine);
+				startLine,
+				language: Language);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
@@ -143,7 +195,8 @@ public class XamlHandler(
 						relativePath,
 						fileNamespace,
 						startLine,
-						"Private");
+						"Private",
+						language: Language);
 
 					symbolBuffer.Add(handlerRecord);
 					relBuffer.Add(new(symbolKey, handlerKey, "BINDS_TO"));

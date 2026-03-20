@@ -258,8 +258,8 @@ public class SolutionProcessor(
 		var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
 		var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
-		List<Symbol> symbols = new();
-		List<Relationship> relationships = new();
+		List<Symbol> symbols = [];
+		List<Relationship> relationships = [];
 
 		TextDocument? document = null;
 		Compilation? compilation = null;
@@ -302,9 +302,12 @@ public class SolutionProcessor(
 		var finalNamespace = fileResult?.Namespace ?? defaultNamespace;
 		var urlNodes = fileResult?.UrlNodes is { Count: > 0 } urls ? urls.ToList() : [];
 
-		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
+		var language = handler?.Language ?? "unknown";
+		// MSBuild-discovered TFMs take priority; fall back to handler-detected TFMs
+		var effectiveTfms = file.TargetFrameworks is { Count: > 0 } ? file.TargetFrameworks : fileResult?.TargetFrameworks;
+		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, effectiveTfms);
 
-		return new(fileRecord, symbols, relationships, urlNodes, relativePath, file.TargetFrameworks);
+		return new(fileRecord, symbols, relationships, urlNodes, relativePath, effectiveTfms);
 	}
 
 	internal static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
@@ -352,17 +355,19 @@ public class SolutionProcessor(
 
 			foreach (var handler in handlers)
 			{
-				var ext = handler.FileExtension;
-
-				// Handlers whose FileExtension is a full filename (e.g. "package.json")
-				// are indexed by filename for O(1) lookup.
-				if (!ext.StartsWith('.'))
+				foreach (var ext in handler.FileExtensions)
 				{
-					_byFileName.TryAdd(ext, handler);
-					continue;
+					// Handlers whose extension is a full filename (e.g. "package.json")
+					// are indexed by filename for O(1) lookup.
+					if (!ext.StartsWith('.'))
+					{
+						_byFileName.TryAdd(ext, handler);
+					}
+					else
+					{
+						_byExtension.TryAdd(ext, handler);
+					}
 				}
-
-				_byExtension.TryAdd(ext, handler);
 			}
 		}
 
@@ -375,25 +380,11 @@ public class SolutionProcessor(
 				return byName;
 			}
 
-			// O(1) extension lookup (e.g. .cs, .html)
+			// O(1) extension lookup — all extensions from every handler are indexed
 			var ext = _fileSystem.Path.GetExtension(filePath);
 			if (!string.IsNullOrEmpty(ext) && _byExtension.TryGetValue(ext, out var byExt))
 			{
-				// Verify via CanHandle for handlers that match multiple extensions (e.g. .ts/.tsx)
-				if (byExt.CanHandle(filePath))
-				{
-					return byExt;
-				}
-			}
-
-			// Linear fallback for files that didn't match by extension or filename
-			// (e.g. .tsx files matched to the .ts handler)
-			foreach (var handler in _byExtension.Values)
-			{
-				if (handler.CanHandle(filePath))
-				{
-					return handler;
-				}
+				return byExt;
 			}
 
 			return null;

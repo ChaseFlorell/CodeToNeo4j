@@ -5,10 +5,12 @@ public static class PubspecParser
 	public static PubspecInfo Parse(string content)
 	{
 		var name = string.Empty;
-		List<PubspecDependency> dependencies = new();
-		List<PubspecDependency> devDependencies = new();
+		string? sdkConstraint = null;
+		List<PubspecDependency> dependencies = [];
+		List<PubspecDependency> devDependencies = [];
 
 		string? currentSection = null;
+		var inEnvironment = false;
 
 		foreach (var line in content.Split('\n'))
 		{
@@ -17,6 +19,7 @@ public static class PubspecParser
 			// Top-level key (no indentation)
 			if (!string.IsNullOrEmpty(trimmed) && !char.IsWhiteSpace(trimmed[0]))
 			{
+				inEnvironment = false;
 				if (trimmed.StartsWith("name:", StringComparison.Ordinal))
 				{
 					name = trimmed["name:".Length..].Trim();
@@ -30,6 +33,11 @@ public static class PubspecParser
 				{
 					currentSection = "dev_dependencies";
 				}
+				else if (trimmed.StartsWith("environment:", StringComparison.Ordinal))
+				{
+					currentSection = null;
+					inEnvironment = true;
+				}
 				else
 				{
 					currentSection = null;
@@ -38,21 +46,32 @@ public static class PubspecParser
 				continue;
 			}
 
-			// Indented entry under a section
-			if (currentSection is null)
-			{
-				continue;
-			}
-
+			// Indented entries
 			if (string.IsNullOrWhiteSpace(trimmed))
 			{
 				continue;
 			}
 
-			// Only process direct children (single indent level, typically 2 spaces)
 			var stripped = trimmed.TrimStart();
 			var indent = trimmed.Length - stripped.Length;
 			if (indent == 0)
+			{
+				continue;
+			}
+
+			// Parse environment.sdk
+			if (inEnvironment && stripped.StartsWith("sdk:", StringComparison.Ordinal))
+			{
+				var raw = stripped["sdk:".Length..].Trim().Trim('"', '\'');
+				if (!string.IsNullOrEmpty(raw))
+				{
+					sdkConstraint = raw;
+				}
+
+				continue;
+			}
+
+			if (currentSection is null)
 			{
 				continue;
 			}
@@ -66,14 +85,11 @@ public static class PubspecParser
 			var depName = stripped[..colonIndex].Trim();
 			var depValue = stripped[(colonIndex + 1)..].Trim();
 
-			// Skip sub-keys (e.g. "path:", "git:" under a dependency)
-			// These will have deeper indentation, but we only care about top-level deps
 			if (string.IsNullOrEmpty(depName))
 			{
 				continue;
 			}
 
-			// Simple version constraint (e.g. "^1.0.0") or empty
 			var version = string.IsNullOrEmpty(depValue) ? null : depValue;
 			var isDev = currentSection == "dev_dependencies";
 
@@ -81,10 +97,10 @@ public static class PubspecParser
 			list.Add(new(depName, version, isDev));
 		}
 
-		return new(name, dependencies, devDependencies);
+		return new(name, dependencies, devDependencies, sdkConstraint);
 	}
 }
 
-public record PubspecInfo(string Name, List<PubspecDependency> Dependencies, List<PubspecDependency> DevDependencies);
+public record PubspecInfo(string Name, List<PubspecDependency> Dependencies, List<PubspecDependency> DevDependencies, string? SdkConstraint = null);
 
 public record PubspecDependency(string Name, string? Version, bool IsDev);

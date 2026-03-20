@@ -52,7 +52,7 @@ public class GitLogParserTests
 		System.IO.Abstractions.FileSystem fileSystem = new();
 		GitLogParser sut = new(fileService, fileSystem);
 		DateTimeOffset date = new(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
-		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history = new() { ("Author One <a@b.com>", date, "abc123", null) };
+		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history = [("Author One <a@b.com>", date, "abc123", null)];
 
 		// Act
 		var result = sut.BuildFileMetadata(history);
@@ -75,10 +75,8 @@ public class GitLogParserTests
 		GitLogParser sut = new(fileService, fileSystem);
 		DateTimeOffset date1 = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 		DateTimeOffset date2 = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history = new()
-		{
-			("Author", date1, "h1", "tag: v1.0"), ("Author", date2, "h2", "tag: v2.0, HEAD -> main")
-		};
+		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history =
+			[("Author", date1, "h1", "tag: v1.0"), ("Author", date2, "h2", "tag: v2.0, HEAD -> main")];
 
 		// Act
 		var result = sut.BuildFileMetadata(history);

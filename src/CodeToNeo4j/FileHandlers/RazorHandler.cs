@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,10 +10,10 @@ namespace CodeToNeo4j.FileHandlers;
 public partial class RazorHandler(
 	IRoslynSymbolProcessor symbolProcessor,
 	IFileSystem fileSystem,
-	ITextSymbolMapper textSymbolMapper)
-	: DocumentHandlerBase(fileSystem)
+	ITextSymbolMapper textSymbolMapper,
+	IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".razor";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -69,7 +70,7 @@ public partial class RazorHandler(
 					}
 
 					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-						minAccessibility);
+						minAccessibility, Language);
 				}
 			}
 		}
@@ -117,7 +118,8 @@ public partial class RazorHandler(
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine);
+				startLine,
+				language: Language);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));

@@ -1,19 +1,14 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : JsHandlerBase(fileSystem, textSymbolMapper)
+public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
+	: JsHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-	public override string FileExtension => ".ts";
-	protected override string KindPrefix => "TypeScript";
-
-	public override bool CanHandle(string filePath)
-		=> filePath.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
-		   || filePath.EndsWith(".tsx", StringComparison.OrdinalIgnoreCase);
-
 	protected override void ExtractAdditionalSymbols(
 		string content,
 		string fileKey,
@@ -51,7 +46,8 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine));
+				startLine,
+				language: Language));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}
@@ -75,7 +71,8 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine));
+				startLine,
+				language: Language));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}
@@ -99,7 +96,8 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine));
+				startLine,
+				language: Language));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}

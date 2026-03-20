@@ -9,10 +9,10 @@ public class GitLogParser(
 {
 	public IEnumerable<CommitMetadata> ParseCommits(string output, string repoRoot)
 	{
-		List<CommitMetadata> commits = new();
+		List<CommitMetadata> commits = [];
 		var lines = output.Split('\n', StringSplitOptions.TrimEntries);
 		CommitMetadata? currentCommit = null;
-		List<FileStatus> changedFiles = new();
+		List<FileStatus> changedFiles = [];
 
 		foreach (var line in lines)
 		{
@@ -68,7 +68,7 @@ public class GitLogParser(
 		Dictionary<string, (DateTimeOffset first, DateTimeOffset last, int count)> authorMap = new();
 		var created = DateTimeOffset.MaxValue;
 		var lastModified = DateTimeOffset.MinValue;
-		List<string> hashes = new();
+		List<string> hashes = [];
 		HashSet<string> tags = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (var commit in history)
@@ -121,7 +121,7 @@ public class GitLogParser(
 			return new(DateTimeOffset.MinValue, DateTimeOffset.MinValue, [], [], []);
 		}
 
-		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history = new();
+		List<(string Author, DateTimeOffset Date, string Hash, string? Refs)> history = [];
 
 		foreach (var line in lines)
 		{

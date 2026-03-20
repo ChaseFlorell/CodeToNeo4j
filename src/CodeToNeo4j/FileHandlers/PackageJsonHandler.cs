@@ -1,15 +1,15 @@
 using System.IO.Abstractions;
 using System.Text.Json;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<PackageJsonHandler> logger)
-	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
+public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<PackageJsonHandler> logger, IConfigurationService configurationService)
+	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-	public override string FileExtension => "package.json";
 
 	public override bool CanHandle(string filePath)
 		=> _fileSystem.Path.GetFileName(filePath).Equals("package.json", StringComparison.OrdinalIgnoreCase);
@@ -68,7 +68,9 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 		var packageDir = _fileSystem.Path.GetDirectoryName(filePath) ?? string.Empty;
-		List<UrlNode> urlNodes = new();
+		List<UrlNode> urlNodes = [];
+
+		IReadOnlySet<string>? tfms = null;
 
 		try
 		{
@@ -79,13 +81,35 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 				.ConfigureAwait(false);
 			await ExtractDependencySection(root, "devDependencies", fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, packageDir,
 				urlNodes).ConfigureAwait(false);
+
+			tfms = ExtractEngines(root);
 		}
 		catch (JsonException)
 		{
 			logger.LogWarning("Failed to parse package.json: {FilePath}", filePath);
 		}
 
-		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
+		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null, tfms);
+	}
+
+	internal static IReadOnlySet<string>? ExtractEngines(JsonElement root)
+	{
+		if (!root.TryGetProperty("engines", out var engines) || engines.ValueKind != JsonValueKind.Object)
+		{
+			return null;
+		}
+
+		HashSet<string> result = new(StringComparer.Ordinal);
+		foreach (var prop in engines.EnumerateObject())
+		{
+			var version = prop.Value.GetString()?.Trim();
+			if (!string.IsNullOrEmpty(version))
+			{
+				result.Add($"{prop.Name}:{version}");
+			}
+		}
+
+		return result.Count > 0 ? result : null;
 	}
 
 	private readonly IFileSystem _fileSystem = fileSystem;

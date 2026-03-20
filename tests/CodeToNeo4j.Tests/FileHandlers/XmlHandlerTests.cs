@@ -1,6 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -10,18 +12,26 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class XmlHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".xml"], "xml"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenXmlWithElements_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance);
+		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance, CreateConfigService());
 		var content = @"<root><child>value</child></root>";
 		var filePath = "test.xml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

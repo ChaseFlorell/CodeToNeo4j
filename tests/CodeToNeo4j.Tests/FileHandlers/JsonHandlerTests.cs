@@ -1,4 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
@@ -11,19 +12,27 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class JsonHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".json"], "json"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenJsonWithNestedProperties_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), CreateConfigService());
 		const string content = @"{ ""foo"": { ""bar"": 123 }, ""baz"": [1, 2] }";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -62,13 +71,13 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), CreateConfigService());
 		const string content = @"{ ""foo"": }"; // Invalid JSON
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -92,13 +101,13 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), CreateConfigService());
 		const string content = @"{ ""foo"": 1 }";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -121,13 +130,13 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), CreateConfigService());
 		const string content = @"[ { ""foo"": 1 }, { ""bar"": 2 } ]";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

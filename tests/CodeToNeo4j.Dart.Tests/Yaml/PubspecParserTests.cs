@@ -107,4 +107,56 @@ public class PubspecParserTests
 		// The parser should pick up "flutter" with null version, and "sdk" as a sub-key is ignored
 		result.Dependencies.ShouldContain(d => d.Name == "flutter" && d.Version == null);
 	}
+
+	[Fact]
+	public void GivenPubspecWithSdkConstraint_WhenParsed_ThenSdkConstraintIsExtracted()
+	{
+		// Arrange
+		const string content = """
+		                       name: my_app
+		                       environment:
+		                         sdk: ">=3.0.0 <4.0.0"
+		                       dependencies:
+		                         http: ^0.13.0
+		                       """;
+
+		// Act
+		var result = PubspecParser.Parse(content);
+
+		// Assert
+		result.SdkConstraint.ShouldBe(">=3.0.0 <4.0.0");
+	}
+
+	[Fact]
+	public void GivenPubspecWithoutEnvironmentSection_WhenParsed_ThenSdkConstraintIsNull()
+	{
+		// Arrange
+		const string content = """
+		                       name: my_app
+		                       dependencies:
+		                         http: ^0.13.0
+		                       """;
+
+		// Act
+		var result = PubspecParser.Parse(content);
+
+		// Assert
+		result.SdkConstraint.ShouldBeNull();
+	}
+
+	[Theory]
+	[InlineData("sdk: '>=2.17.0 <3.0.0'", ">=2.17.0 <3.0.0")]
+	[InlineData("sdk: \">=3.0.0 <4.0.0\"", ">=3.0.0 <4.0.0")]
+	[InlineData("sdk: any", "any")]
+	public void GivenSdkConstraintInVariousFormats_WhenParsed_ThenConstraintIsNormalized(string sdkLine, string expectedConstraint)
+	{
+		// Arrange
+		var content = $"name: my_app\nenvironment:\n  {sdkLine}\n";
+
+		// Act
+		var result = PubspecParser.Parse(content);
+
+		// Assert
+		result.SdkConstraint.ShouldBe(expectedConstraint);
+	}
 }

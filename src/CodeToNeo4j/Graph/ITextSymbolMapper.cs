@@ -16,5 +16,6 @@ public interface ITextSymbolMapper
 		int startLine,
 		string accessibility = "Public",
 		string? documentation = null,
-		string? version = null);
+		string? version = null,
+		string language = "unknown");
 }

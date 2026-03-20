@@ -34,7 +34,7 @@ public class SolutionProcessorTests
 	{
 		// Arrange
 		var files = new[] { new ProcessedFile("file1.cs"), new ProcessedFile("file2.cs") };
-		HashSet<string> changedFiles = new();
+		HashSet<string> changedFiles = [];
 
 		// Act
 		var result = SolutionProcessor.FilterFiles(files, changedFiles);
@@ -50,7 +50,7 @@ public class SolutionProcessorTests
 	{
 		// Arrange
 		var files = new[] { new ProcessedFile("file1.cs"), new ProcessedFile("file2.cs"), new ProcessedFile("file3.cs") };
-		HashSet<string> changedFiles = new() { changedFile };
+		HashSet<string> changedFiles = [changedFile];
 
 		// Act
 		var result = SolutionProcessor.FilterFiles(files, changedFiles);
@@ -71,8 +71,8 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData fileMetaData = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<Symbol> symbols = new() { new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns") };
-		List<Relationship> rels = new() { new("k1", "k2", "CONTAINS") };
+		List<Symbol> symbols = [new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")];
+		List<Relationship> rels = [new("k1", "k2", "CONTAINS")];
 
 		SolutionProcessor.ProcessResult result = new(fileMetaData, symbols, rels, [], "file.cs");
 		await channel.Writer.WriteAsync(result);
@@ -102,10 +102,8 @@ public class SolutionProcessorTests
 		for (var i = 0; i < 3; i++)
 		{
 			FileMetaData file = new($"key{i}", $"file{i}.cs", $"file{i}.cs", "hash", metadata, "repo", "ns");
-			List<Symbol> symbols = new()
-			{
-				new($"s{i}", $"Sym{i}", "NamedType", "class", $"Sym{i}", "Public", $"key{i}", $"file{i}.cs", 1, 10, null, null, "ns")
-			};
+			List<Symbol> symbols =
+				[new($"s{i}", $"Sym{i}", "NamedType", "class", $"Sym{i}", "Public", $"key{i}", $"file{i}.cs", 1, 10, null, null, "ns")];
 			await channel.Writer.WriteAsync(new(file, symbols, [], [], $"file{i}.cs"));
 		}
 
@@ -150,7 +148,7 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData file = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<UrlNode> urlNodes = new() { new("dep:pkg", "https://example.com", "example") };
+		List<UrlNode> urlNodes = [new("dep:pkg", "https://example.com", "example")];
 
 		await channel.Writer.WriteAsync(new(file, [], [], urlNodes, "file.cs"));
 		channel.Writer.Complete();
@@ -169,8 +167,10 @@ public class SolutionProcessorTests
 		var fileService = A.Fake<IFileService>();
 		var handler = A.Fake<IDocumentHandler>();
 		A.CallTo(() => handler.FileExtension).Returns(".cs");
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
 		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
-		var sut = CreateProcessor(fileService: fileService, handlers: [handler]);
+		A.CallTo(() => handler.Language).Returns("csharp");
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
 
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp);
@@ -192,6 +192,72 @@ public class SolutionProcessorTests
 			.MustHaveHappenedOnceExactly();
 	}
 
+	[Theory]
+	[InlineData("csharp")]
+	[InlineData("typescript")]
+	[InlineData("javascript")]
+	public async Task GivenHandlerWithLanguage_WhenProcessFileCalled_ThenFileSetsLanguageFromHandler(string expectedLanguage)
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var handler = A.Fake<IDocumentHandler>();
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
+		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+		A.CallTo(() => handler.Language).Returns(expectedLanguage);
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
+
+		ProcessedFile processedFile = new("test.cs");
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "test.cs")).Returns("test.cs");
+		A.CallTo(() => fileService.InferFileMetadata("test.cs")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.Language.ShouldBe(expectedLanguage);
+	}
+
+	[Fact]
+	public async Task GivenNoHandler_WhenProcessFileCalled_ThenFileSetsLanguageToUnknown()
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var sut = CreateProcessor(fileService: fileService, fileSystem: new System.IO.Abstractions.FileSystem());
+
+		ProcessedFile processedFile = new("unknown.xyz");
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "unknown.xyz")).Returns("unknown.xyz");
+		A.CallTo(() => fileService.InferFileMetadata("unknown.xyz")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.Language.ShouldBe("unknown");
+	}
+
+	[Fact]
+	public async Task GivenProcessedFileWithTargetFrameworks_WhenProcessFileCalled_ThenFileSetsTargetFrameworks()
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var handler = A.Fake<IDocumentHandler>();
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
+		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+		A.CallTo(() => handler.Language).Returns("csharp");
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
+
+		IReadOnlySet<string> tfms = new HashSet<string> { "net8.0", "net9.0" };
+		ProcessedFile processedFile = new("app.cs", TargetFrameworks: tfms);
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "app.cs")).Returns("app.cs");
+		A.CallTo(() => fileService.InferFileMetadata("app.cs")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.TargetFrameworks.ShouldBe(tfms);
+	}
+
 	[Fact]
 	public async Task GivenResultWithTargetFrameworks_WhenRunConsumerCalled_ThenFlushesTargetFrameworks()
 	{
@@ -202,7 +268,7 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData file = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<Symbol> symbols = new() { new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns") };
+		List<Symbol> symbols = [new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")];
 		IReadOnlySet<string> tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "net9.0", "net8.0" } as IReadOnlySet<string>;
 
 		await channel.Writer.WriteAsync(new(file, symbols, [], [], "file.cs", tfms));
@@ -548,10 +614,12 @@ public class SolutionProcessorTests
 		// Arrange
 		var h1 = A.Fake<IDocumentHandler>();
 		A.CallTo(() => h1.FileExtension).Returns(".cs");
+		A.CallTo(() => h1.FileExtensions).Returns([".cs"]);
 		A.CallTo(() => h1.CanHandle(A<string>.That.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
 		var h2 = A.Fake<IDocumentHandler>();
 		A.CallTo(() => h2.FileExtension).Returns("package.json");
+		A.CallTo(() => h2.FileExtensions).Returns(["package.json"]);
 		A.CallTo(() => h2.CanHandle(A<string>.That.EndsWith("package.json", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
 		// Act

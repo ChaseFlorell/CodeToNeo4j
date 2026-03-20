@@ -1,4 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Models;
 using CodeToNeo4j.FileHandlers;
@@ -13,13 +14,21 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class DartHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".dart"], "dart"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenDartFile_WhenBridgeReturnsResult_ThenExtractsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		var projectRoot = "/project";
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
@@ -65,8 +74,8 @@ public class DartHandlerTests
 
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -91,15 +100,15 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/main.dart", new("void main() {}"));
 
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns((DartAnalysisResult?)null);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -124,12 +133,12 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		fileSystem.AddFile("/orphan/main.dart", new("void main() {}"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -154,7 +163,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/other.dart", new("class Other {}"));
@@ -167,8 +176,8 @@ public class DartHandlerTests
 		};
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -193,7 +202,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		// File at project root — no parent directory → fileNamespace is null
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
@@ -227,8 +236,8 @@ public class DartHandlerTests
 		};
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — relativePath has no directory component
 		await sut.Handle(
@@ -259,7 +268,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/foo.dart", new("class Foo {}"));
@@ -292,8 +301,8 @@ public class DartHandlerTests
 
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -320,7 +329,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance);
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, CreateConfigService());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/foo.dart", new("class Foo {}"));
@@ -353,8 +362,8 @@ public class DartHandlerTests
 
 		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

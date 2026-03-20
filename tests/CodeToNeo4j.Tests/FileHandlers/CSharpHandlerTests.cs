@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
@@ -14,6 +15,14 @@ public class CSharpHandlerTests
 {
 	private readonly ITestOutputHelper _testOutputHelper;
 
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".cs"], "csharp"));
+		return fake;
+	}
+
 	public CSharpHandlerTests(ITestOutputHelper testOutputHelper)
 	{
 		_testOutputHelper = testOutputHelper;
@@ -27,7 +36,7 @@ public class CSharpHandlerTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public interface IBar
@@ -45,8 +54,8 @@ public class Foo : IBar
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		// Explicit interface implementations are usually considered private/internal in terms of accessibility,
@@ -81,7 +90,7 @@ public class Foo : IBar
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public interface IBar
@@ -99,8 +108,8 @@ public class Foo : IBar
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -126,7 +135,7 @@ public class Foo : IBar
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public interface IBarService { }
@@ -142,8 +151,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -180,7 +189,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public class Foo
@@ -196,8 +205,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -232,7 +241,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public class Foo
@@ -247,8 +256,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -284,7 +293,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 using System;
@@ -300,8 +309,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -336,7 +345,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 using System;
@@ -352,8 +361,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -386,10 +395,12 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 using System;
+using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Tests.Configuration;
 public class MyEventArgs : EventArgs { }
 public class Foo
 {
@@ -403,8 +414,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -439,7 +450,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public class OrderService
@@ -459,8 +470,8 @@ public class OrderService
 		var document = workspace.AddDocument(project.Id, "OrderService.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -496,7 +507,7 @@ public class OrderService
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public class Widget
@@ -516,8 +527,8 @@ public class Factory
 		var document = workspace.AddDocument(project.Id, "Factory.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -547,7 +558,7 @@ public class Factory
 	[InlineData("file.razor", false)]
 	public void GivenFilePath_WhenCanHandleCalled_ThenMatchesCsExtensionOnly(string path, bool expected)
 	{
-		CSharpHandler sut = new(A.Fake<IRoslynSymbolProcessor>(), A.Fake<IFileSystem>());
+		CSharpHandler sut = new(A.Fake<IRoslynSymbolProcessor>(), A.Fake<IFileSystem>(), CreateConfigService());
 		sut.CanHandle(path).ShouldBe(expected);
 		sut.FileExtension.ShouldBe(".cs");
 	}
@@ -560,7 +571,7 @@ public class Factory
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
 public class Pure
@@ -573,8 +584,8 @@ public class Pure
 		var document = workspace.AddDocument(project.Id, "Pure.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -589,5 +600,38 @@ public class Pure
 
 		// Assert
 		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+	}
+
+	[Fact]
+	public async Task GivenCSharpHandler_WhenHandleCalled_ThenAllSymbolsHaveLanguageCsharp()
+	{
+		// Arrange
+		var fileSystem = A.Fake<IFileSystem>();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
+
+		var code = """
+			public class Foo
+			{
+			    public void Bar() { }
+			}
+			""";
+		AdhocWorkspace workspace = new();
+		var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
+			.AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
+		var compilation = await document.Project.GetCompilationAsync();
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(document, compilation, null, "file-key", "Foo.cs", "Foo.cs", symbolBuffer, relBuffer, Accessibility.Public);
+
+		// Assert
+		symbolBuffer.ShouldNotBeEmpty();
+		symbolBuffer.ShouldAllBe(s => s.Language == "csharp");
 	}
 }

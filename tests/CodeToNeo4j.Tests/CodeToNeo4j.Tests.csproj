@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\CodeToNeo4j\CodeToNeo4j.csproj" />
+		<Content Include="..\..\src\CodeToNeo4j\Configuration\config.json" Link="config.json" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 
 </Project>

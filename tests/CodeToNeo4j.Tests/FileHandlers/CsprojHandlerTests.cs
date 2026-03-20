@@ -1,6 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -10,12 +12,20 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class CsprojHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".csproj"], "xml"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenCsprojWithPackageAndProjectReferences_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		var content = @"
 <Project Sdk=""Microsoft.NET.Sdk"">
@@ -30,8 +40,8 @@ public class CsprojHandlerTests
 		var filePath = "test.csproj";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -71,7 +81,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -92,8 +102,8 @@ public class CsprojHandlerTests
 		                             """;
 		fileSystem.AddFile(NuspecPath("Newtonsoft.Json", "13.0.1"), new(nuspecContent));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -127,7 +137,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -147,8 +157,8 @@ public class CsprojHandlerTests
 		                             """;
 		fileSystem.AddFile(NuspecPath("Serilog", "3.0.0"), new(nuspecContent));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -169,7 +179,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -189,8 +199,8 @@ public class CsprojHandlerTests
 		                             """;
 		fileSystem.AddFile(NuspecPath("MyLib", "1.0.0"), new(nuspecContent));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -211,7 +221,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -222,8 +232,8 @@ public class CsprojHandlerTests
 		fileSystem.AddFile(filePath, new(content));
 		// No nuspec added to MockFileSystem
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -242,7 +252,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -253,8 +263,8 @@ public class CsprojHandlerTests
 		fileSystem.AddFile(filePath, new(content));
 		fileSystem.AddFile(NuspecPath("BrokenPkg", "1.0.0"), new("this is not valid xml <<>>"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — should not throw
 		var result = await sut.Handle(
@@ -273,7 +283,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -283,8 +293,8 @@ public class CsprojHandlerTests
 		const string filePath = "test.csproj";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -303,15 +313,15 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		// A well-formed XML document with no root element (just a processing instruction)
 		const string content = "<?xml version=\"1.0\"?>";
 		const string filePath = "test.csproj";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — Root is null, should skip processing gracefully
 		var exception = await Record.ExceptionAsync(() => sut.Handle(
@@ -332,13 +342,13 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance);
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
 
 		const string filePath = "test.csproj";
 		fileSystem.AddFile(filePath, new("<<< not xml >>>"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var exception = await Record.ExceptionAsync(() => sut.Handle(
@@ -351,6 +361,96 @@ public class CsprojHandlerTests
 		// Assert
 		exception.ShouldBeNull();
 		symbolBuffer.ShouldBeEmpty();
+	}
+
+	[Theory]
+	[InlineData("<Project><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>", "net9.0")]
+	[InlineData("<Project><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>", "net8.0")]
+	public async Task GivenCsprojWithSingleTargetFramework_WhenHandled_ThenFileResultContainsTfm(string content, string expectedTfm)
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
+
+		const string filePath = "test.csproj";
+		fileSystem.AddFile(filePath, new(content));
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		var result = await sut.Handle(
+			null, null,
+			"test-repo", "test-file",
+			filePath, filePath,
+			symbolBuffer, relBuffer,
+			Accessibility.Private);
+
+		// Assert
+		result.TargetFrameworks.ShouldNotBeNull();
+		result.TargetFrameworks.ShouldContain(expectedTfm);
+	}
+
+	[Fact]
+	public async Task GivenCsprojWithMultipleTargetFrameworks_WhenHandled_ThenFileResultContainsAllTfms()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
+
+		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+  </PropertyGroup>
+</Project>";
+		const string filePath = "test.csproj";
+		fileSystem.AddFile(filePath, new(content));
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		var result = await sut.Handle(
+			null, null,
+			"test-repo", "test-file",
+			filePath, filePath,
+			symbolBuffer, relBuffer,
+			Accessibility.Private);
+
+		// Assert
+		result.TargetFrameworks.ShouldNotBeNull();
+		result.TargetFrameworks.ShouldContain("net8.0");
+		result.TargetFrameworks.ShouldContain("net9.0");
+	}
+
+	[Fact]
+	public async Task GivenCsprojWithNoTargetFramework_WhenHandled_ThenFileResultHasNullTfms()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, CreateConfigService());
+
+		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <ItemGroup>
+    <PackageReference Include=""SomePackage"" Version=""1.0.0"" />
+  </ItemGroup>
+</Project>";
+		const string filePath = "test.csproj";
+		fileSystem.AddFile(filePath, new(content));
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		var result = await sut.Handle(
+			null, null,
+			"test-repo", "test-file",
+			filePath, filePath,
+			symbolBuffer, relBuffer,
+			Accessibility.Private);
+
+		// Assert
+		result.TargetFrameworks.ShouldBeNull();
 	}
 
 	private static string NuspecPath(string name, string version)

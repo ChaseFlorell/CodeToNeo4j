@@ -1,15 +1,15 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger)
-	: DocumentHandlerBase(fileSystem)
+public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger, IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".xml";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -64,7 +64,8 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
 			fileKey,
 			relativePath,
 			fileNamespace,
-			startLine);
+			startLine,
+			language: Language);
 
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "CONTAINS"));

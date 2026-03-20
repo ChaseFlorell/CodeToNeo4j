@@ -13,6 +13,8 @@ n.endLine = s.endLine,
 n.documentation = s.documentation,
 n.comments = s.comments,
 n.version = s.version,
+n.language = s.language,
+n.target_frameworks = coalesce(n.target_frameworks, []),
 n.updatedAt = datetime(),
 n.CodeToNeo4j = true
 WITH n, s

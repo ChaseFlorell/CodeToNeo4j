@@ -1,6 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
@@ -9,18 +11,26 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class JavaScriptHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".js"], "javascript", "JavaScript"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenJsInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function foo() {}";
 		var filePath = "src/utils/test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -43,7 +53,7 @@ public class JavaScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 import { foo } from './foo.js';
 function myFunction() {
@@ -53,8 +63,8 @@ const myArrow = () => {};";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -89,7 +99,7 @@ const myArrow = () => {};";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function validate(order) {
     return order != null;
@@ -102,8 +112,8 @@ function save(order) {}";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -134,13 +144,13 @@ function save(order) {}";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function add(a, b) { return a + b; }";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -162,7 +172,7 @@ function save(order) {}";
 	{
 		// Arrange — two functions with the same name (e.g. redefinitions common in JS)
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function to(value) { return value; }
 function to(value, unit) { return value + unit; }
@@ -170,8 +180,8 @@ function caller() { to(1); }";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — should not throw ArgumentException
 		await sut.Handle(
@@ -194,7 +204,7 @@ function caller() { to(1); }";
 	{
 		// Arrange — externalFn is not defined in this file
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function doWork() {
     externalFn();
@@ -202,8 +212,8 @@ function doWork() {
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -225,7 +235,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              function render(name) {
 		                  return `Hello ${name}, welcome to {world}`;
@@ -234,8 +244,8 @@ function doWork() {
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -254,7 +264,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              const processUser = ({ name, age }) => {
 		                  return `${name} is ${age}`;
@@ -263,8 +273,8 @@ function doWork() {
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -283,7 +293,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              import { foo } from './foo';
 		              import { bar } from './bar';
@@ -291,8 +301,8 @@ function doWork() {
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -312,7 +322,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              const path = require('./utils/path');
 		              function main() {}
@@ -320,8 +330,8 @@ function doWork() {
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -343,13 +353,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = $"import something from '{moduleName}';";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -369,13 +379,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "const obj = { foo: function() {} };";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -394,13 +404,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "import something from '/abs/path';";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -420,13 +430,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function main() { someCall(); "; // Missing closing brace
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -446,13 +456,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function main() { if(true) { return; } while(false) {} someCall(); } function someCall() {}";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -474,13 +484,13 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function foo() {}";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -497,10 +507,28 @@ function doWork() {
 	[Fact]
 	public void GivenJavaScriptHandler_WhenFileExtensionAndCanHandleChecked_ThenMatchesJsOnly()
 	{
-		JavaScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper());
+		JavaScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
 		sut.FileExtension.ShouldBe(".js");
 		sut.CanHandle("app.js").ShouldBeTrue();
 		sut.CanHandle("app.JS").ShouldBeTrue();
 		sut.CanHandle("app.ts").ShouldBeFalse();
+	}
+
+	[Theory]
+	[InlineData("const x = obj?.foo ?? 'default';", "es2020")]
+	[InlineData("async function foo() { await bar(); }", "es2017")]
+	[InlineData("import { x } from './x.js'; const y = () => {};", "es2015")]
+	[InlineData("function foo() { var x = 1; return x; }", "es5")]
+	public async Task GivenJsWithFeatures_WhenHandleCalled_ThenFileResultContainsExpectedEsVersion(string content, string expected)
+	{
+		MockFileSystem fileSystem = new();
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
+		var filePath = "test.js";
+		fileSystem.AddFile(filePath, new(content));
+
+		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
+
+		result.TargetFrameworks.ShouldNotBeNull();
+		result.TargetFrameworks.ShouldContain(expected);
 	}
 }

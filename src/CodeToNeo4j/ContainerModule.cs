@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.FileHandlers;
@@ -11,6 +12,7 @@ using CodeToNeo4j.ProgramOptions.Handlers;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
@@ -43,6 +45,16 @@ public static class ContainerModule
 		});
 
 		services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
+
+		var configuration = new ConfigurationBuilder()
+			.SetBasePath(AppContext.BaseDirectory)
+			.AddJsonFile("config.json", optional: false)
+			.Build();
+
+		services.AddSingleton<IConfiguration>(configuration);
+		services.Configure<HandlersConfiguration>(configuration);
+		services.AddSingleton<IConfigurationService, ConfigurationService>();
+
 		services.AddSingleton<ICypherService, CypherService>();
 		services.AddSingleton<IFileService, FileService>();
 		services.AddSingleton<IGitLogParser, GitLogParser>();

@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
@@ -9,9 +10,9 @@ namespace CodeToNeo4j.FileHandlers;
 public class PubspecYamlHandler(
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
-	ILogger<PubspecYamlHandler> logger) : DocumentHandlerBase(fileSystem)
+	ILogger<PubspecYamlHandler> logger,
+	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => "pubspec.yaml";
 
 	public override bool CanHandle(string filePath)
 		=> Path.GetFileName(filePath).Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase);
@@ -36,6 +37,8 @@ public class PubspecYamlHandler(
 
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 
+		IReadOnlySet<string>? tfms = null;
+
 		try
 		{
 			var pubspec = PubspecParser.Parse(content);
@@ -49,13 +52,18 @@ public class PubspecYamlHandler(
 			{
 				AddDependency(dep.Name, dep.Version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
 			}
+
+			if (!string.IsNullOrEmpty(pubspec.SdkConstraint))
+			{
+				tfms = new HashSet<string>(StringComparer.Ordinal) { pubspec.SdkConstraint };
+			}
 		}
 		catch (Exception ex)
 		{
 			logger.LogWarning(ex, "Failed to parse pubspec.yaml: {FilePath}", filePath);
 		}
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: tfms);
 	}
 
 	private void AddDependency(
@@ -79,7 +87,8 @@ public class PubspecYamlHandler(
 			fileNamespace,
 			-1,
 			documentation: version,
-			version: version);
+			version: version,
+			language: Language);
 
 		symbolBuffer.Add(symbol);
 		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));

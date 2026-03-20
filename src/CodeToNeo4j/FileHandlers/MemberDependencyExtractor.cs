@@ -85,7 +85,7 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 			return;
 		}
 
-		HashSet<string> seenCallees = new();
+		HashSet<string> seenCallees = [];
 
 		foreach (var node in body.DescendantNodes())
 		{

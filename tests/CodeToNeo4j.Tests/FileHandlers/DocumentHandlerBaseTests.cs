@@ -1,6 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
@@ -30,7 +32,7 @@ public class DocumentHandlerBaseTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TestHandler sut = new(fileSystem);
+		TestHandler sut = new(fileSystem, MakeConfigService());
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp);
 		var document = workspace.AddDocument(project.Id, "test.cs", SourceText.From("doc content"));
@@ -48,7 +50,7 @@ public class DocumentHandlerBaseTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		fileSystem.AddFile("file.cs", new("file content"));
-		TestHandler sut = new(fileSystem);
+		TestHandler sut = new(fileSystem, MakeConfigService());
 
 		// Act
 		var content = await sut.PublicGetContent(null, "file.cs");
@@ -62,7 +64,7 @@ public class DocumentHandlerBaseTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TestHandler sut = new(fileSystem);
+		TestHandler sut = new(fileSystem, MakeConfigService());
 
 		// Act
 		await sut.Handle(null, null, null, "a", "a", "a", [], [], Accessibility.NotApplicable);
@@ -79,14 +81,48 @@ public class DocumentHandlerBaseTests
 	[InlineData("file.test.bak", false)]
 	public void GivenFilePath_WhenCanHandleCalled_ThenReturnsExpected(string filePath, bool expected)
 	{
-		TestHandler sut = new(new());
+		TestHandler sut = new(new MockFileSystem(), MakeConfigService());
 		sut.CanHandle(filePath).ShouldBe(expected);
 	}
 
-	private sealed class TestHandler(MockFileSystem fs) : DocumentHandlerBase(fs)
+	[Theory]
+	[InlineData("csharp")]
+	[InlineData("typescript")]
+	[InlineData("javascript")]
+	public void GivenConfigWithLanguage_WhenLanguageRead_ThenReturnsConfiguredLanguage(string language)
 	{
-		public override string FileExtension => ".test";
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".test"], language));
 
+		TestHandler sut = new(new MockFileSystem(), configService);
+
+		sut.Language.ShouldBe(language);
+	}
+
+	[Fact]
+	public void GivenConfigWithMultipleExtensions_WhenFileExtensionsRead_ThenReturnsAllExtensions()
+	{
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".ts", ".tsx"], "typescript"));
+
+		TestHandler sut = new(new MockFileSystem(), configService);
+
+		sut.FileExtensions.ShouldBe([".ts", ".tsx"]);
+		sut.FileExtension.ShouldBe(".ts");
+	}
+
+	private static IConfigurationService MakeConfigService()
+	{
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".test"], "test"));
+		return configService;
+	}
+
+	private sealed class TestHandler(MockFileSystem fs, IConfigurationService configService) : DocumentHandlerBase(fs, configService)
+	{
 		protected override Task<FileResult> HandleFile(
 			TextDocument? document,
 			Compilation? compilation,

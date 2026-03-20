@@ -35,10 +35,14 @@ public class HandlerLookupTests
 	[InlineData("/repo/src/Component.tsx")]
 	public void GivenTypeScriptHandler_WhenGetHandlerCalled_ThenMatchesTsAndTsx(string filePath)
 	{
-		// Arrange
-		var tsHandler = CreateExtensionHandler(".ts", path =>
-			path.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
-			|| path.EndsWith(".tsx", StringComparison.OrdinalIgnoreCase));
+		// Arrange — handler declares both .ts and .tsx; HandlerLookup indexes all extensions for O(1) lookup
+		var tsHandler = A.Fake<IDocumentHandler>();
+		A.CallTo(() => tsHandler.FileExtension).Returns(".ts");
+		A.CallTo(() => tsHandler.FileExtensions).Returns([".ts", ".tsx"]);
+		A.CallTo(() => tsHandler.CanHandle(A<string>._))
+			.ReturnsLazily((string path) =>
+				path.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
+				|| path.EndsWith(".tsx", StringComparison.OrdinalIgnoreCase));
 		SolutionProcessor.HandlerLookup sut = new([tsHandler], new System.IO.Abstractions.FileSystem());
 
 		// Act
@@ -110,6 +114,7 @@ public class HandlerLookupTests
 	{
 		var handler = A.Fake<IDocumentHandler>();
 		A.CallTo(() => handler.FileExtension).Returns(extension);
+		A.CallTo(() => handler.FileExtensions).Returns([extension]);
 		A.CallTo(() => handler.CanHandle(A<string>._))
 			.ReturnsLazily((string path) => canHandle?.Invoke(path)
 											?? path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
@@ -120,6 +125,7 @@ public class HandlerLookupTests
 	{
 		var handler = A.Fake<IDocumentHandler>();
 		A.CallTo(() => handler.FileExtension).Returns(fileName);
+		A.CallTo(() => handler.FileExtensions).Returns([fileName]);
 		A.CallTo(() => handler.CanHandle(A<string>._))
 			.ReturnsLazily((string path) => path.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
 		return handler;

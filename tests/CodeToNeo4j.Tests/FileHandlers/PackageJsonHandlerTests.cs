@@ -1,6 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -10,8 +12,16 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class PackageJsonHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration(["package.json"], "json"));
+		return fake;
+	}
+
 	private static PackageJsonHandler CreateSut(MockFileSystem fileSystem)
-		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance);
+		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, CreateConfigService());
 
 	[Theory]
 	[InlineData("package.json")]
@@ -54,8 +64,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -111,8 +121,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -143,8 +153,8 @@ public class PackageJsonHandlerTests
 		var content = """{"dependencies": {"lodash": "^4.0.0"}}""";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -172,8 +182,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -201,8 +211,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new("{ invalid json }"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act - should not throw
 		await sut.Handle(
@@ -239,8 +249,8 @@ public class PackageJsonHandlerTests
 		                                                           }
 		                                                           """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -280,8 +290,8 @@ public class PackageJsonHandlerTests
 		                                                          }
 		                                                          """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -314,8 +324,8 @@ public class PackageJsonHandlerTests
 		                                                                                             }
 		                                                                                             """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -347,8 +357,8 @@ public class PackageJsonHandlerTests
 		                                                                                                      }
 		                                                                                                      """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -374,8 +384,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new("""{"dependencies":{"lodash":"^4.17.21"}}"""));
 		// No node_modules at all
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -400,8 +410,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new("""{"dependencies":{"my-pkg":"1.0.0"}}"""));
 		fileSystem.AddFile("node_modules/my-pkg/package.json", new("""{"name":"my-pkg","version":"1.0.0"}"""));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -427,8 +437,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new(rootContent));
 		fileSystem.AddFile("node_modules/bad-pkg/package.json", new(installedContent));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — should not throw
 		var result = await sut.Handle(
@@ -484,4 +494,36 @@ public class PackageJsonHandlerTests
 	[InlineData("https://user:pass@gitlab.com/user/repo.git", "https://gitlab.com/user/repo")]
 	public void GivenUrlWithEmbeddedCredentials_WhenNormalizeRepositoryUrlCalled_ThenStripsCredentials(string input, string expected) =>
 		PackageJsonHandler.NormalizeRepositoryUrl(input).ShouldBe(expected);
+
+	[Fact]
+	public void GivenEnginesWithNodeAndNpm_WhenExtractEnginesCalled_ThenReturnsAllEntries()
+	{
+		using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse("""{"engines":{"node":">=18.0.0","npm":">=9.0.0"}}""");
+		IReadOnlySet<string>? result = PackageJsonHandler.ExtractEngines(doc.RootElement);
+		result.ShouldNotBeNull();
+		result.ShouldContain("node:>=18.0.0");
+		result.ShouldContain("npm:>=9.0.0");
+	}
+
+	[Fact]
+	public void GivenNoEnginesField_WhenExtractEnginesCalled_ThenReturnsNull()
+	{
+		using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse("""{"name":"myapp","version":"1.0.0"}""");
+		PackageJsonHandler.ExtractEngines(doc.RootElement).ShouldBeNull();
+	}
+
+	[Fact]
+	public async Task GivenPackageJsonWithEngines_WhenHandleCalled_ThenFileResultContainsEngineTargetFrameworks()
+	{
+		MockFileSystem fileSystem = new();
+		var sut = CreateSut(fileSystem);
+		var content = """{"name":"myapp","engines":{"node":">=20.0.0"}}""";
+		var filePath = "package.json";
+		fileSystem.AddFile(filePath, new(content));
+
+		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
+
+		result.TargetFrameworks.ShouldNotBeNull();
+		result.TargetFrameworks.ShouldContain("node:>=20.0.0");
+	}
 }

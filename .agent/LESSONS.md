@@ -114,6 +114,16 @@
 - For `PackageReference` symbols, add a `Version` property to the `Symbol` record.
 - When purging, conditionally delete orphaned dependencies unless `--skip-dependencies` is set.
 
+## Neo4j Graph Design for AI Consumers
+
+- This graph is queried **exclusively by AI**, not by humans navigating a visual graph explorer.
+- Always favor graph designs that are easier for AI to query correctly:
+  - **Prefer flat properties over separate nodes** when the information is a simple label or scalar — simpler Cypher reduces AI query errors.
+  - **Prefer token-efficient result shapes** — flat rows are cheaper for an AI to consume than multi-hop join results.
+  - **Do not create node types or relationships solely for graph purity** — only add them if an AI genuinely needs to traverse them at query time.
+  - **Technology metadata** (docs URLs, version strings, ecosystem links) has no practical value — the AI already knows what `.NET` or `Node.js` is from training.
+  - **Inter-entity relationships** (e.g. `Technology INCLUDES Language`) add complexity the AI doesn't need — it understands those associations from training knowledge.
+
 ## Neo4j Best Practices
 
 - All nodes must include `CodeToNeo4j: true` for purge identification.

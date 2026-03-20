@@ -5,7 +5,7 @@ namespace CodeToNeo4j.Graph;
 
 public class SymbolMapper : ISymbolMapper
 {
-	public Symbol ToSymbolRecord(string? repoKey, string fileKey, string relativePath, string? fileNamespace, ISymbol symbol, SyntaxNode node)
+	public Symbol ToSymbolRecord(string? repoKey, string fileKey, string relativePath, string? fileNamespace, ISymbol symbol, SyntaxNode node, string language = "unknown")
 	{
 		var kind = symbol.Kind.ToString();
 		var name = symbol.Name;
@@ -34,7 +34,8 @@ public class SymbolMapper : ISymbolMapper
 			string.IsNullOrWhiteSpace(documentation) ? null : documentation,
 			string.IsNullOrWhiteSpace(comments) ? null : comments,
 			@namespace,
-			null
+			null,
+			language
 		);
 	}
 

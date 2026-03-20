@@ -28,7 +28,7 @@ public static class NamespaceTagParser
 			return [];
 		}
 
-		List<string> tags = new();
+		List<string> tags = [];
 		foreach (var segment in @namespace.Split('.', StringSplitOptions.RemoveEmptyEntries))
 		{
 			var tag = SegmentToTag(segment);
@@ -53,7 +53,7 @@ public static class NamespaceTagParser
 			return segment;
 		}
 
-		List<string> words = new();
+		List<string> words = [];
 		StringBuilder current = new();
 
 		for (var i = 0; i < segment.Length; i++)

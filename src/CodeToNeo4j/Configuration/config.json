@@ -1,0 +1,17 @@
+{
+  "Handlers": {
+    "CSharpHandler":     { "FileExtensions": [ ".cs"          ], "Language": "csharp"                          },
+    "RazorHandler":      { "FileExtensions": [ ".razor"       ], "Language": "csharp"                          },
+    "TypeScriptHandler": { "FileExtensions": [ ".ts", ".tsx"  ], "Language": "typescript", "KindPrefix": "TypeScript" },
+    "JavaScriptHandler": { "FileExtensions": [ ".js"          ], "Language": "javascript", "KindPrefix": "JavaScript" },
+    "CssHandler":        { "FileExtensions": [ ".css"         ], "Language": "css"                             },
+    "HtmlHandler":       { "FileExtensions": [ ".html"        ], "Language": "html"                            },
+    "XamlHandler":       { "FileExtensions": [ ".xaml"        ], "Language": "xaml"                            },
+    "XmlHandler":        { "FileExtensions": [ ".xml"         ], "Language": "xml"                             },
+    "JsonHandler":       { "FileExtensions": [ ".json"        ], "Language": "json"                            },
+    "DartHandler":       { "FileExtensions": [ ".dart"        ], "Language": "dart"                            },
+    "CsprojHandler":     { "FileExtensions": [ ".csproj"      ], "Language": "xml"                             },
+    "PackageJsonHandler":{ "FileExtensions": [ "package.json" ], "Language": "json"                            },
+    "PubspecYamlHandler":{ "FileExtensions": [ "pubspec.yaml" ], "Language": "yaml"                           }
+  }
+}

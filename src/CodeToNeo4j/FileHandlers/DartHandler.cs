@@ -1,6 +1,8 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Models;
+using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
@@ -11,9 +13,9 @@ public class DartHandler(
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
 	IDartBridgeService dartBridgeService,
-	ILogger<DartHandler> logger) : DocumentHandlerBase(fileSystem)
+	ILogger<DartHandler> logger,
+	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".dart";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -80,7 +82,8 @@ public class DartHandler(
 				symbolInfo.Namespace ?? fileNamespace,
 				symbolInfo.StartLine,
 				symbolInfo.Accessibility,
-				symbolInfo.Documentation);
+				symbolInfo.Documentation,
+				language: Language);
 
 			symbolBuffer.Add(symbol);
 		}
@@ -93,7 +96,32 @@ public class DartHandler(
 			relBuffer.Add(new(fromKey, toKey, rel.RelType));
 		}
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: GetDartSdkConstraint(projectRoot));
+	}
+
+	private HashSet<string>? GetDartSdkConstraint(string projectRoot)
+	{
+		var pubspecPath = _fileSystem.Path.Combine(projectRoot, "pubspec.yaml");
+		if (!_fileSystem.File.Exists(pubspecPath))
+		{
+			return null;
+		}
+
+		try
+		{
+			var content = _fileSystem.File.ReadAllText(pubspecPath);
+			var pubspec = PubspecParser.Parse(content);
+			if (!string.IsNullOrEmpty(pubspec.SdkConstraint))
+			{
+				return new HashSet<string>(StringComparer.Ordinal) { pubspec.SdkConstraint };
+			}
+		}
+		catch
+		{
+			// ignore parse errors
+		}
+
+		return null;
 	}
 
 	private readonly IFileSystem _fileSystem = fileSystem;
