@@ -1,12 +1,11 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -20,7 +19,7 @@ public class RazorRoslynTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new ConfigurationService());
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 
 		var razorFilePath = "Pages/Index.razor";
 		var razorContent = @"@page ""/""

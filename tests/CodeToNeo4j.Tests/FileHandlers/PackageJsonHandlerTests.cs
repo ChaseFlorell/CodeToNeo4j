@@ -5,15 +5,14 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
+using CodeToNeo4j.Tests.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class PackageJsonHandlerTests
 {
 	private static PackageJsonHandler CreateSut(MockFileSystem fileSystem)
-		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, new ConfigurationService());
+		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, ConfigurationServiceFactory.Create());
 
 	[Theory]
 	[InlineData("package.json")]

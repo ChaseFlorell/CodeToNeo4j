@@ -2,9 +2,9 @@ using System.CommandLine;
 using System.Reflection;
 using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
-using Microsoft.Extensions.Logging;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j;
 

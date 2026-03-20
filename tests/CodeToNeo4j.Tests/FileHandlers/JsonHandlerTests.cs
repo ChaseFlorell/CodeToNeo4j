@@ -1,12 +1,12 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -18,7 +18,7 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), new ConfigurationService());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		const string content = @"{ ""foo"": { ""bar"": 123 }, ""baz"": [1, 2] }";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
@@ -63,7 +63,7 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), new ConfigurationService());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		const string content = @"{ ""foo"": }"; // Invalid JSON
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
@@ -93,7 +93,7 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), new ConfigurationService());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		const string content = @"{ ""foo"": 1 }";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));
@@ -122,7 +122,7 @@ public class JsonHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var logger = A.Fake<ILogger<JsonHandler>>();
-		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), new ConfigurationService());
+		JsonHandler sut = new(fileSystem, logger, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		const string content = @"[ { ""foo"": 1 }, { ""bar"": 2 } ]";
 		const string filePath = "test.json";
 		fileSystem.AddFile(filePath, new(content));

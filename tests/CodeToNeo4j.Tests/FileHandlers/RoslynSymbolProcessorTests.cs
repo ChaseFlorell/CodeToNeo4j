@@ -1,12 +1,12 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -203,7 +203,7 @@ public class RoslynSymbolProcessorTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor sut = new(symbolMapper, dependencyExtractor);
-		CSharpHandler handler = new(sut, fileSystem, new ConfigurationService());
+		CSharpHandler handler = new(sut, fileSystem, ConfigurationServiceFactory.Create());
 
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp)

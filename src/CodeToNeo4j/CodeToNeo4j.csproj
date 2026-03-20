@@ -23,7 +23,6 @@
 	<ItemGroup>
 		<None Remove="Cypher\*.cypher" />
 		<EmbeddedResource Include="Cypher\*.cypher" />
-		<EmbeddedResource Include="Configuration\handlers.json" />
 	</ItemGroup>
 
 	<ItemGroup>

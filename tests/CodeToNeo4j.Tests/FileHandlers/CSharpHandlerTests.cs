@@ -1,5 +1,5 @@
 using System.IO.Abstractions;
-using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Tests.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
@@ -28,7 +28,7 @@ public class CSharpHandlerTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public interface IBar
@@ -82,7 +82,7 @@ public class Foo : IBar
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public interface IBar
@@ -127,7 +127,7 @@ public class Foo : IBar
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public interface IBarService { }
@@ -181,7 +181,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public class Foo
@@ -233,7 +233,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public class Foo
@@ -285,7 +285,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 using System;
@@ -337,7 +337,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 using System;
@@ -387,11 +387,12 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 using System;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Tests.Configuration;
 public class MyEventArgs : EventArgs { }
 public class Foo
 {
@@ -441,7 +442,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public class OrderService
@@ -498,7 +499,7 @@ public class OrderService
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public class Widget
@@ -549,7 +550,7 @@ public class Factory
 	[InlineData("file.razor", false)]
 	public void GivenFilePath_WhenCanHandleCalled_ThenMatchesCsExtensionOnly(string path, bool expected)
 	{
-		CSharpHandler sut = new(A.Fake<IRoslynSymbolProcessor>(), A.Fake<IFileSystem>(), new ConfigurationService());
+		CSharpHandler sut = new(A.Fake<IRoslynSymbolProcessor>(), A.Fake<IFileSystem>(), ConfigurationServiceFactory.Create());
 		sut.CanHandle(path).ShouldBe(expected);
 		sut.FileExtension.ShouldBe(".cs");
 	}
@@ -562,7 +563,7 @@ public class Factory
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
 
 		var code = @"
 public class Pure

@@ -1,13 +1,12 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -21,7 +20,7 @@ public class XamlRoslynTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, new ConfigurationService());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		var xamlFilePath = "MainWindow.xaml";
 		var xamlContent = @"<Window x:Class=""MyApp.MainWindow""

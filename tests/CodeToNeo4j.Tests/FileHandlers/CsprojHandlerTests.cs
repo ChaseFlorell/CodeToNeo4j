@@ -5,8 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
+using CodeToNeo4j.Tests.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -17,7 +16,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		var content = @"
 <Project Sdk=""Microsoft.NET.Sdk"">
@@ -73,7 +72,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -129,7 +128,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -171,7 +170,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -213,7 +212,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -244,7 +243,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -275,7 +274,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
@@ -305,7 +304,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		// A well-formed XML document with no root element (just a processing instruction)
 		const string content = "<?xml version=\"1.0\"?>";
@@ -334,7 +333,7 @@ public class CsprojHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, new ConfigurationService());
+		CsprojHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<CsprojHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string filePath = "test.csproj";
 		fileSystem.AddFile(filePath, new("<<< not xml >>>"));

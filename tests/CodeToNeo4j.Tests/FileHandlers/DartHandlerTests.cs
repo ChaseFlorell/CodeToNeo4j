@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Tests.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -20,7 +20,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		var projectRoot = "/project";
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
@@ -92,7 +92,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/main.dart", new("void main() {}"));
@@ -125,7 +125,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		fileSystem.AddFile("/orphan/main.dart", new("void main() {}"));
 
@@ -155,7 +155,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/other.dart", new("class Other {}"));
@@ -194,7 +194,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		// File at project root — no parent directory → fileNamespace is null
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
@@ -260,7 +260,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/foo.dart", new("class Foo {}"));
@@ -321,7 +321,7 @@ public class DartHandlerTests
 		// Arrange
 		MockFileSystem fileSystem = new();
 		var bridgeService = A.Fake<IDartBridgeService>();
-		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, new ConfigurationService());
+		DartHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<DartHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		fileSystem.AddFile("/project/pubspec.yaml", new("name: test_app"));
 		fileSystem.AddFile("/project/lib/foo.dart", new("class Foo {}"));

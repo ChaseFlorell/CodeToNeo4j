@@ -1,11 +1,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -16,7 +15,7 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		var content = @"body { color: black; }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));
@@ -48,7 +47,7 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		var content = @"@import ""foo.css""; @media screen { .foo { color: red; } }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));
@@ -77,7 +76,7 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
 		var content = @".foo { color: red; }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));

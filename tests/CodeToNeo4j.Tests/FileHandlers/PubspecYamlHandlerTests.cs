@@ -1,12 +1,11 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Configuration;
-using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -17,7 +16,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = """
 		                       name: my_app
@@ -61,7 +60,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = "name: empty_app\n";
 		var filePath = "/project/pubspec.yaml";
@@ -95,7 +94,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		// Act & Assert
 		sut.CanHandle(filePath).ShouldBe(expected);
@@ -106,7 +105,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		// Dependency with no version value (empty after colon)
 		const string content = """
@@ -145,7 +144,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = "{ this is: [not valid yaml: - broken";
 		var filePath = "/project/pubspec.yaml";
@@ -177,7 +176,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, ConfigurationServiceFactory.Create());
 
 		const string content = """
 		                       name: test_app

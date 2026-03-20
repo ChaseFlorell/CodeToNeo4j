@@ -1,26 +1,13 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace CodeToNeo4j.Configuration;
 
-public class ConfigurationService : IConfigurationService
+public class ConfigurationService(IOptions<HandlersConfiguration> options) : IConfigurationService
 {
-	private readonly Dictionary<string, HandlerConfiguration> _handlers;
-
-	public ConfigurationService()
-	{
-		using var stream = typeof(ConfigurationService).Assembly
-			.GetManifestResourceStream("CodeToNeo4j.Configuration.handlers.json")!;
-
-		var settings = JsonSerializer.Deserialize<HandlersRoot>(stream)!;
-		_handlers = new(settings.Handlers, StringComparer.OrdinalIgnoreCase);
-	}
+	private readonly HandlersConfiguration _config = options.Value;
 
 	public HandlerConfiguration GetHandlerConfiguration(string handlerTypeName)
-		=> _handlers.TryGetValue(handlerTypeName, out var config)
+		=> _config.Handlers.TryGetValue(handlerTypeName, out var config)
 			? config
 			: new("", "unknown");
-
-	private sealed record HandlersRoot(
-		[property: JsonPropertyName("handlers")] Dictionary<string, HandlerConfiguration> Handlers);
 }
