@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using CodeToNeo4j.FileSystem;
 
 namespace CodeToNeo4j.Solution;
@@ -20,6 +21,9 @@ public partial class SolutionFileDiscoveryService(
 		// 1. Get all documents from MSBuild (when a solution/project is loaded)
 		if (solution is not null)
 		{
+			// Cache TFMs by project file path so each .csproj is read at most once
+			Dictionary<string, IReadOnlySet<string>?> projectFileTfmCache = new(StringComparer.OrdinalIgnoreCase);
+
 			foreach (var project in solution.Projects)
 			{
 				// Skip outer multi-target wrapper projects (they have 0 documents and no useful data)
@@ -28,7 +32,12 @@ public partial class SolutionFileDiscoveryService(
 					continue;
 				}
 
-				var tfm = ExtractTargetFramework(project.Name);
+				// Fast path: TFM embedded in project name (e.g. "MyApp (net9.0)") — set by MSBuild for
+				// each target-framework instance of a multi-targeted project.
+				var tfmFromName = ExtractTargetFramework(project.Name);
+				IReadOnlySet<string>? projectTfms = tfmFromName is not null
+					? new HashSet<string>(StringComparer.OrdinalIgnoreCase) { tfmFromName }
+					: ReadProjectFileTfms(project.FilePath, projectFileTfmCache);
 
 				// Regular Documents
 				foreach (var doc in project.Documents)
@@ -46,20 +55,20 @@ public partial class SolutionFileDiscoveryService(
 
 					if (solutionFiles.TryGetValue(path, out var existing))
 					{
-						if (tfm is not null)
+						if (projectTfms is not null)
 						{
 							existing.Tfms ??= new(StringComparer.OrdinalIgnoreCase);
-							existing.Tfms.Add(tfm);
+							foreach (var t in projectTfms)
+							{
+								existing.Tfms.Add(t);
+							}
 						}
 					}
 					else
 					{
-						HashSet<string>? tfms = null;
-						if (tfm is not null)
-						{
-							tfms = new(StringComparer.OrdinalIgnoreCase) { tfm };
-						}
-
+						HashSet<string>? tfms = projectTfms is not null
+							? new HashSet<string>(projectTfms, StringComparer.OrdinalIgnoreCase)
+							: null;
 						solutionFiles[path] = (new(path, project.Id, doc.Id), tfms);
 					}
 				}
@@ -80,20 +89,20 @@ public partial class SolutionFileDiscoveryService(
 
 					if (solutionFiles.TryGetValue(path, out var existing))
 					{
-						if (tfm is not null)
+						if (projectTfms is not null)
 						{
 							existing.Tfms ??= new(StringComparer.OrdinalIgnoreCase);
-							existing.Tfms.Add(tfm);
+							foreach (var t in projectTfms)
+							{
+								existing.Tfms.Add(t);
+							}
 						}
 					}
 					else
 					{
-						HashSet<string>? tfms = null;
-						if (tfm is not null)
-						{
-							tfms = new(StringComparer.OrdinalIgnoreCase) { tfm };
-						}
-
+						HashSet<string>? tfms = projectTfms is not null
+							? new HashSet<string>(projectTfms, StringComparer.OrdinalIgnoreCase)
+							: null;
 						solutionFiles[path] = (new(path, project.Id, doc.Id), tfms);
 					}
 				}
@@ -166,6 +175,60 @@ public partial class SolutionFileDiscoveryService(
 		}
 
 		return files.Values;
+	}
+
+	private IReadOnlySet<string>? ReadProjectFileTfms(string? projectFilePath, Dictionary<string, IReadOnlySet<string>?> cache)
+	{
+		if (string.IsNullOrEmpty(projectFilePath))
+		{
+			return null;
+		}
+
+		if (cache.TryGetValue(projectFilePath, out var cached))
+		{
+			return cached;
+		}
+
+		IReadOnlySet<string>? result = null;
+
+		try
+		{
+			if (fileSystem.File.Exists(projectFilePath))
+			{
+				string content = fileSystem.File.ReadAllText(projectFilePath);
+				XDocument xdoc = XDocument.Parse(content);
+				if (xdoc.Root is not null)
+				{
+					HashSet<string> tfms = new(StringComparer.OrdinalIgnoreCase);
+					foreach (var pg in xdoc.Root.Elements().Where(e => e.Name.LocalName == "PropertyGroup"))
+					{
+						var single = pg.Elements().FirstOrDefault(e => e.Name.LocalName == "TargetFramework")?.Value.Trim();
+						if (!string.IsNullOrEmpty(single))
+						{
+							tfms.Add(single);
+						}
+
+						var multi = pg.Elements().FirstOrDefault(e => e.Name.LocalName == "TargetFrameworks")?.Value.Trim();
+						if (!string.IsNullOrEmpty(multi))
+						{
+							foreach (var tfm in multi.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+							{
+								tfms.Add(tfm);
+							}
+						}
+					}
+
+					result = tfms.Count > 0 ? tfms : null;
+				}
+			}
+		}
+		catch
+		{
+			// ignore malformed project files
+		}
+
+		cache[projectFilePath] = result;
+		return result;
 	}
 
 	internal static string? ExtractTargetFramework(string projectName)

@@ -70,6 +70,8 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 		var packageDir = _fileSystem.Path.GetDirectoryName(filePath) ?? string.Empty;
 		List<UrlNode> urlNodes = [];
 
+		IReadOnlySet<string>? tfms = null;
+
 		try
 		{
 			using JsonDocument jsonDoc = JsonDocument.Parse(content);
@@ -79,13 +81,35 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 				.ConfigureAwait(false);
 			await ExtractDependencySection(root, "devDependencies", fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, packageDir,
 				urlNodes).ConfigureAwait(false);
+
+			tfms = ExtractEngines(root);
 		}
 		catch (JsonException)
 		{
 			logger.LogWarning("Failed to parse package.json: {FilePath}", filePath);
 		}
 
-		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
+		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null, tfms);
+	}
+
+	internal static IReadOnlySet<string>? ExtractEngines(JsonElement root)
+	{
+		if (!root.TryGetProperty("engines", out var engines) || engines.ValueKind != JsonValueKind.Object)
+		{
+			return null;
+		}
+
+		HashSet<string> result = new(StringComparer.Ordinal);
+		foreach (var prop in engines.EnumerateObject())
+		{
+			var version = prop.Value.GetString()?.Trim();
+			if (!string.IsNullOrEmpty(version))
+			{
+				result.Add($"{prop.Name}:{version}");
+			}
+		}
+
+		return result.Count > 0 ? result : null;
 	}
 
 	private readonly IFileSystem _fileSystem = fileSystem;

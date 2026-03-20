@@ -30,8 +30,50 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 		// Extract IDs and Classes
 		ExtractIdsAndClasses(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: DetectHtmlVersion(content));
 	}
+
+	internal static IReadOnlySet<string> DetectHtmlVersion(string content)
+	{
+		var doctypeMatch = DoctypeRegex().Match(content);
+		if (!doctypeMatch.Success)
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "html5" };
+		}
+
+		var doctype = doctypeMatch.Value;
+
+		if (doctype.Contains("XHTML 1.1", StringComparison.OrdinalIgnoreCase))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "xhtml1.1" };
+		}
+
+		if (doctype.Contains("XHTML 1.0", StringComparison.OrdinalIgnoreCase))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "xhtml1.0" };
+		}
+
+		if (doctype.Contains("HTML 4.01", StringComparison.OrdinalIgnoreCase))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "html4.01" };
+		}
+
+		if (doctype.Contains("HTML 4.0", StringComparison.OrdinalIgnoreCase))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "html4.0" };
+		}
+
+		if (doctype.Contains("HTML 3.2", StringComparison.OrdinalIgnoreCase))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "html3.2" };
+		}
+
+		// <!DOCTYPE html> with no PUBLIC qualifier = HTML5
+		return new HashSet<string>(StringComparer.Ordinal) { "html5" };
+	}
+
+	[GeneratedRegex(@"<!DOCTYPE\s[^>]+>", RegexOptions.IgnoreCase | RegexOptions.Singleline, "en-CA")]
+	private static partial Regex DoctypeRegex();
 
 	private void ExtractScriptReferences(string content, string fileKey, string relativePath, string? fileNamespace, ICollection<Symbol> symbolBuffer,
 		ICollection<Relationship> relBuffer, Accessibility minAccessibility)

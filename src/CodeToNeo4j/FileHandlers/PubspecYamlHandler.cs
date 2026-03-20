@@ -37,6 +37,8 @@ public class PubspecYamlHandler(
 
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 
+		IReadOnlySet<string>? tfms = null;
+
 		try
 		{
 			var pubspec = PubspecParser.Parse(content);
@@ -50,13 +52,18 @@ public class PubspecYamlHandler(
 			{
 				AddDependency(dep.Name, dep.Version, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer);
 			}
+
+			if (!string.IsNullOrEmpty(pubspec.SdkConstraint))
+			{
+				tfms = new HashSet<string>(StringComparer.Ordinal) { pubspec.SdkConstraint };
+			}
 		}
 		catch (Exception ex)
 		{
 			logger.LogWarning(ex, "Failed to parse pubspec.yaml: {FilePath}", filePath);
 		}
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: tfms);
 	}
 
 	private void AddDependency(

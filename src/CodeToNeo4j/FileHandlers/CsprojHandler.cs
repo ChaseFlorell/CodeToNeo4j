@@ -27,11 +27,14 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 		var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
 		List<UrlNode> urlNodes = [];
 
+		IReadOnlySet<string>? tfms = null;
+
 		try
 		{
 			XDocument xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
 			if (xdoc.Root != null)
 			{
+				tfms = ExtractTargetFrameworks(xdoc.Root);
 				await ProcessProject(xdoc.Root, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, urlNodes,
 					minAccessibility).ConfigureAwait(false);
 			}
@@ -41,7 +44,32 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 			logger.LogWarning(ex, "Failed to parse .csproj file: {FilePath}", filePath);
 		}
 
-		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null);
+		return new(fileNamespace, fileKey, urlNodes.Count > 0 ? urlNodes : null, tfms);
+	}
+
+	private static HashSet<string>? ExtractTargetFrameworks(XElement project)
+	{
+		HashSet<string> tfms = new(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var pg in project.Elements().Where(e => e.Name.LocalName == "PropertyGroup"))
+		{
+			var single = pg.Elements().FirstOrDefault(e => e.Name.LocalName == "TargetFramework")?.Value.Trim();
+			if (!string.IsNullOrEmpty(single))
+			{
+				tfms.Add(single);
+			}
+
+			var multi = pg.Elements().FirstOrDefault(e => e.Name.LocalName == "TargetFrameworks")?.Value.Trim();
+			if (!string.IsNullOrEmpty(multi))
+			{
+				foreach (var tfm in multi.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+				{
+					tfms.Add(tfm);
+				}
+			}
+		}
+
+		return tfms.Count > 0 ? tfms : null;
 	}
 
 	private async Task ProcessProject(XElement project, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer,

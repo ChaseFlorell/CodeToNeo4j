@@ -1,3 +1,3 @@
 namespace CodeToNeo4j.Graph;
 
-public record FileResult(string? Namespace, string? FileKey, IReadOnlyCollection<UrlNode>? UrlNodes = null);
+public record FileResult(string? Namespace, string? FileKey, IReadOnlyCollection<UrlNode>? UrlNodes = null, IReadOnlySet<string>? TargetFrameworks = null);

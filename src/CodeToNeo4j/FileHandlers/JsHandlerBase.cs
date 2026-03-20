@@ -34,8 +34,37 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 		ExtractImportsExports(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 		ExtractAdditionalSymbols(content, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
 
-		return new(fileNamespace, fileKey);
+		return new(fileNamespace, fileKey, TargetFrameworks: DetectEsVersion(content));
 	}
+
+	protected virtual IReadOnlySet<string> DetectEsVersion(string content)
+	{
+		if (Es2020Regex().IsMatch(content))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "es2020" };
+		}
+
+		if (Es2017Regex().IsMatch(content))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "es2017" };
+		}
+
+		if (Es2015Regex().IsMatch(content))
+		{
+			return new HashSet<string>(StringComparer.Ordinal) { "es2015" };
+		}
+
+		return new HashSet<string>(StringComparer.Ordinal) { "es5" };
+	}
+
+	[GeneratedRegex(@"\?\.|\ \?\?\ ", RegexOptions.Multiline)]
+	private static partial Regex Es2020Regex();
+
+	[GeneratedRegex(@"\basync\b|\bawait\b", RegexOptions.Multiline)]
+	private static partial Regex Es2017Regex();
+
+	[GeneratedRegex(@"\bimport\b.*\bfrom\b|`|=>|\bclass\b|\bconst\b|\blet\b", RegexOptions.Multiline)]
+	private static partial Regex Es2015Regex();
 
 	/// <summary>
 	/// Extension point for derived classes to extract language-specific symbols beyond functions and imports.

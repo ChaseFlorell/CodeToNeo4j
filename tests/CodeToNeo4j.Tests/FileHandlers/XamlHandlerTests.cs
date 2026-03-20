@@ -1,4 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
+using System.Xml.Linq;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
@@ -70,5 +71,45 @@ public class XamlHandlerTests
 
 		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == windowSymbol.Key && r.RelType == "CONTAINS");
 		relBuffer.ShouldContain(r => r.FromKey == buttonSymbol.Key && r.ToKey == handlerSymbol.Key && r.RelType == "BINDS_TO");
+	}
+
+	[Theory]
+	[InlineData(@"<Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />", "wpf")]
+	[InlineData(@"<ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />", "maui")]
+	[InlineData(@"<Window xmlns=""https://github.com/avaloniaui"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />", "avalonia")]
+	[InlineData(@"<ContentPage xmlns=""http://xamarin.com/schemas/2014/forms"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />", "xamarin.forms")]
+	[InlineData(@"<UserControl xmlns=""http://schemas.microsoft.com/client/2007"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />", "silverlight")]
+	public void GivenXamlWithKnownNamespace_WhenDetectXamlFrameworkCalled_ThenReturnsExpectedFramework(string xaml, string expected)
+	{
+		XDocument xdoc = XDocument.Parse(xaml);
+		IReadOnlySet<string>? result = XamlHandler.DetectXamlFramework(xdoc);
+		result.ShouldNotBeNull();
+		result.ShouldContain(expected);
+	}
+
+	[Fact]
+	public void GivenXamlWithUnknownNamespace_WhenDetectXamlFrameworkCalled_ThenReturnsNull()
+	{
+		XDocument xdoc = XDocument.Parse(@"<Root xmlns=""http://unknown.namespace.com"" />");
+		XamlHandler.DetectXamlFramework(xdoc).ShouldBeNull();
+	}
+
+	[Fact]
+	public async Task GivenWpfXaml_WhenHandleCalled_ThenFileResultContainsWpfTargetFramework()
+	{
+		MockFileSystem fileSystem = new();
+		SymbolMapper symbolMapper = new();
+		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		var content = @"<Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
+                               xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" />";
+		var filePath = "main.xaml";
+		fileSystem.AddFile(filePath, new(content));
+
+		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
+
+		result.TargetFrameworks.ShouldNotBeNull();
+		result.TargetFrameworks.ShouldContain("wpf");
 	}
 }

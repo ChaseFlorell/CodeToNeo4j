@@ -125,8 +125,9 @@ public class SolutionFileDiscoveryServiceTests
 	}
 
 	[Fact]
-	public void GivenSingleTargetProject_WhenGetFilesToProcessCalled_ThenTargetFrameworksIsNull()
+	public void GivenSingleTargetProjectWithNoProjectFile_WhenGetFilesToProcessCalled_ThenTargetFrameworksIsNull()
 	{
+		// AdhocWorkspace projects have no FilePath, so the file-based fallback returns null
 		// Arrange
 		MockFileSystem fileSystem = new();
 		fileSystem.AddDirectory("/solution");
@@ -151,6 +152,128 @@ public class SolutionFileDiscoveryServiceTests
 		// Assert
 		files.Length.ShouldBe(1);
 		files[0].TargetFrameworks.ShouldBeNull();
+	}
+
+	[Fact]
+	public void GivenSingleTargetProjectWithCsprojFile_WhenGetFilesToProcessCalled_ThenTargetFrameworksFromFile()
+	{
+		// Single-target projects don't embed TFM in project name; discovery falls back to reading the .csproj
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddDirectory("/solution");
+		fileSystem.AddFile("/solution/src/MyClass.cs", new("class MyClass {}"));
+		fileSystem.AddFile("/solution/MyProject.csproj", new("""
+			<Project Sdk="Microsoft.NET.Sdk">
+			  <PropertyGroup>
+			    <TargetFramework>net10.0</TargetFramework>
+			  </PropertyGroup>
+			</Project>
+			"""));
+
+		var fileService = A.Fake<IFileService>();
+		A.CallTo(() => fileService.NormalizePath(A<string>._)).ReturnsLazily((string p) => p);
+
+		SolutionFileDiscoveryService sut = new(fileService, fileSystem);
+
+		AdhocWorkspace workspace = new();
+		ProjectId projectId = ProjectId.CreateNewId();
+		DocumentId docId = DocumentId.CreateNewId(projectId);
+
+		var solution = workspace.CurrentSolution
+			.AddProject(ProjectInfo.Create(projectId, VersionStamp.Default, "MyProject", "MyProject", LanguageNames.CSharp,
+				filePath: "/solution/MyProject.csproj"))
+			.AddDocument(DocumentInfo.Create(docId, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
+
+		// Act
+		var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
+
+		// Assert
+		files.Length.ShouldBe(1);
+		files[0].TargetFrameworks.ShouldNotBeNull();
+		files[0].TargetFrameworks!.ShouldContain("net10.0");
+	}
+
+	[Fact]
+	public void GivenMultiTargetCsprojFile_WhenGetFilesToProcessCalled_ThenAllTargetFrameworksFromFile()
+	{
+		// A project with <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks> should produce all three TFMs
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddDirectory("/solution");
+		fileSystem.AddFile("/solution/src/MyClass.cs", new("class MyClass {}"));
+		fileSystem.AddFile("/solution/MyProject.csproj", new("""
+			<Project Sdk="Microsoft.NET.Sdk">
+			  <PropertyGroup>
+			    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+			  </PropertyGroup>
+			</Project>
+			"""));
+
+		var fileService = A.Fake<IFileService>();
+		A.CallTo(() => fileService.NormalizePath(A<string>._)).ReturnsLazily((string p) => p);
+
+		SolutionFileDiscoveryService sut = new(fileService, fileSystem);
+
+		AdhocWorkspace workspace = new();
+		ProjectId projectId = ProjectId.CreateNewId();
+		DocumentId docId = DocumentId.CreateNewId(projectId);
+
+		// Single-target project instance (no TFM in name) pointing to the multi-target csproj
+		var solution = workspace.CurrentSolution
+			.AddProject(ProjectInfo.Create(projectId, VersionStamp.Default, "MyProject", "MyProject", LanguageNames.CSharp,
+				filePath: "/solution/MyProject.csproj"))
+			.AddDocument(DocumentInfo.Create(docId, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
+
+		// Act
+		var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
+
+		// Assert
+		files.Length.ShouldBe(1);
+		files[0].TargetFrameworks.ShouldNotBeNull();
+		files[0].TargetFrameworks!.ShouldContain("net8.0");
+		files[0].TargetFrameworks!.ShouldContain("net9.0");
+		files[0].TargetFrameworks!.ShouldContain("net10.0");
+	}
+
+	[Fact]
+	public void GivenMultipleFilesInSameProject_WhenGetFilesToProcessCalled_ThenAllFilesShareProjectTfms()
+	{
+		// TFMs read from .csproj once (cached) and applied to every file in that project
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddDirectory("/solution");
+		fileSystem.AddFile("/solution/src/A.cs", new("class A {}"));
+		fileSystem.AddFile("/solution/src/B.cs", new("class B {}"));
+		fileSystem.AddFile("/solution/MyProject.csproj", new("""
+			<Project Sdk="Microsoft.NET.Sdk">
+			  <PropertyGroup>
+			    <TargetFramework>net9.0</TargetFramework>
+			  </PropertyGroup>
+			</Project>
+			"""));
+
+		var fileService = A.Fake<IFileService>();
+		A.CallTo(() => fileService.NormalizePath(A<string>._)).ReturnsLazily((string p) => p);
+
+		SolutionFileDiscoveryService sut = new(fileService, fileSystem);
+
+		AdhocWorkspace workspace = new();
+		ProjectId projectId = ProjectId.CreateNewId();
+		DocumentId docIdA = DocumentId.CreateNewId(projectId);
+		DocumentId docIdB = DocumentId.CreateNewId(projectId);
+
+		var solution = workspace.CurrentSolution
+			.AddProject(ProjectInfo.Create(projectId, VersionStamp.Default, "MyProject", "MyProject", LanguageNames.CSharp,
+				filePath: "/solution/MyProject.csproj"))
+			.AddDocument(DocumentInfo.Create(docIdA, "A.cs", filePath: "/solution/src/A.cs"))
+			.AddDocument(DocumentInfo.Create(docIdB, "B.cs", filePath: "/solution/src/B.cs"));
+
+		// Act
+		var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
+
+		// Assert
+		files.Length.ShouldBe(2);
+		files.ShouldAllBe(f => f.TargetFrameworks != null && f.TargetFrameworks.Contains("net9.0"));
 	}
 
 	[Fact]
