@@ -302,7 +302,8 @@ public class SolutionProcessor(
 		var finalNamespace = fileResult?.Namespace ?? defaultNamespace;
 		var urlNodes = fileResult?.UrlNodes is { Count: > 0 } urls ? urls.ToList() : [];
 
-		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace);
+		var language = handler?.Language ?? "unknown";
+		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, file.TargetFrameworks);
 
 		return new(fileRecord, symbols, relationships, urlNodes, relativePath, file.TargetFrameworks);
 	}

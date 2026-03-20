@@ -9,5 +9,7 @@ public record FileMetaData(
 	string FileHash,
 	FileMetadata Metadata,
 	string? RepoKey,
-	string? Namespace
+	string? Namespace,
+	string Language = "unknown",
+	IReadOnlySet<string>? TargetFrameworks = null
 );

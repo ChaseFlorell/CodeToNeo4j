@@ -11,6 +11,8 @@ f.deleted = false,
 f.deletedAt = null,
 f.commits = file.commits,
 f.tags = file.tags,
+f.language = file.language,
+f.target_frameworks = file.targetFrameworks,
 f.CodeToNeo4j = true
 WITH f, file
 OPTIONAL MATCH (p:Project {key: file.repoKey})

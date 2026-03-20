@@ -169,6 +169,7 @@ public class SolutionProcessorTests
 		A.CallTo(() => handler.FileExtension).Returns(".cs");
 		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
 		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+		A.CallTo(() => handler.Language).Returns("csharp");
 		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
 
 		AdhocWorkspace workspace = new();
@@ -189,6 +190,72 @@ public class SolutionProcessorTests
 		A.CallTo(() => handler.Handle(A<TextDocument?>._, A<Compilation?>._, "repo", "key", "test.cs", "test.cs", A<List<Symbol>>._,
 				A<List<Relationship>>._, Accessibility.Public))
 			.MustHaveHappenedOnceExactly();
+	}
+
+	[Theory]
+	[InlineData("csharp")]
+	[InlineData("typescript")]
+	[InlineData("javascript")]
+	public async Task GivenHandlerWithLanguage_WhenProcessFileCalled_ThenFileSetsLanguageFromHandler(string expectedLanguage)
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var handler = A.Fake<IDocumentHandler>();
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
+		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+		A.CallTo(() => handler.Language).Returns(expectedLanguage);
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
+
+		ProcessedFile processedFile = new("test.cs");
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "test.cs")).Returns("test.cs");
+		A.CallTo(() => fileService.InferFileMetadata("test.cs")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.Language.ShouldBe(expectedLanguage);
+	}
+
+	[Fact]
+	public async Task GivenNoHandler_WhenProcessFileCalled_ThenFileSetsLanguageToUnknown()
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var sut = CreateProcessor(fileService: fileService, fileSystem: new System.IO.Abstractions.FileSystem());
+
+		ProcessedFile processedFile = new("unknown.xyz");
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "unknown.xyz")).Returns("unknown.xyz");
+		A.CallTo(() => fileService.InferFileMetadata("unknown.xyz")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.Language.ShouldBe("unknown");
+	}
+
+	[Fact]
+	public async Task GivenProcessedFileWithTargetFrameworks_WhenProcessFileCalled_ThenFileSetsTargetFrameworks()
+	{
+		// Arrange
+		var fileService = A.Fake<IFileService>();
+		var handler = A.Fake<IDocumentHandler>();
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
+		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
+		A.CallTo(() => handler.Language).Returns("csharp");
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
+
+		IReadOnlySet<string> tfms = new HashSet<string> { "net8.0", "net9.0" };
+		ProcessedFile processedFile = new("app.cs", TargetFrameworks: tfms);
+		A.CallTo(() => fileService.GetRelativePath(A<string>._, "app.cs")).Returns("app.cs");
+		A.CallTo(() => fileService.InferFileMetadata("app.cs")).Returns(("key", "ns"));
+
+		// Act
+		var result = await sut.ProcessFile(null, processedFile, "/root", "repo", Accessibility.Public);
+
+		// Assert
+		result.File.TargetFrameworks.ShouldBe(tfms);
 	}
 
 	[Fact]

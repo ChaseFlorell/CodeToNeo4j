@@ -30,7 +30,9 @@ public class Neo4jFlushService(
 			}).ToArray(),
 			["commits"] = file.Metadata.Commits.ToArray(),
 			["tags"] = file.Metadata.Tags.ToArray(),
-			["repoKey"] = file.RepoKey
+			["repoKey"] = file.RepoKey,
+			["language"] = file.Language,
+			["targetFrameworks"] = file.TargetFrameworks?.ToArray() ?? Array.Empty<string>()
 		}).ToArray();
 
 		if (fileBatch.Length == 0)
@@ -67,7 +69,8 @@ public class Neo4jFlushService(
 			["endLine"] = s.EndLine,
 			["documentation"] = s.Documentation,
 			["comments"] = s.Comments,
-			["version"] = s.Version
+			["version"] = s.Version,
+			["language"] = s.Language
 		}).ToArray();
 
 		var relBatch = relationships.Select(r => new Dictionary<string, object?>
