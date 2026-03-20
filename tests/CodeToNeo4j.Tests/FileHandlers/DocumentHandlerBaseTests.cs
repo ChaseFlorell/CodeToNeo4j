@@ -85,6 +85,34 @@ public class DocumentHandlerBaseTests
 		sut.CanHandle(filePath).ShouldBe(expected);
 	}
 
+	[Theory]
+	[InlineData("csharp")]
+	[InlineData("typescript")]
+	[InlineData("javascript")]
+	public void GivenConfigWithLanguage_WhenLanguageRead_ThenReturnsConfiguredLanguage(string language)
+	{
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".test"], language));
+
+		TestHandler sut = new(new MockFileSystem(), configService);
+
+		sut.Language.ShouldBe(language);
+	}
+
+	[Fact]
+	public void GivenConfigWithMultipleExtensions_WhenFileExtensionsRead_ThenReturnsAllExtensions()
+	{
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".ts", ".tsx"], "typescript"));
+
+		TestHandler sut = new(new MockFileSystem(), configService);
+
+		sut.FileExtensions.ShouldBe([".ts", ".tsx"]);
+		sut.FileExtension.ShouldBe(".ts");
+	}
+
 	private static IConfigurationService MakeConfigService()
 	{
 		IConfigurationService configService = A.Fake<IConfigurationService>();

@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
@@ -11,6 +12,14 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class RazorRoslynTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".razor"], "csharp"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenRazorWithGeneratedCode_WhenHandleCalled_ThenExtractsMembersViaRoslyn()
 	{
@@ -19,7 +28,7 @@ public class RazorRoslynTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), CreateConfigService());
 
 		var razorFilePath = "Pages/Index.razor";
 		var razorContent = @"@page ""/""

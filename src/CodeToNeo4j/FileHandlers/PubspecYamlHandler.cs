@@ -80,7 +80,8 @@ public class PubspecYamlHandler(
 			fileNamespace,
 			-1,
 			documentation: version,
-			version: version);
+			version: version,
+			language: Language);
 
 		symbolBuffer.Add(symbol);
 		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));

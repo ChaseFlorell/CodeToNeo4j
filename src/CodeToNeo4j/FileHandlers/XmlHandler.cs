@@ -64,7 +64,8 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
 			fileKey,
 			relativePath,
 			fileNamespace,
-			startLine);
+			startLine,
+			language: Language);
 
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "CONTAINS"));

@@ -1,7 +1,7 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -12,6 +12,14 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class RoslynSymbolProcessorTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".cs"], "csharp"));
+		return fake;
+	}
+
 	[Theory]
 	[InlineData("Dictionary<string, List<int>>", "Items")]
 	[InlineData("List<string>", "Names")]
@@ -203,7 +211,7 @@ public class RoslynSymbolProcessorTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor sut = new(symbolMapper, dependencyExtractor);
-		CSharpHandler handler = new(sut, fileSystem, ConfigurationServiceFactory.Create());
+		CSharpHandler handler = new(sut, fileSystem, CreateConfigService());
 
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp)

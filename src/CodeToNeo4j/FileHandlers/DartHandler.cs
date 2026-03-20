@@ -81,7 +81,8 @@ public class DartHandler(
 				symbolInfo.Namespace ?? fileNamespace,
 				symbolInfo.StartLine,
 				symbolInfo.Accessibility,
-				symbolInfo.Documentation);
+				symbolInfo.Documentation,
+				language: Language);
 
 			symbolBuffer.Add(symbol);
 		}

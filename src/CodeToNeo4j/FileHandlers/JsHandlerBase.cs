@@ -95,7 +95,8 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine);
+				startLine,
+				language: Language);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
@@ -153,7 +154,8 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 			fileKey,
 			relativePath,
 			fileNamespace,
-			startLine);
+			startLine,
+			language: Language);
 
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));

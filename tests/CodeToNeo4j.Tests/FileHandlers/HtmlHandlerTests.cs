@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
@@ -10,12 +11,20 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class HtmlHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".html"], "html"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenHtmlWithScriptAndId_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 <html>
   <head>
@@ -60,7 +69,7 @@ public class HtmlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"<div id=""myId""></div><script src=""app.js""></script>";
 		var filePath = "test.html";
 		fileSystem.AddFile(filePath, new(content));

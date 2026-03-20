@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
@@ -10,19 +11,27 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class TypeScriptHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".ts", ".tsx"], "typescript", "TypeScript"));
+		return fake;
+	}
+
 	[Theory]
 	[InlineData("test.ts")]
 	[InlineData("test.tsx")]
 	public void GivenTsOrTsxFile_WhenCanHandleCalled_ThenReturnsTrue(string filePath)
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
 		sut.CanHandle(filePath).ShouldBeTrue();
 	}
 
 	[Fact]
 	public void GivenJsFile_WhenCanHandleCalled_ThenReturnsFalse()
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
 		sut.CanHandle("test.js").ShouldBeFalse();
 	}
 
@@ -31,7 +40,7 @@ public class TypeScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var filePath = "src/utils/test.ts";
 		fileSystem.AddFile(filePath, new("function foo() {}"));
 
@@ -60,7 +69,7 @@ public class TypeScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 import { Component } from '@angular/core';
 function myFunction(value: string): void {
@@ -105,7 +114,7 @@ const myArrow = (x: number): number => x * 2;";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 interface User {
     id: number;
@@ -143,7 +152,7 @@ interface User {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 type UserId = string | number;
 type Result<T> = { value: T; error?: string };";
@@ -177,7 +186,7 @@ type Result<T> = { value: T; error?: string };";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 enum Direction {
     Up,
@@ -222,7 +231,7 @@ const enum Status {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function validate(order: Order): boolean {
     return order != null;
@@ -268,7 +277,7 @@ function save(order: Order): void {}";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 import { Injectable } from '@angular/core';
 
@@ -318,7 +327,7 @@ function createUser(name: string): User {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "// just a comment\nconst x = 42;";
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
@@ -341,5 +350,24 @@ function createUser(name: string): User {
 		// Assert
 		symbolBuffer.ShouldBeEmpty();
 		relBuffer.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task GivenTypeScriptHandler_WhenHandleCalled_ThenAllSymbolsHaveLanguageTypescript()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddFile("src/app.ts", new("export interface IFoo { }"));
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(null, null, null, "src/app.ts", "src/app.ts", "src/app.ts", symbolBuffer, relBuffer, Accessibility.Public);
+
+		// Assert
+		symbolBuffer.ShouldNotBeEmpty();
+		symbolBuffer.ShouldAllBe(s => s.Language == "typescript");
 	}
 }

@@ -119,7 +119,8 @@ public class XamlHandler(
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine);
+				startLine,
+				language: Language);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
@@ -144,7 +145,8 @@ public class XamlHandler(
 						relativePath,
 						fileNamespace,
 						startLine,
-						"Private");
+						"Private",
+						language: Language);
 
 					symbolBuffer.Add(handlerRecord);
 					relBuffer.Add(new(symbolKey, handlerKey, "BINDS_TO"));

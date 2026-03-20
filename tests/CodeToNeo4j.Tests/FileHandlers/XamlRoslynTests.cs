@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,6 +13,14 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class XamlRoslynTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".xaml"], "xaml"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenXamlWithGeneratedCode_WhenHandleCalled_ThenExtractsMembersViaRoslyn()
 	{
@@ -20,7 +29,7 @@ public class XamlRoslynTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 
 		var xamlFilePath = "MainWindow.xaml";
 		var xamlContent = @"<Window x:Class=""MyApp.MainWindow""

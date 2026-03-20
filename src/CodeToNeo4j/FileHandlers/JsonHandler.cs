@@ -66,7 +66,8 @@ public class JsonHandler(
 						fileKey,
 						relativePath,
 						fileNamespace,
-						-1); // System.Text.Json.JsonDocument does not provide line numbers easily
+						-1, // System.Text.Json.JsonDocument does not provide line numbers easily
+					language: Language);
 
 					symbolBuffer.Add(record);
 					relBuffer.Add(new(fileKey, key, "CONTAINS"));

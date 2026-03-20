@@ -36,7 +36,8 @@ public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, IText
 			fileNamespace,
 			-1,
 			documentation: version,
-			version: version);
+			version: version,
+			language: Language);
 
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));

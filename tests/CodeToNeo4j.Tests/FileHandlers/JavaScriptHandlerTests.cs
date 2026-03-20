@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
@@ -10,12 +11,20 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class JavaScriptHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".js"], "javascript", "JavaScript"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenJsInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function foo() {}";
 		var filePath = "src/utils/test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -44,7 +53,7 @@ public class JavaScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 import { foo } from './foo.js';
 function myFunction() {
@@ -90,7 +99,7 @@ const myArrow = () => {};";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function validate(order) {
     return order != null;
@@ -135,7 +144,7 @@ function save(order) {}";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function add(a, b) { return a + b; }";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -163,7 +172,7 @@ function save(order) {}";
 	{
 		// Arrange — two functions with the same name (e.g. redefinitions common in JS)
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function to(value) { return value; }
 function to(value, unit) { return value + unit; }
@@ -195,7 +204,7 @@ function caller() { to(1); }";
 	{
 		// Arrange — externalFn is not defined in this file
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = @"
 function doWork() {
     externalFn();
@@ -226,7 +235,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              function render(name) {
 		                  return `Hello ${name}, welcome to {world}`;
@@ -255,7 +264,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              const processUser = ({ name, age }) => {
 		                  return `${name} is ${age}`;
@@ -284,7 +293,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              import { foo } from './foo';
 		              import { bar } from './bar';
@@ -313,7 +322,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = """
 		              const path = require('./utils/path');
 		              function main() {}
@@ -344,7 +353,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = $"import something from '{moduleName}';";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -370,7 +379,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "const obj = { foo: function() {} };";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -395,7 +404,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "import something from '/abs/path';";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -421,7 +430,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function main() { someCall(); "; // Missing closing brace
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -447,7 +456,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function main() { if(true) { return; } while(false) {} someCall(); } function someCall() {}";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -475,7 +484,7 @@ function doWork() {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
 		var content = "function foo() {}";
 		var filePath = "test.js";
 		fileSystem.AddFile(filePath, new(content));
@@ -498,7 +507,7 @@ function doWork() {
 	[Fact]
 	public void GivenJavaScriptHandler_WhenFileExtensionAndCanHandleChecked_ThenMatchesJsOnly()
 	{
-		JavaScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), ConfigurationServiceFactory.Create());
+		JavaScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
 		sut.FileExtension.ShouldBe(".js");
 		sut.CanHandle("app.js").ShouldBeTrue();
 		sut.CanHandle("app.JS").ShouldBeTrue();

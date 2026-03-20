@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -11,6 +12,14 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class XamlNamespaceTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".xaml"], "xaml"));
+		return fake;
+	}
+
 	[Theory]
 	[InlineData("http://schemas.microsoft.com/winfx/2006/xaml")]
 	[InlineData("http://schemas.microsoft.com/winfx/2009/xaml")]
@@ -21,7 +30,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = $@"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
@@ -60,7 +69,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -98,7 +107,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -136,7 +145,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, ConfigurationServiceFactory.Create());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />

@@ -118,7 +118,8 @@ public partial class RazorHandler(
 				fileKey,
 				relativePath,
 				fileNamespace,
-				startLine);
+				startLine,
+				language: Language);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));

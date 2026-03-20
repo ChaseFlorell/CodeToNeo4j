@@ -1,7 +1,8 @@
 using System.IO.Abstractions.TestingHelpers;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
+using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -11,8 +12,16 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class PackageJsonHandlerTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration(["package.json"], "json"));
+		return fake;
+	}
+
 	private static PackageJsonHandler CreateSut(MockFileSystem fileSystem)
-		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, ConfigurationServiceFactory.Create());
+		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, CreateConfigService());
 
 	[Theory]
 	[InlineData("package.json")]

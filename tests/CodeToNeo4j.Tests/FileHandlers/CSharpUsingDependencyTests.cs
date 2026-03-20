@@ -1,7 +1,7 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
-using CodeToNeo4j.Tests.Configuration;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -12,6 +12,14 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class CSharpUsingDependencyTests
 {
+	private static IConfigurationService CreateConfigService()
+	{
+		IConfigurationService fake = A.Fake<IConfigurationService>();
+		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".cs"], "csharp"));
+		return fake;
+	}
+
 	[Fact]
 	public async Task GivenThirdPartyUsing_WhenHandleCalled_ThenAddsDependsOnRelationshipToDependency()
 	{
@@ -20,7 +28,7 @@ public class CSharpUsingDependencyTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis as an external dependency
 		var code = @"
@@ -69,7 +77,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis.CSharp.SyntaxKind as a static using
 		var code = @"
@@ -120,7 +128,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis as a global using
 		var code = @"
@@ -170,7 +178,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem, ConfigurationServiceFactory.Create());
+		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// File 1 has the global using
 		var globalUsingCode = "global using Microsoft.CodeAnalysis;";
