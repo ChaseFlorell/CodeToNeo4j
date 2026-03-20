@@ -19,7 +19,8 @@ public class TextSymbolMapper : ITextSymbolMapper
 		int startLine,
 		string accessibility = "Public",
 		string? documentation = null,
-		string? version = null)
+		string? version = null,
+		string language = "unknown")
 		=> new(
 			key,
 			name,
@@ -34,5 +35,6 @@ public class TextSymbolMapper : ITextSymbolMapper
 			documentation,
 			null,
 			fileNamespace,
-			version);
+			version,
+			language);
 }

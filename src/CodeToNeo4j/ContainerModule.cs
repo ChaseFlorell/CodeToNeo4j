@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.FileHandlers;
@@ -43,6 +44,7 @@ public static class ContainerModule
 		});
 
 		services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
+		services.AddSingleton<IConfigurationService, ConfigurationService>();
 		services.AddSingleton<ICypherService, CypherService>();
 		services.AddSingleton<IFileService, FileService>();
 		services.AddSingleton<IGitLogParser, GitLogParser>();

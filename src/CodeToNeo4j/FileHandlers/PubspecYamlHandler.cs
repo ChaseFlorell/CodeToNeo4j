@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
@@ -9,9 +10,9 @@ namespace CodeToNeo4j.FileHandlers;
 public class PubspecYamlHandler(
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
-	ILogger<PubspecYamlHandler> logger) : DocumentHandlerBase(fileSystem)
+	ILogger<PubspecYamlHandler> logger,
+	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => "pubspec.yaml";
 
 	public override bool CanHandle(string filePath)
 		=> Path.GetFileName(filePath).Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase);

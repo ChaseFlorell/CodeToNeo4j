@@ -4,6 +4,8 @@ using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -14,14 +16,14 @@ public class TypeScriptHandlerTests
 	[InlineData("test.tsx")]
 	public void GivenTsOrTsxFile_WhenCanHandleCalled_ThenReturnsTrue(string filePath)
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper());
+		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), new ConfigurationService());
 		sut.CanHandle(filePath).ShouldBeTrue();
 	}
 
 	[Fact]
 	public void GivenJsFile_WhenCanHandleCalled_ThenReturnsFalse()
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper());
+		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), new ConfigurationService());
 		sut.CanHandle("test.js").ShouldBeFalse();
 	}
 
@@ -30,12 +32,12 @@ public class TypeScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var filePath = "src/utils/test.ts";
 		fileSystem.AddFile(filePath, new("function foo() {}"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -59,7 +61,7 @@ public class TypeScriptHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 import { Component } from '@angular/core';
 function myFunction(value: string): void {
@@ -69,8 +71,8 @@ const myArrow = (x: number): number => x * 2;";
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -104,7 +106,7 @@ const myArrow = (x: number): number => x * 2;";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 interface User {
     id: number;
@@ -113,8 +115,8 @@ interface User {
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -142,15 +144,15 @@ interface User {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 type UserId = string | number;
 type Result<T> = { value: T; error?: string };";
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -176,7 +178,7 @@ type Result<T> = { value: T; error?: string };";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 enum Direction {
     Up,
@@ -191,8 +193,8 @@ const enum Status {
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -221,7 +223,7 @@ const enum Status {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 function validate(order: Order): boolean {
     return order != null;
@@ -234,8 +236,8 @@ function save(order: Order): void {}";
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -267,7 +269,7 @@ function save(order: Order): void {}";
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 import { Injectable } from '@angular/core';
 
@@ -288,8 +290,8 @@ function createUser(name: string): User {
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -317,13 +319,13 @@ function createUser(name: string): User {
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper());
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = "// just a comment\nconst x = 42;";
 		var filePath = "test.ts";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

@@ -13,7 +13,7 @@ public class DependencyIngestor(
 	{
 		logger.LogInformation("Ingesting NuGet dependencies...");
 
-		ConcurrentBag<Dependency> dependencies = new();
+		ConcurrentBag<Dependency> dependencies = [];
 		ParallelOptions parallelOptions = new()
 		{
 			MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount),

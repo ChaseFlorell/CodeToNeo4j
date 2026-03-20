@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.Json;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
@@ -9,9 +10,9 @@ namespace CodeToNeo4j.FileHandlers;
 public class JsonHandler(
 	IFileSystem fileSystem,
 	ILogger<JsonHandler> logger,
-	ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
+	ITextSymbolMapper textSymbolMapper,
+	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".json";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,

@@ -4,6 +4,8 @@ using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -14,13 +16,13 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"body { color: black; }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -46,13 +48,13 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"@import ""foo.css""; @media screen { .foo { color: red; } }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -75,13 +77,13 @@ public class CssHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper());
+		CssHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @".foo { color: red; }";
 		var filePath = "test.css";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

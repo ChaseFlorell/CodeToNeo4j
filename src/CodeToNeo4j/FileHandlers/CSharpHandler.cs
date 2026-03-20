@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -7,10 +8,10 @@ namespace CodeToNeo4j.FileHandlers;
 
 public class CSharpHandler(
 	IRoslynSymbolProcessor symbolProcessor,
-	IFileSystem fileSystem)
-	: DocumentHandlerBase(fileSystem)
+	IFileSystem fileSystem,
+	IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".cs";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -41,7 +42,7 @@ public class CSharpHandler(
 				}
 
 				symbolProcessor.ProcessSyntaxTree(syntaxTree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-					minAccessibility);
+					minAccessibility, Language);
 			}
 		}
 

@@ -33,7 +33,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -70,7 +70,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -107,7 +107,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -145,7 +145,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -230,7 +230,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -275,7 +275,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -315,7 +315,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -357,7 +357,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new("test:TestClass", "TestClass", "Class", "TestClass", "TestClass", "Public", "file.cs", "file.cs", 1, 5, null, null,
 			null);
@@ -389,7 +389,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		// Act
 		sut.AddDependsOnIfExternal(usingSymbol, compilation.Assembly, "test", "file.cs", relBuffer);
@@ -410,7 +410,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		// Act
 		sut.AddDependsOnIfExternal(null, compilation.Assembly, "test", "file.cs", relBuffer);
@@ -701,7 +701,7 @@ public class MemberDependencyExtractorTests
 
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor sut = new(symbolMapper);
-		List<Relationship> relBuffer = new();
+		List<Relationship> relBuffer = [];
 
 		Symbol typeRec = new($"test:{className}", className, "Class", className, className, "Public", "file.cs", "file.cs", 1, 10, null, null,
 			null);

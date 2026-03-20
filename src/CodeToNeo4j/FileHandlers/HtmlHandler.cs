@@ -1,13 +1,14 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
+public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".html";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,

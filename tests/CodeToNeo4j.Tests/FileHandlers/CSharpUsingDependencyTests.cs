@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
@@ -19,7 +20,7 @@ public class CSharpUsingDependencyTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
 
 		// We use Microsoft.CodeAnalysis as an external dependency
 		var code = @"
@@ -36,8 +37,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -68,11 +69,12 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
 
 		// We use Microsoft.CodeAnalysis.CSharp.SyntaxKind as a static using
 		var code = @"
 using static Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using CodeToNeo4j.Configuration;
 
 public class Foo
 {
@@ -85,8 +87,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -117,7 +119,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
 
 		// We use Microsoft.CodeAnalysis as a global using
 		var code = @"
@@ -134,8 +136,8 @@ public class Foo
 		var document = workspace.AddDocument(project.Id, "Foo.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -167,7 +169,7 @@ public class Foo
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		CSharpHandler sut = new(symbolProcessor, fileSystem);
+		CSharpHandler sut = new(symbolProcessor, fileSystem, new ConfigurationService());
 
 		// File 1 has the global using
 		var globalUsingCode = "global using Microsoft.CodeAnalysis;";
@@ -188,8 +190,8 @@ public class Foo
 		document = project.GetDocument(document.Id)!;
 		var compilation = await project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

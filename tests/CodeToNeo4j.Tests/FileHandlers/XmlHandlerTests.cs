@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -15,13 +17,13 @@ public class XmlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance);
+		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance, new ConfigurationService());
 		var content = @"<root><child>value</child></root>";
 		var filePath = "test.xml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

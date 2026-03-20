@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Models;
 using CodeToNeo4j.Graph;
@@ -11,9 +12,9 @@ public class DartHandler(
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
 	IDartBridgeService dartBridgeService,
-	ILogger<DartHandler> logger) : DocumentHandlerBase(fileSystem)
+	ILogger<DartHandler> logger,
+	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".dart";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,

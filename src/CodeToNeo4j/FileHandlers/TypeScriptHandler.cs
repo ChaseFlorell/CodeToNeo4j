@@ -1,14 +1,14 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : JsHandlerBase(fileSystem, textSymbolMapper)
+public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
+	: JsHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-	public override string FileExtension => ".ts";
-	protected override string KindPrefix => "TypeScript";
 
 	public override bool CanHandle(string filePath)
 		=> filePath.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)

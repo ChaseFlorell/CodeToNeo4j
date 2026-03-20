@@ -94,7 +94,7 @@ public class Neo4jFlushService(
 		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 		await session.ExecuteWriteAsync(async tx =>
 		{
-			List<Task> tasks = new();
+			List<Task> tasks = [];
 
 			if (symbolBatch.Length > 0)
 			{

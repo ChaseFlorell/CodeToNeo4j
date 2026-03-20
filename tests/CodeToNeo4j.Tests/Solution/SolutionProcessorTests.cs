@@ -34,7 +34,7 @@ public class SolutionProcessorTests
 	{
 		// Arrange
 		var files = new[] { new ProcessedFile("file1.cs"), new ProcessedFile("file2.cs") };
-		HashSet<string> changedFiles = new();
+		HashSet<string> changedFiles = [];
 
 		// Act
 		var result = SolutionProcessor.FilterFiles(files, changedFiles);
@@ -50,7 +50,7 @@ public class SolutionProcessorTests
 	{
 		// Arrange
 		var files = new[] { new ProcessedFile("file1.cs"), new ProcessedFile("file2.cs"), new ProcessedFile("file3.cs") };
-		HashSet<string> changedFiles = new() { changedFile };
+		HashSet<string> changedFiles = [changedFile];
 
 		// Act
 		var result = SolutionProcessor.FilterFiles(files, changedFiles);
@@ -71,8 +71,8 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData fileMetaData = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<Symbol> symbols = new() { new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns") };
-		List<Relationship> rels = new() { new("k1", "k2", "CONTAINS") };
+		List<Symbol> symbols = [new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")];
+		List<Relationship> rels = [new("k1", "k2", "CONTAINS")];
 
 		SolutionProcessor.ProcessResult result = new(fileMetaData, symbols, rels, [], "file.cs");
 		await channel.Writer.WriteAsync(result);
@@ -102,10 +102,8 @@ public class SolutionProcessorTests
 		for (var i = 0; i < 3; i++)
 		{
 			FileMetaData file = new($"key{i}", $"file{i}.cs", $"file{i}.cs", "hash", metadata, "repo", "ns");
-			List<Symbol> symbols = new()
-			{
-				new($"s{i}", $"Sym{i}", "NamedType", "class", $"Sym{i}", "Public", $"key{i}", $"file{i}.cs", 1, 10, null, null, "ns")
-			};
+			List<Symbol> symbols =
+				[new($"s{i}", $"Sym{i}", "NamedType", "class", $"Sym{i}", "Public", $"key{i}", $"file{i}.cs", 1, 10, null, null, "ns")];
 			await channel.Writer.WriteAsync(new(file, symbols, [], [], $"file{i}.cs"));
 		}
 
@@ -150,7 +148,7 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData file = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<UrlNode> urlNodes = new() { new("dep:pkg", "https://example.com", "example") };
+		List<UrlNode> urlNodes = [new("dep:pkg", "https://example.com", "example")];
 
 		await channel.Writer.WriteAsync(new(file, [], [], urlNodes, "file.cs"));
 		channel.Writer.Complete();
@@ -202,7 +200,7 @@ public class SolutionProcessorTests
 		Channel<SolutionProcessor.ProcessResult> channel = Channel.CreateUnbounded<SolutionProcessor.ProcessResult>();
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData file = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
-		List<Symbol> symbols = new() { new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns") };
+		List<Symbol> symbols = [new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")];
 		IReadOnlySet<string> tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "net9.0", "net8.0" } as IReadOnlySet<string>;
 
 		await channel.Writer.WriteAsync(new(file, symbols, [], [], "file.cs", tfms));

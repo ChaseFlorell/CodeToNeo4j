@@ -20,4 +20,5 @@ public interface IDocumentHandler
 
 	int NumberOfFilesHandled { get; }
 	string FileExtension { get; }
+	string Language { get; }
 }

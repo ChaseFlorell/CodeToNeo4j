@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 
 namespace CodeToNeo4j.FileHandlers;
@@ -8,8 +9,8 @@ namespace CodeToNeo4j.FileHandlers;
 /// Provides shared infrastructure for producing Dependency nodes keyed as
 /// <c>pkg:{packageName}</c> with <c>DEPENDS_ON</c> relationships.
 /// </summary>
-public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper)
-	: DocumentHandlerBase(fileSystem)
+public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
 	protected ITextSymbolMapper SymbolMapper { get; } = textSymbolMapper;
 

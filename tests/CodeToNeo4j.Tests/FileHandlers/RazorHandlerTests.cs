@@ -4,6 +4,8 @@ using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -17,14 +19,14 @@ public class RazorHandlerTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"@namespace MyProject.Pages
 <h1>Hello</h1>";
 		var filePath = "test.razor";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -49,7 +51,7 @@ public class RazorHandlerTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 @using System.Text
 @inject IMyService MyService
@@ -59,8 +61,8 @@ public class RazorHandlerTests
 		var filePath = "test.razor";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

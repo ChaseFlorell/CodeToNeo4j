@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
@@ -9,9 +10,10 @@ namespace CodeToNeo4j.FileHandlers;
 /// Shared base handler for JavaScript and TypeScript files.
 /// Provides common function, import, and call-graph extraction logic.
 /// </summary>
-public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper) : DocumentHandlerBase(fileSystem)
+public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	protected abstract string KindPrefix { get; }
+	protected string KindPrefix => Configuration.KindPrefix;
 	protected ITextSymbolMapper TextSymbolMapper { get; } = textSymbolMapper;
 
 	protected override async Task<FileResult> HandleFile(
@@ -61,7 +63,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
 		var functionRegex = FunctionRegex();
 		var matches = functionRegex.Matches(content);
-		List<FunctionDef> functionDefs = new();
+		List<FunctionDef> functionDefs = [];
 
 		foreach (Match match in matches)
 		{
@@ -222,7 +224,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 		foreach (var caller in functionDefs)
 		{
 			var body = content[caller.BodyStart..caller.BodyEnd];
-			HashSet<string> seen = new();
+			HashSet<string> seen = [];
 
 			foreach (Match match in callRegex.Matches(body))
 			{

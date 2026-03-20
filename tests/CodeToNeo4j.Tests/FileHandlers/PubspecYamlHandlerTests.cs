@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -15,7 +17,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		const string content = """
 		                       name: my_app
@@ -29,8 +31,8 @@ public class PubspecYamlHandlerTests
 		var filePath = "/project/pubspec.yaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -59,14 +61,14 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		const string content = "name: empty_app\n";
 		var filePath = "/project/pubspec.yaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -93,7 +95,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		// Act & Assert
 		sut.CanHandle(filePath).ShouldBe(expected);
@@ -104,7 +106,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		// Dependency with no version value (empty after colon)
 		const string content = """
@@ -116,8 +118,8 @@ public class PubspecYamlHandlerTests
 		var filePath = "/project/pubspec.yaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -143,14 +145,14 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		const string content = "{ this is: [not valid yaml: - broken";
 		var filePath = "/project/pubspec.yaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — should not throw
 		var exception = await Record.ExceptionAsync(() => sut.Handle(
@@ -175,7 +177,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance);
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, new ConfigurationService());
 
 		const string content = """
 		                       name: test_app
@@ -186,8 +188,8 @@ public class PubspecYamlHandlerTests
 		var filePath = "/project/pubspec.yaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

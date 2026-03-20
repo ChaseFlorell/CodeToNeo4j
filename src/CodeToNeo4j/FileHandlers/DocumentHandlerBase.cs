@@ -1,13 +1,17 @@
 using System.IO.Abstractions;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHandler
+public abstract class DocumentHandlerBase : IDocumentHandler
 {
 	public int NumberOfFilesHandled => _numberOfFilesHandled;
-	public abstract string FileExtension { get; }
+	public string FileExtension => Configuration.FileExtension;
+	public string Language => Configuration.Language;
+
+	protected HandlerConfiguration Configuration { get; }
 
 	public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
 
@@ -49,5 +53,12 @@ public abstract class DocumentHandlerBase(IFileSystem fileSystem) : IDocumentHan
 	protected static bool IsPublicAccessible(Accessibility minAccessibility)
 		=> minAccessibility is <= Accessibility.Public and not Accessibility.NotApplicable;
 
+	protected DocumentHandlerBase(IFileSystem fileSystem, IConfigurationService configurationService)
+	{
+		this.fileSystem = fileSystem;
+		Configuration = configurationService.GetHandlerConfiguration(GetType().Name);
+	}
+
+	private readonly IFileSystem fileSystem;
 	private int _numberOfFilesHandled;
 }

@@ -1,0 +1,17 @@
+{
+  "handlers": {
+    "CSharpHandler":     { "fileExtension": ".cs",          "language": "csharp"                        },
+    "RazorHandler":      { "fileExtension": ".razor",       "language": "csharp"                        },
+    "TypeScriptHandler": { "fileExtension": ".ts",          "language": "typescript", "kindPrefix": "TypeScript" },
+    "JavaScriptHandler": { "fileExtension": ".js",          "language": "javascript", "kindPrefix": "JavaScript" },
+    "CssHandler":        { "fileExtension": ".css",         "language": "css"                           },
+    "HtmlHandler":       { "fileExtension": ".html",        "language": "html"                          },
+    "XamlHandler":       { "fileExtension": ".xaml",        "language": "xaml"                          },
+    "XmlHandler":        { "fileExtension": ".xml",         "language": "xml"                           },
+    "JsonHandler":       { "fileExtension": ".json",        "language": "json"                          },
+    "DartHandler":       { "fileExtension": ".dart",        "language": "dart"                          },
+    "CsprojHandler":     { "fileExtension": ".csproj",      "language": "xml"                           },
+    "PackageJsonHandler":{ "fileExtension": "package.json", "language": "json"                          },
+    "PubspecYamlHandler":{ "fileExtension": "pubspec.yaml", "language": "yaml"                          }
+  }
+}

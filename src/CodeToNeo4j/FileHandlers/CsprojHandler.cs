@@ -1,16 +1,16 @@
 using System.IO.Abstractions;
 using System.Xml;
 using System.Xml.Linq;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<CsprojHandler> logger)
-	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
+public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<CsprojHandler> logger, IConfigurationService configurationService)
+	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-	public override string FileExtension => ".csproj";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -25,7 +25,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 	{
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 		var fileNamespace = _fileSystem.Path.GetDirectoryName(relativePath)?.Replace('\\', '/');
-		List<UrlNode> urlNodes = new();
+		List<UrlNode> urlNodes = [];
 
 		try
 		{

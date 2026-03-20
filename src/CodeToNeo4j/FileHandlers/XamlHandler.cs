@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,10 +12,10 @@ public class XamlHandler(
 	IRoslynSymbolProcessor symbolProcessor,
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
-	ILogger<XamlHandler> logger)
-	: DocumentHandlerBase(fileSystem)
+	ILogger<XamlHandler> logger,
+	IConfigurationService configurationService)
+	: DocumentHandlerBase(fileSystem, configurationService)
 {
-	public override string FileExtension => ".xaml";
 
 	protected override async Task<FileResult> HandleFile(
 		TextDocument? document,
@@ -75,7 +76,7 @@ public class XamlHandler(
 				{
 					var semanticModel = compilation.GetSemanticModel(tree, true);
 					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-						minAccessibility);
+						minAccessibility, Language);
 				}
 			}
 		}

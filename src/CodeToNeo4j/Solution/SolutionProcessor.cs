@@ -258,8 +258,8 @@ public class SolutionProcessor(
 		var fileHash = await fileService.ComputeSha256(filePath).ConfigureAwait(false);
 		var metadata = await versionControlService.GetFileMetadata(filePath, solutionRoot).ConfigureAwait(false);
 
-		List<Symbol> symbols = new();
-		List<Relationship> relationships = new();
+		List<Symbol> symbols = [];
+		List<Relationship> relationships = [];
 
 		TextDocument? document = null;
 		Compilation? compilation = null;

@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -20,7 +22,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, new ConfigurationService());
 		var content = $@"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
@@ -31,8 +33,8 @@ public class XamlNamespaceTests
 		const string filePath = "test.xaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var resultNamespace = await sut.Handle(
@@ -59,7 +61,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, new ConfigurationService());
 		var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -69,8 +71,8 @@ public class XamlNamespaceTests
 		const string filePath = "MainPage.xaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var resultNamespace = await sut.Handle(
@@ -97,7 +99,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, new ConfigurationService());
 		var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -107,8 +109,8 @@ public class XamlNamespaceTests
 		const string filePath = "MainPage.xaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var resultNamespace = await sut.Handle(
@@ -135,7 +137,7 @@ public class XamlNamespaceTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance);
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, new ConfigurationService());
 		var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />
@@ -143,8 +145,8 @@ public class XamlNamespaceTests
 		const string filePath = "test.xaml";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

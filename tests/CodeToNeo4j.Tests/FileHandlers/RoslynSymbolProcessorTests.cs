@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -202,7 +203,7 @@ public class RoslynSymbolProcessorTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor sut = new(symbolMapper, dependencyExtractor);
-		CSharpHandler handler = new(sut, fileSystem);
+		CSharpHandler handler = new(sut, fileSystem, new ConfigurationService());
 
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp)
@@ -223,8 +224,8 @@ public class RoslynSymbolProcessorTests
 		var document = workspace.AddDocument(project.Id, "Test.cs", SourceText.From(code));
 		var compilation = await document.Project.GetCompilationAsync();
 
-		List<Symbol> symbols = new();
-		List<Relationship> rels = new();
+		List<Symbol> symbols = [];
+		List<Relationship> rels = [];
 
 		await handler.Handle(
 			document,

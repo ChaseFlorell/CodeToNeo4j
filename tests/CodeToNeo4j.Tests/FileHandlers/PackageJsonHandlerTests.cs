@@ -5,13 +5,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class PackageJsonHandlerTests
 {
 	private static PackageJsonHandler CreateSut(MockFileSystem fileSystem)
-		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance);
+		=> new(fileSystem, new TextSymbolMapper(), NullLogger<PackageJsonHandler>.Instance, new ConfigurationService());
 
 	[Theory]
 	[InlineData("package.json")]
@@ -54,8 +56,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -111,8 +113,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -143,8 +145,8 @@ public class PackageJsonHandlerTests
 		var content = """{"dependencies": {"lodash": "^4.0.0"}}""";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -172,8 +174,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -201,8 +203,8 @@ public class PackageJsonHandlerTests
 		var filePath = "package.json";
 		fileSystem.AddFile(filePath, new("{ invalid json }"));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act - should not throw
 		await sut.Handle(
@@ -239,8 +241,8 @@ public class PackageJsonHandlerTests
 		                                                           }
 		                                                           """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -280,8 +282,8 @@ public class PackageJsonHandlerTests
 		                                                          }
 		                                                          """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -314,8 +316,8 @@ public class PackageJsonHandlerTests
 		                                                                                             }
 		                                                                                             """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -347,8 +349,8 @@ public class PackageJsonHandlerTests
 		                                                                                                      }
 		                                                                                                      """));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -374,8 +376,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new("""{"dependencies":{"lodash":"^4.17.21"}}"""));
 		// No node_modules at all
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -400,8 +402,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new("""{"dependencies":{"my-pkg":"1.0.0"}}"""));
 		fileSystem.AddFile("node_modules/my-pkg/package.json", new("""{"name":"my-pkg","version":"1.0.0"}"""));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		var result = await sut.Handle(
@@ -427,8 +429,8 @@ public class PackageJsonHandlerTests
 		fileSystem.AddFile("package.json", new(rootContent));
 		fileSystem.AddFile("node_modules/bad-pkg/package.json", new(installedContent));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act — should not throw
 		var result = await sut.Handle(

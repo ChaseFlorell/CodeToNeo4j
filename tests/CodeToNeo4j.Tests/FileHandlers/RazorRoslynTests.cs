@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -18,7 +20,7 @@ public class RazorRoslynTests
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
 		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper());
+		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new ConfigurationService());
 
 		var razorFilePath = "Pages/Index.razor";
 		var razorContent = @"@page ""/""
@@ -48,8 +50,8 @@ namespace MyProject.Pages
 		var generatedDoc = workspace.AddDocument(project.Id, "Index.razor.g.cs", SourceText.From(generatedCode));
 		var compilation = await generatedDoc.Project.GetCompilationAsync();
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

@@ -14,5 +14,6 @@ public record Symbol(
 	string? Documentation,
 	string? Comments,
 	string? Namespace,
-	string? Version = null
+	string? Version = null,
+	string Language = "unknown"
 );

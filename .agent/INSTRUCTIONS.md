@@ -19,6 +19,15 @@
 	- Implement a `IConsoleCompletionsService` to handle terminal detection and `dotnet-suggest` configuration.
 	- Supported shells: zsh, bash, pwsh.
 
+# Graph Design Principles
+
+The Neo4j graph produced by this tool is consumed **exclusively by AI agents** to understand codebases. No human directly queries or navigates the graph. All graph design decisions must reflect this:
+
+- **Flat properties over separate nodes**: When information is a simple scalar or label (e.g. `language`, `technology`), store it as a property on the symbol node — not as a separate node with a relationship. Simpler Cypher means fewer AI query errors.
+- **Token-efficient results**: Flat result rows cost fewer tokens for an AI to process than multi-hop traversals. Avoid unnecessary joins.
+- **No metadata for its own sake**: Do not add node properties or related nodes for information the AI already knows from training (e.g. a Technology node with a `docsUrl` field). Only store what the AI cannot infer.
+- **Relationships must earn their place**: Only model a relationship in the graph if an AI genuinely needs to traverse it at query time. Graph richness is not a goal in itself.
+
 # Performance Principles
 
 - **Batching**: Always prefer batching I/O operations (database writes, git commands) to minimize overhead.

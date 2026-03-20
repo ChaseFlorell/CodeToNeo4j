@@ -1,15 +1,15 @@
 using System.IO.Abstractions;
 using System.Text.Json;
+using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<PackageJsonHandler> logger)
-	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper)
+public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<PackageJsonHandler> logger, IConfigurationService configurationService)
+	: PackageDependencyHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-	public override string FileExtension => "package.json";
 
 	public override bool CanHandle(string filePath)
 		=> _fileSystem.Path.GetFileName(filePath).Equals("package.json", StringComparison.OrdinalIgnoreCase);
@@ -68,7 +68,7 @@ public class PackageJsonHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 		var packageDir = _fileSystem.Path.GetDirectoryName(filePath) ?? string.Empty;
-		List<UrlNode> urlNodes = new();
+		List<UrlNode> urlNodes = [];
 
 		try
 		{

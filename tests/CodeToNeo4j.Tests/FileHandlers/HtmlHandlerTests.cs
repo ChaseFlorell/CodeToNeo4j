@@ -4,6 +4,8 @@ using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Shouldly;
 using Xunit;
+using CodeToNeo4j.Configuration;
+using FakeItEasy;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 
@@ -14,7 +16,7 @@ public class HtmlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		HtmlHandler sut = new(fileSystem, new TextSymbolMapper());
+		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"
 <html>
   <head>
@@ -27,8 +29,8 @@ public class HtmlHandlerTests
 		var filePath = "test.html";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(
@@ -59,13 +61,13 @@ public class HtmlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		HtmlHandler sut = new(fileSystem, new TextSymbolMapper());
+		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), new ConfigurationService());
 		var content = @"<div id=""myId""></div><script src=""app.js""></script>";
 		var filePath = "test.html";
 		fileSystem.AddFile(filePath, new(content));
 
-		List<Symbol> symbolBuffer = new();
-		List<Relationship> relBuffer = new();
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
 
 		// Act
 		await sut.Handle(

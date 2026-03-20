@@ -5,8 +5,8 @@ public static class PubspecParser
 	public static PubspecInfo Parse(string content)
 	{
 		var name = string.Empty;
-		List<PubspecDependency> dependencies = new();
-		List<PubspecDependency> devDependencies = new();
+		List<PubspecDependency> dependencies = [];
+		List<PubspecDependency> devDependencies = [];
 
 		string? currentSection = null;
 
