@@ -12,6 +12,7 @@ using CodeToNeo4j.ProgramOptions.Handlers;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
 using CodeToNeo4j.VersionControl;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
@@ -45,22 +46,13 @@ public static class ContainerModule
 
 		services.AddSingleton<IFileSystem, System.IO.Abstractions.FileSystem>();
 
-		services.Configure<HandlersConfiguration>(options =>
-		{
-			options.Handlers["CSharpHandler"] = new(".cs", "csharp");
-			options.Handlers["RazorHandler"] = new(".razor", "csharp");
-			options.Handlers["TypeScriptHandler"] = new(".ts", "typescript", "TypeScript");
-			options.Handlers["JavaScriptHandler"] = new(".js", "javascript", "JavaScript");
-			options.Handlers["CssHandler"] = new(".css", "css");
-			options.Handlers["HtmlHandler"] = new(".html", "html");
-			options.Handlers["XamlHandler"] = new(".xaml", "xaml");
-			options.Handlers["XmlHandler"] = new(".xml", "xml");
-			options.Handlers["JsonHandler"] = new(".json", "json");
-			options.Handlers["DartHandler"] = new(".dart", "dart");
-			options.Handlers["CsprojHandler"] = new(".csproj", "xml");
-			options.Handlers["PackageJsonHandler"] = new("package.json", "json");
-			options.Handlers["PubspecYamlHandler"] = new("pubspec.yaml", "yaml");
-		});
+		var configuration = new ConfigurationBuilder()
+			.SetBasePath(AppContext.BaseDirectory)
+			.AddJsonFile("config.json", optional: false)
+			.Build();
+
+		services.AddSingleton<IConfiguration>(configuration);
+		services.Configure<HandlersConfiguration>(configuration);
 		services.AddSingleton<IConfigurationService, ConfigurationService>();
 
 		services.AddSingleton<ICypherService, CypherService>();

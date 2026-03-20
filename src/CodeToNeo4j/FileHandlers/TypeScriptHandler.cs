@@ -9,11 +9,6 @@ namespace CodeToNeo4j.FileHandlers;
 public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IConfigurationService configurationService)
 	: JsHandlerBase(fileSystem, textSymbolMapper, configurationService)
 {
-
-	public override bool CanHandle(string filePath)
-		=> filePath.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
-		   || filePath.EndsWith(".tsx", StringComparison.OrdinalIgnoreCase);
-
 	protected override void ExtractAdditionalSymbols(
 		string content,
 		string fileKey,

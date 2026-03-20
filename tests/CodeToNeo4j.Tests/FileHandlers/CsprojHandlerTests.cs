@@ -1,11 +1,11 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
-using CodeToNeo4j.Tests.Configuration;
 
 namespace CodeToNeo4j.Tests.FileHandlers;
 

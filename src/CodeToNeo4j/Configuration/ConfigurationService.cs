@@ -9,5 +9,5 @@ public class ConfigurationService(IOptions<HandlersConfiguration> options) : ICo
 	public HandlerConfiguration GetHandlerConfiguration(string handlerTypeName)
 		=> _config.Handlers.TryGetValue(handlerTypeName, out var config)
 			? config
-			: new("", "unknown");
+			: new([], "unknown");
 }

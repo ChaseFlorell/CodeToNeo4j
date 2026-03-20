@@ -1,7 +1,7 @@
 using System.IO.Abstractions;
-using CodeToNeo4j.Tests.Configuration;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Tests.Configuration;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;

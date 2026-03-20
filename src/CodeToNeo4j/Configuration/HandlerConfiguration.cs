@@ -1,6 +1,6 @@
 namespace CodeToNeo4j.Configuration;
 
 public record HandlerConfiguration(
-	string FileExtension,
+	string[] FileExtensions,
 	string Language,
 	string KindPrefix = "");

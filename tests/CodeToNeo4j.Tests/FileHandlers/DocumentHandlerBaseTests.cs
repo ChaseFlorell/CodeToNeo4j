@@ -89,7 +89,7 @@ public class DocumentHandlerBaseTests
 	{
 		IConfigurationService configService = A.Fake<IConfigurationService>();
 		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
-			.Returns(new HandlerConfiguration(".test", "test"));
+			.Returns(new HandlerConfiguration([".test"], "test"));
 		return configService;
 	}
 

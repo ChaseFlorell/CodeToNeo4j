@@ -167,8 +167,9 @@ public class SolutionProcessorTests
 		var fileService = A.Fake<IFileService>();
 		var handler = A.Fake<IDocumentHandler>();
 		A.CallTo(() => handler.FileExtension).Returns(".cs");
+		A.CallTo(() => handler.FileExtensions).Returns([".cs"]);
 		A.CallTo(() => handler.CanHandle(A<string>._)).Returns(true);
-		var sut = CreateProcessor(fileService: fileService, handlers: [handler]);
+		var sut = CreateProcessor(fileService: fileService, handlers: [handler], fileSystem: new System.IO.Abstractions.FileSystem());
 
 		AdhocWorkspace workspace = new();
 		var project = workspace.AddProject("TestProject", LanguageNames.CSharp);
@@ -546,10 +547,12 @@ public class SolutionProcessorTests
 		// Arrange
 		var h1 = A.Fake<IDocumentHandler>();
 		A.CallTo(() => h1.FileExtension).Returns(".cs");
+		A.CallTo(() => h1.FileExtensions).Returns([".cs"]);
 		A.CallTo(() => h1.CanHandle(A<string>.That.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
 		var h2 = A.Fake<IDocumentHandler>();
 		A.CallTo(() => h2.FileExtension).Returns("package.json");
+		A.CallTo(() => h2.FileExtensions).Returns(["package.json"]);
 		A.CallTo(() => h2.CanHandle(A<string>.That.EndsWith("package.json", StringComparison.OrdinalIgnoreCase))).Returns(true);
 
 		// Act

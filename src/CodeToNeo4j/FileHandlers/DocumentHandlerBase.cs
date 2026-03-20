@@ -8,12 +8,14 @@ namespace CodeToNeo4j.FileHandlers;
 public abstract class DocumentHandlerBase : IDocumentHandler
 {
 	public int NumberOfFilesHandled => _numberOfFilesHandled;
-	public string FileExtension => Configuration.FileExtension;
+	public string FileExtension => Configuration.FileExtensions[0];
+	public string[] FileExtensions => Configuration.FileExtensions;
 	public string Language => Configuration.Language;
 
 	protected HandlerConfiguration Configuration { get; }
 
-	public virtual bool CanHandle(string filePath) => filePath.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
+	public virtual bool CanHandle(string filePath)
+		=> Configuration.FileExtensions.Any(ext => filePath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
 
 	public Task<FileResult> Handle(
 		TextDocument? document,
