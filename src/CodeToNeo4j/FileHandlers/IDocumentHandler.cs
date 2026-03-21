@@ -22,4 +22,5 @@ public interface IDocumentHandler
 	string FileExtension { get; }
 	string[] FileExtensions { get; }
 	string Language { get; }
+	string Technology { get; }
 }

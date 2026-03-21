@@ -42,7 +42,7 @@ public class CSharpHandler(
 				}
 
 				symbolProcessor.ProcessSyntaxTree(syntaxTree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-					minAccessibility, Language);
+					minAccessibility, Language, Technology);
 			}
 		}
 

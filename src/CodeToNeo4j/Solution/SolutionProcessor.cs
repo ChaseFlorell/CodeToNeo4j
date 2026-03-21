@@ -303,9 +303,10 @@ public class SolutionProcessor(
 		var urlNodes = fileResult?.UrlNodes is { Count: > 0 } urls ? urls.ToList() : [];
 
 		var language = handler?.Language ?? "unknown";
+		var technology = handler?.Technology ?? "unknown";
 		// MSBuild-discovered TFMs take priority; fall back to handler-detected TFMs
 		var effectiveTfms = file.TargetFrameworks is { Count: > 0 } ? file.TargetFrameworks : fileResult?.TargetFrameworks;
-		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, effectiveTfms);
+		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, technology, effectiveTfms);
 
 		return new(fileRecord, symbols, relationships, urlNodes, relativePath, effectiveTfms);
 	}

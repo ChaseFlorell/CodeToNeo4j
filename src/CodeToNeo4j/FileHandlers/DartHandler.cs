@@ -83,7 +83,7 @@ public class DartHandler(
 				symbolInfo.StartLine,
 				symbolInfo.Accessibility,
 				symbolInfo.Documentation,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(symbol);
 		}

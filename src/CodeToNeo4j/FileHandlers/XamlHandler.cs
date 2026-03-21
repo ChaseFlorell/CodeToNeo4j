@@ -77,7 +77,7 @@ public partial class XamlHandler(
 				{
 					var semanticModel = compilation.GetSemanticModel(tree, true);
 					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-						minAccessibility, Language);
+						minAccessibility, Language, Technology);
 				}
 			}
 		}
@@ -170,7 +170,7 @@ public partial class XamlHandler(
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
@@ -196,7 +196,7 @@ public partial class XamlHandler(
 						fileNamespace,
 						startLine,
 						"Private",
-						language: Language);
+						language: Language, technology: Technology);
 
 					symbolBuffer.Add(handlerRecord);
 					relBuffer.Add(new(symbolKey, handlerKey, "BINDS_TO"));

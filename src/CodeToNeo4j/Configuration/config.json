@@ -1,17 +1,17 @@
 {
   "Handlers": {
-    "CSharpHandler":     { "FileExtensions": [ ".cs"          ], "Language": "csharp"                          },
-    "RazorHandler":      { "FileExtensions": [ ".razor"       ], "Language": "csharp"                          },
-    "TypeScriptHandler": { "FileExtensions": [ ".ts", ".tsx"  ], "Language": "typescript", "KindPrefix": "TypeScript" },
-    "JavaScriptHandler": { "FileExtensions": [ ".js"          ], "Language": "javascript", "KindPrefix": "JavaScript" },
-    "CssHandler":        { "FileExtensions": [ ".css"         ], "Language": "css"                             },
-    "HtmlHandler":       { "FileExtensions": [ ".html"        ], "Language": "html"                            },
-    "XamlHandler":       { "FileExtensions": [ ".xaml"        ], "Language": "xaml"                            },
-    "XmlHandler":        { "FileExtensions": [ ".xml"         ], "Language": "xml"                             },
-    "JsonHandler":       { "FileExtensions": [ ".json"        ], "Language": "json"                            },
-    "DartHandler":       { "FileExtensions": [ ".dart"        ], "Language": "dart"                            },
-    "CsprojHandler":     { "FileExtensions": [ ".csproj"      ], "Language": "xml"                             },
-    "PackageJsonHandler":{ "FileExtensions": [ "package.json" ], "Language": "json"                            },
-    "PubspecYamlHandler":{ "FileExtensions": [ "pubspec.yaml" ], "Language": "yaml"                           }
+    "CSharpHandler":     { "FileExtensions": [ ".cs"          ], "Language": "csharp",      "Technology": "dotnet"                            },
+    "RazorHandler":      { "FileExtensions": [ ".razor"       ], "Language": "csharp",      "Technology": "dotnet"                            },
+    "TypeScriptHandler": { "FileExtensions": [ ".ts", ".tsx"  ], "Language": "typescript",  "Technology": "node",    "KindPrefix": "TypeScript" },
+    "JavaScriptHandler": { "FileExtensions": [ ".js"          ], "Language": "javascript",  "Technology": "node",    "KindPrefix": "JavaScript" },
+    "CssHandler":        { "FileExtensions": [ ".css"         ], "Language": "css",          "Technology": "web"                               },
+    "HtmlHandler":       { "FileExtensions": [ ".html"        ], "Language": "html",         "Technology": "web"                               },
+    "XamlHandler":       { "FileExtensions": [ ".xaml"        ], "Language": "xaml",         "Technology": "dotnet"                            },
+    "XmlHandler":        { "FileExtensions": [ ".xml"         ], "Language": "xml",          "Technology": "xml"                               },
+    "JsonHandler":       { "FileExtensions": [ ".json"        ], "Language": "json",         "Technology": "json"                              },
+    "DartHandler":       { "FileExtensions": [ ".dart"        ], "Language": "dart",         "Technology": "flutter"                           },
+    "CsprojHandler":     { "FileExtensions": [ ".csproj"      ], "Language": "xml",          "Technology": "dotnet"                            },
+    "PackageJsonHandler":{ "FileExtensions": [ "package.json" ], "Language": "json",         "Technology": "node"                              },
+    "PubspecYamlHandler":{ "FileExtensions": [ "pubspec.yaml" ], "Language": "yaml",         "Technology": "flutter"                           }
   }
 }

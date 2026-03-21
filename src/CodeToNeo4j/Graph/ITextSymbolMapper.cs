@@ -17,5 +17,6 @@ public interface ITextSymbolMapper
 		string accessibility = "Public",
 		string? documentation = null,
 		string? version = null,
-		string language = "unknown");
+		string language = "unknown",
+		string technology = "unknown");
 }

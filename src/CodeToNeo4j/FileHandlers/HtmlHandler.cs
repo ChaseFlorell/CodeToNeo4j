@@ -100,7 +100,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
@@ -133,7 +133,7 @@ public partial class HtmlHandler(IFileSystem fileSystem, ITextSymbolMapper textS
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));

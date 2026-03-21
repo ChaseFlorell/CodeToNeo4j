@@ -15,7 +15,7 @@ public class JavaScriptHandlerTests
 	{
 		IConfigurationService fake = A.Fake<IConfigurationService>();
 		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
-			.Returns(new HandlerConfiguration([".js"], "javascript", "JavaScript"));
+			.Returns(new HandlerConfiguration([".js"], "javascript", "node", KindPrefix: "JavaScript"));
 		return fake;
 	}
 

@@ -47,7 +47,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language));
+				language: Language, technology: Technology));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}
@@ -72,7 +72,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language));
+				language: Language, technology: Technology));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}
@@ -97,7 +97,7 @@ public partial class TypeScriptHandler(IFileSystem fileSystem, ITextSymbolMapper
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language));
+				language: Language, technology: Technology));
 
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));
 		}

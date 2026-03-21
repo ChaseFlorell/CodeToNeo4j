@@ -15,7 +15,7 @@ public class TypeScriptHandlerTests
 	{
 		IConfigurationService fake = A.Fake<IConfigurationService>();
 		A.CallTo(() => fake.GetHandlerConfiguration(A<string>._))
-			.Returns(new HandlerConfiguration([".ts", ".tsx"], "typescript", "TypeScript"));
+			.Returns(new HandlerConfiguration([".ts", ".tsx"], "typescript", "node", KindPrefix: "TypeScript"));
 		return fake;
 	}
 
@@ -369,5 +369,24 @@ function createUser(name: string): User {
 		// Assert
 		symbolBuffer.ShouldNotBeEmpty();
 		symbolBuffer.ShouldAllBe(s => s.Language == "typescript");
+	}
+
+	[Fact]
+	public async Task GivenTypeScriptHandler_WhenHandleCalled_ThenAllSymbolsHaveTechnologyNode()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddFile("src/app.ts", new("export interface IFoo { }"));
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(null, null, null, "src/app.ts", "src/app.ts", "src/app.ts", symbolBuffer, relBuffer, Accessibility.Public);
+
+		// Assert
+		symbolBuffer.ShouldNotBeEmpty();
+		symbolBuffer.ShouldAllBe(s => s.Technology == "node");
 	}
 }
