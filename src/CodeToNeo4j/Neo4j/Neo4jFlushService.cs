@@ -1,5 +1,6 @@
 using CodeToNeo4j.Cypher;
-using CodeToNeo4j.Graph;
+using CodeToNeo4j.Graph.Models;
+using CodeToNeo4j.Graph.Xml;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
 

@@ -1,4 +1,4 @@
-using CodeToNeo4j.Graph;
+using CodeToNeo4j.Graph.Models;
 
 namespace CodeToNeo4j.Neo4j;
 

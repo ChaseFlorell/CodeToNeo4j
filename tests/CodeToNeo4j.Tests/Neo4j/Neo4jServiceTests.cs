@@ -1,6 +1,6 @@
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileSystem;
-using CodeToNeo4j.Graph;
+using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.VersionControl;
 using FakeItEasy;

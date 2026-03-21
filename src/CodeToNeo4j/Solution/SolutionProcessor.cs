@@ -1,10 +1,14 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Threading.Channels;
-using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Progress;
+using CodeToNeo4j.Solution.Discovery;
+using CodeToNeo4j.Solution.Ingestion;
+using CodeToNeo4j.Solution.Workspace;
+using CodeToNeo4j.Technologies;
 using CodeToNeo4j.VersionControl;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
@@ -29,7 +33,7 @@ public class SolutionProcessor(
 	public async Task ProcessSolution(string inputPath, string? repoKey, string? diffBase, string databaseName, int batchSize, bool skipDependencies,
 		Accessibility minAccessibility, IEnumerable<string> includeExtensions)
 	{
-		Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+		Stopwatch stopwatch = Stopwatch.StartNew();
 		HashSet<string> extensionsToInclude = includeExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
 		var ext = fileSystem.Path.GetExtension(inputPath);
