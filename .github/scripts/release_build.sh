@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-dotnet build --no-restore -c Release /p:Version="$VERSION"
+dotnet build --no-restore -c Release /p:Version="$VERSION" /p:AssemblyVersion="$VERSION" /p:FileVersion="$VERSION" /p:InformationalVersion="$VERSION"
