@@ -10,6 +10,7 @@ namespace CodeToNeo4j.Tests.Validation;
 
 public class OptionsBinderValidatorTests
 {
+	private readonly IOptionsBinderValidator _sut = new OptionsBinderValidator();
 	private readonly Option<string?> _inputOption = new("--input");
 	private readonly Option<bool> _noKeyOption = new("--no-key");
 	private readonly Option<LogLevel> _logLevelOption = new("--log-level");
@@ -63,7 +64,7 @@ public class OptionsBinderValidatorTests
 
 	private void Validate(CommandResult result)
 	{
-		OptionsBinderValidator.Validate(
+		_sut.Validate(
 			result,
 			_inputOption,
 			_noKeyOption,

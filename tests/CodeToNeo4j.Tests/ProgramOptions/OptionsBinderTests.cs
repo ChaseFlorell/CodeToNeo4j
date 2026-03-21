@@ -109,6 +109,7 @@ public class OptionsBinderTests
 
 		OptionsBinder binder = new(
 			fs,
+			new OptionsBinderValidator(),
 			inputOption,
 			uriOption,
 			userOption,

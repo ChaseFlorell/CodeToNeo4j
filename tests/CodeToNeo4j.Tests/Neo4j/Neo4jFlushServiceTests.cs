@@ -14,12 +14,13 @@ public class Neo4jFlushServiceTests
 {
 	private readonly IDriver _driver = A.Fake<IDriver>();
 	private readonly ICypherService _cypherService = A.Fake<ICypherService>();
+	private readonly INamespaceTagParser _namespaceTagParser = new NamespaceTagParser();
 	private readonly ILogger<Neo4jFlushService> _logger = A.Fake<ILogger<Neo4jFlushService>>();
 	private readonly Neo4jFlushService _sut;
 
 	public Neo4jFlushServiceTests()
 	{
-		_sut = new(_driver, _cypherService, _logger);
+		_sut = new(_driver, _cypherService, _namespaceTagParser, _logger);
 	}
 
 	private IAsyncSession SetupSession()

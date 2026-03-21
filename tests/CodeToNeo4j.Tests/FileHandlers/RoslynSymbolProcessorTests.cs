@@ -193,7 +193,7 @@ public class RoslynSymbolProcessorTests
 		           }
 		           """;
 
-		var (symbols, _) = await ProcessCode(code, Accessibility.Public);
+		var (symbols, _) = await ProcessCode(code, Accessibility.Public, accessibilityFilter: new AccessibilityFilter());
 
 		// Assert
 		symbols.ShouldContain(s => s.Name == "PublicMethod");
@@ -205,12 +205,13 @@ public class RoslynSymbolProcessorTests
 		string code,
 		Accessibility minAccessibility = Accessibility.Private,
 		bool addLinqReference = false,
-		bool addCollectionsReference = false)
+		bool addCollectionsReference = false,
+		IAccessibilityFilter? accessibilityFilter = null)
 	{
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor sut = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor sut = new(symbolMapper, dependencyExtractor, accessibilityFilter ?? A.Fake<IAccessibilityFilter>());
 		CSharpHandler handler = new(sut, fileSystem, CreateConfigService());
 
 		AdhocWorkspace workspace = new();

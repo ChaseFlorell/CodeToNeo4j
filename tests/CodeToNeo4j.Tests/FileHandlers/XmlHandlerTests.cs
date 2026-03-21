@@ -133,7 +133,7 @@ public class XmlHandlerTests
 	private static (XmlHandler sut, MockFileSystem fileSystem) CreateSut()
 	{
 		MockFileSystem fileSystem = new();
-		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<XmlHandler>.Instance, CreateConfigService());
+		XmlHandler sut = new(fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XmlHandler>.Instance, CreateConfigService());
 		return (sut, fileSystem);
 	}
 }

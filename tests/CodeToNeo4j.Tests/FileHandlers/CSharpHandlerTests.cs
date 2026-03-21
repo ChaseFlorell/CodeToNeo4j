@@ -35,7 +35,7 @@ public class CSharpHandlerTests
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -89,7 +89,7 @@ public class Foo : IBar
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -134,7 +134,7 @@ public class Foo : IBar
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -188,7 +188,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -240,7 +240,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -292,7 +292,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -344,7 +344,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -394,7 +394,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -449,7 +449,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -506,7 +506,7 @@ public class OrderService
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -570,7 +570,7 @@ public class Factory
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = @"
@@ -609,7 +609,7 @@ public class Pure
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		var code = """

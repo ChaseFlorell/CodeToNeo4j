@@ -27,7 +27,7 @@ public class CSharpUsingDependencyTests
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis as an external dependency
@@ -76,7 +76,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis.CSharp.SyntaxKind as a static using
@@ -127,7 +127,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// We use Microsoft.CodeAnalysis as a global using
@@ -177,7 +177,7 @@ public class Foo
 		var fileSystem = A.Fake<IFileSystem>();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		CSharpHandler sut = new(symbolProcessor, fileSystem, CreateConfigService());
 
 		// File 1 has the global using

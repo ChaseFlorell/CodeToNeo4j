@@ -29,8 +29,8 @@ public class XamlNamespaceTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = $@"
 <Window x:Class=""MyApp.MainWindow""
         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
@@ -68,8 +68,8 @@ public class XamlNamespaceTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <ContentPage xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -106,8 +106,8 @@ public class XamlNamespaceTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <ContentPage xmlns=""http://xamarin.com/schemas/2014/forms""
              xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml""
@@ -144,8 +144,8 @@ public class XamlNamespaceTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 		var content = @"
 <Window xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
     <Button Name=""UnprefixedButton"" />

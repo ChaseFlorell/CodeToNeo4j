@@ -8,6 +8,7 @@ namespace CodeToNeo4j.Neo4j;
 public class Neo4jFlushService(
 	IDriver driver,
 	ICypherService cypherService,
+	INamespaceTagParser namespaceTagParser,
 	ILogger<Neo4jFlushService> logger) : INeo4jFlushService
 {
 	internal const int MaxIndexedStringLength = 8000;
@@ -90,7 +91,7 @@ public class Neo4jFlushService(
 
 		var tagBatch = symbols
 			.Where(s => !string.IsNullOrWhiteSpace(s.Namespace))
-			.Select(s => new Dictionary<string, object?> { ["symbolKey"] = s.Key, ["tags"] = NamespaceTagParser.ParseTags(s.Namespace).ToArray() })
+			.Select(s => new Dictionary<string, object?> { ["symbolKey"] = s.Key, ["tags"] = namespaceTagParser.ParseTags(s.Namespace).ToArray() })
 			.Where(x => ((string[])x["tags"]!).Length > 0)
 			.ToArray();
 

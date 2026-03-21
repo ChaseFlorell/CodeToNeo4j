@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.FileHandlers;
 
-public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, ILogger<XmlHandler> logger, IConfigurationService configurationService)
+public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapper, IXmlAttributeExtractor xmlAttributeExtractor, ILogger<XmlHandler> logger, IConfigurationService configurationService)
 	: DocumentHandlerBase(fileSystem, configurationService)
 {
 
@@ -70,7 +70,7 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "CONTAINS"));
 
-		XmlAttributeExtractor.ExtractAttributes(
+		xmlAttributeExtractor.ExtractAttributes(
 			element, name, key, startLine,
 			fileKey, relativePath, fileNamespace,
 			textSymbolMapper, symbolBuffer, relBuffer,

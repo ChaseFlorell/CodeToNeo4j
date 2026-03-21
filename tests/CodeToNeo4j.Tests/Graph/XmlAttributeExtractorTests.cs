@@ -1,14 +1,14 @@
 using System.Xml.Linq;
-using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using Shouldly;
 using Xunit;
 
-namespace CodeToNeo4j.Tests.FileHandlers;
+namespace CodeToNeo4j.Tests.Graph;
 
 public class XmlAttributeExtractorTests
 {
 	private readonly TextSymbolMapper _mapper = new();
+	private readonly XmlAttributeExtractor _sut = new();
 
 	[Fact]
 	public void GivenElementWithAttributes_WhenExtractAttributes_ThenCreatesSymbolsAndRelationships()
@@ -19,7 +19,7 @@ public class XmlAttributeExtractorTests
 		List<Relationship> rels = [];
 
 		// Act
-		XmlAttributeExtractor.ExtractAttributes(
+		_sut.ExtractAttributes(
 			element, "Entry", "parent-key", 5,
 			"file-key", "path.xaml", "ns",
 			_mapper, symbols, rels,
@@ -55,7 +55,7 @@ public class XmlAttributeExtractorTests
 		List<Relationship> rels = [];
 
 		// Act
-		XmlAttributeExtractor.ExtractAttributes(
+		_sut.ExtractAttributes(
 			element, "Item", "parent-key", 1,
 			"file-key", "path.xml", null,
 			_mapper, symbols, rels,
@@ -77,7 +77,7 @@ public class XmlAttributeExtractorTests
 		List<Relationship> rels = [];
 
 		// Act
-		XmlAttributeExtractor.ExtractAttributes(
+		_sut.ExtractAttributes(
 			element, "Label", "parent-key", 1,
 			"file-key", "path.xaml", null,
 			_mapper, symbols, rels,
@@ -99,7 +99,7 @@ public class XmlAttributeExtractorTests
 		List<Relationship> rels = [];
 
 		// Act
-		XmlAttributeExtractor.ExtractAttributes(
+		_sut.ExtractAttributes(
 			element, "Empty", "parent-key", 1,
 			"file-key", "path.xml", null,
 			_mapper, symbols, rels,

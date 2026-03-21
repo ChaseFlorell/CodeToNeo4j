@@ -6,6 +6,8 @@ namespace CodeToNeo4j.Dart.Tests.Yaml;
 
 public class PubspecParserTests
 {
+	private readonly PubspecParser _sut = new();
+
 	[Fact]
 	public void GivenPubspecWithNameAndDeps_WhenParsed_ThenExtractsAll()
 	{
@@ -25,7 +27,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		result.Name.ShouldBe("my_app");
@@ -44,7 +46,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		result.Name.ShouldBe("simple_app");
@@ -56,7 +58,7 @@ public class PubspecParserTests
 	public void GivenEmptyContent_WhenParsed_ThenReturnsEmptyResult()
 	{
 		// Act
-		var result = PubspecParser.Parse(string.Empty);
+		var result = _sut.Parse(string.Empty);
 
 		// Assert
 		result.Name.ShouldBeEmpty();
@@ -79,7 +81,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		List<PubspecDependency> allDeps = result.Dependencies.Concat(result.DevDependencies).ToList();
@@ -100,7 +102,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		// "flutter:" has no version on the same line, followed by an indented "sdk: flutter"
@@ -121,7 +123,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		result.SdkConstraint.ShouldBe(">=3.0.0 <4.0.0");
@@ -138,7 +140,7 @@ public class PubspecParserTests
 		                       """;
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		result.SdkConstraint.ShouldBeNull();
@@ -154,7 +156,7 @@ public class PubspecParserTests
 		var content = $"name: my_app\nenvironment:\n  {sdkLine}\n";
 
 		// Act
-		var result = PubspecParser.Parse(content);
+		var result = _sut.Parse(content);
 
 		// Assert
 		result.SdkConstraint.ShouldBe(expectedConstraint);

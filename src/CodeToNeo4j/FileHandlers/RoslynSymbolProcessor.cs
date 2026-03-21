@@ -23,7 +23,8 @@ public interface IRoslynSymbolProcessor
 
 public class RoslynSymbolProcessor(
 	ISymbolMapper symbolMapper,
-	IMemberDependencyExtractor dependencyExtractor) : IRoslynSymbolProcessor
+	IMemberDependencyExtractor dependencyExtractor,
+	IAccessibilityFilter accessibilityFilter) : IRoslynSymbolProcessor
 {
 	public void ProcessSyntaxTree(
 		SyntaxTree syntaxTree,
@@ -273,7 +274,7 @@ public class RoslynSymbolProcessor(
 		string language,
 		string technology)
 	{
-		if (AccessibilityFilter.IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
+		if (accessibilityFilter.IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
 		{
 			return;
 		}

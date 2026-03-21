@@ -7,6 +7,7 @@ namespace CodeToNeo4j.ProgramOptions;
 
 public class OptionsBinder(
 	IFileSystem fileSystem,
+	IOptionsBinderValidator validator,
 	Option<string?> inputOption,
 	Option<string> uriOption,
 	Option<string> userOption,
@@ -56,7 +57,7 @@ public class OptionsBinder(
 		command.Options.Add(showSupportedFilesOption);
 		command.Options.Add(showInfoOption);
 
-		command.Validators.Add(result => OptionsBinderValidator.Validate(
+		command.Validators.Add(result => validator.Validate(
 			result,
 			inputOption,
 			noKeyOption,

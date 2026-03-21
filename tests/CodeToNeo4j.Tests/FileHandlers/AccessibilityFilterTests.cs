@@ -8,6 +8,8 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class AccessibilityFilterTests
 {
+	private readonly AccessibilityFilter _sut = new();
+
 	[Theory]
 	[InlineData("public int Foo { get; set; }", Accessibility.Public, false)]
 	[InlineData("private int Foo { get; set; }", Accessibility.Public, true)]
@@ -30,7 +32,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(memberNode)!;
 
 		// Act
-		var result = AccessibilityFilter.IsAccessibilityBelowMinimum(symbol, minAccessibility);
+		var result = _sut.IsAccessibilityBelowMinimum(symbol, minAccessibility);
 
 		// Assert
 		result.ShouldBe(expectedResult);
@@ -55,7 +57,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(methodNode)!;
 
 		// Act — explicit interface impl has Private accessibility, but should NOT be filtered
-		var result = AccessibilityFilter.IsAccessibilityBelowMinimum(symbol, Accessibility.Public);
+		var result = _sut.IsAccessibilityBelowMinimum(symbol, Accessibility.Public);
 
 		// Assert
 		result.ShouldBeFalse();
@@ -80,7 +82,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(memberNode)!;
 
 		// Act
-		var result = AccessibilityFilter.IsExplicitInterfaceImplementation(symbol);
+		var result = _sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBe(expected);
@@ -105,7 +107,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(propertyNode)!;
 
 		// Act
-		var result = AccessibilityFilter.IsExplicitInterfaceImplementation(symbol);
+		var result = _sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBeTrue();
@@ -130,7 +132,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(eventNode)!;
 
 		// Act
-		var result = AccessibilityFilter.IsExplicitInterfaceImplementation(symbol);
+		var result = _sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBeTrue();
