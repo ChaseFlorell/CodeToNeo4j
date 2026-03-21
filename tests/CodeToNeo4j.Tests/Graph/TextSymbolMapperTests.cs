@@ -41,10 +41,17 @@ public class TextSymbolMapperTests
 	}
 
 	[Fact]
-	public void WhenCreateSymbol_ThenCommentsIsAlwaysNull()
+	public void GivenNoComments_WhenCreateSymbol_ThenCommentsIsNull()
 	{
 		var symbol = BuildSymbol();
 		symbol.Comments.ShouldBeNull();
+	}
+
+	[Fact]
+	public void GivenComments_WhenCreateSymbol_ThenCommentsIsSet()
+	{
+		var symbol = BuildSymbol(comments: "some comments");
+		symbol.Comments.ShouldBe("some comments");
 	}
 
 	[Fact]
@@ -137,6 +144,7 @@ public class TextSymbolMapperTests
 		int startLine = 1,
 		string accessibility = "Public",
 		string? documentation = null,
+		string? comments = null,
 		string? version = null)
 		=> _sut.CreateSymbol(
 			"file:Kind:name:1",
@@ -150,5 +158,6 @@ public class TextSymbolMapperTests
 			startLine,
 			accessibility,
 			documentation,
+			comments,
 			version);
 }

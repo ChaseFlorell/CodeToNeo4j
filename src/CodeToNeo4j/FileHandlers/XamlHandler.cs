@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Graph;
@@ -127,7 +128,7 @@ public partial class XamlHandler(
 			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
 		}
 
-		// Extract potential event handlers
+		// Extract potential event handlers and property attributes
 		foreach (var attr in element.Attributes())
 		{
 			if (IsEventHandler(attr.Name.LocalName))
@@ -153,6 +154,33 @@ public partial class XamlHandler(
 					relBuffer.Add(new(symbolKey, handlerKey, "BINDS_TO"));
 				}
 			}
+			else if (IsPropertyAttribute(attr))
+			{
+				if (Accessibility.Public >= minAccessibility)
+				{
+					var attrName = attr.Name.LocalName;
+					var attrValue = attr.Value;
+					var bindingPath = ExtractBindingPath(attrValue);
+					var attrKey = textSymbolMapper.BuildKey(fileKey, "XamlAttribute", $"{name}.{attrName}", startLine);
+
+					var attrRecord = textSymbolMapper.CreateSymbol(
+						attrKey,
+						attrName,
+						"XamlAttribute",
+						"attribute",
+						$"{name}.{attrName}={attrValue}",
+						fileKey,
+						relativePath,
+						fileNamespace,
+						startLine,
+						documentation: attrValue,
+						comments: bindingPath,
+						language: Language, technology: Technology);
+
+					symbolBuffer.Add(attrRecord);
+					relBuffer.Add(new(symbolKey, attrKey, "SETS_PROPERTY"));
+				}
+			}
 		}
 
 		foreach (var child in element.Elements())
@@ -165,8 +193,50 @@ public partial class XamlHandler(
 	{
 		return element.Attributes().FirstOrDefault(a =>
 			a.Name.LocalName == localName &&
-			(a.Name.NamespaceName == string.Empty || XamlNamespaces.Contains(a.Name.NamespaceName))
+			(a.Name.NamespaceName == string.Empty || _xamlNamespaces.Contains(a.Name.NamespaceName))
 		);
+	}
+
+	private static bool IsPropertyAttribute(XAttribute attr)
+	{
+		// Skip namespace declarations (xmlns:x="..." or xmlns="...")
+		if (attr.IsNamespaceDeclaration)
+		{
+			return false;
+		}
+
+		// Skip x:-prefixed attributes (x:Class, x:Name, x:Key, etc.)
+		if (_xamlNamespaces.Contains(attr.Name.NamespaceName))
+		{
+			return false;
+		}
+
+		// Skip event handlers (already captured separately)
+		if (IsEventHandler(attr.Name.LocalName))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	internal static string? ExtractBindingPath(string value)
+	{
+		var match = BindingRegex().Match(value);
+		if (!match.Success)
+		{
+			return null;
+		}
+
+		var path = match.Groups[1].Value;
+
+		// Handle named Path= syntax: {Binding Path=Items.Count}
+		if (path.StartsWith("Path=", StringComparison.Ordinal))
+		{
+			path = path.Substring(5);
+		}
+
+		return path;
 	}
 
 	private static bool IsEventHandler(string attrName)
@@ -180,7 +250,10 @@ public partial class XamlHandler(
 			   attrName == "Command";
 	}
 
-	private static readonly string[] XamlNamespaces =
+	[GeneratedRegex(@"^\{Binding\s+(\S+?)(?:\s*,.*)?}$")]
+	private static partial Regex BindingRegex();
+
+	private static readonly string[] _xamlNamespaces =
 	[
 		"http://schemas.microsoft.com/winfx/2009/xaml",
 		"http://schemas.microsoft.com/winfx/2006/xaml",
