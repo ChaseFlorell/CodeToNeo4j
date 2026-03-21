@@ -3,6 +3,7 @@ using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.Dart.Bridge;
+using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
@@ -54,6 +55,11 @@ public static class ContainerModule
 		services.AddSingleton<IConfiguration>(configuration);
 		services.Configure<HandlersConfiguration>(configuration);
 		services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+		services.AddSingleton<IXmlAttributeExtractor, XmlAttributeExtractor>();
+		services.AddSingleton<INamespaceTagParser, NamespaceTagParser>();
+		services.AddSingleton<IAccessibilityFilter, AccessibilityFilter>();
+		services.AddSingleton<IPubspecParser, PubspecParser>();
 
 		services.AddSingleton<ICypherService, CypherService>();
 		services.AddSingleton<IFileService, FileService>();

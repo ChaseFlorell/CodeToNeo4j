@@ -28,8 +28,8 @@ public class XamlRoslynTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
-		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), NullLogger<XamlHandler>.Instance, CreateConfigService());
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
+		XamlHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), new XmlAttributeExtractor(), NullLogger<XamlHandler>.Instance, CreateConfigService());
 
 		var xamlFilePath = "MainWindow.xaml";
 		var xamlContent = @"<Window x:Class=""MyApp.MainWindow""

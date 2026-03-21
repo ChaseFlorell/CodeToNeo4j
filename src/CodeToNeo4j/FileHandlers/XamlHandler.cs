@@ -13,6 +13,7 @@ public partial class XamlHandler(
 	IRoslynSymbolProcessor symbolProcessor,
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
+	IXmlAttributeExtractor xmlAttributeExtractor,
 	ILogger<XamlHandler> logger,
 	IConfigurationService configurationService)
 	: DocumentHandlerBase(fileSystem, configurationService)
@@ -158,7 +159,7 @@ public partial class XamlHandler(
 		// Extract property attributes
 		if (Accessibility.Public >= minAccessibility)
 		{
-			XmlAttributeExtractor.ExtractAttributes(
+			xmlAttributeExtractor.ExtractAttributes(
 				element, name, symbolKey, startLine,
 				fileKey, relativePath, fileNamespace,
 				textSymbolMapper, symbolBuffer, relBuffer,

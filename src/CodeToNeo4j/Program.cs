@@ -107,6 +107,7 @@ public class Program
 
 		OptionsBinder binder = new(
 			new System.IO.Abstractions.FileSystem(),
+			new OptionsBinderValidator(),
 			inputOption,
 			uriOption,
 			userOption,

@@ -1,8 +1,13 @@
 namespace CodeToNeo4j.Dart.Yaml;
 
-public static class PubspecParser
+public interface IPubspecParser
 {
-	public static PubspecInfo Parse(string content)
+	PubspecInfo Parse(string content);
+}
+
+public class PubspecParser : IPubspecParser
+{
+	public PubspecInfo Parse(string content)
 	{
 		var name = string.Empty;
 		string? sdkConstraint = null;

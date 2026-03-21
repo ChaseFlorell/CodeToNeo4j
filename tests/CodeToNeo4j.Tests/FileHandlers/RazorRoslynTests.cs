@@ -27,7 +27,7 @@ public class RazorRoslynTests
 		MockFileSystem fileSystem = new();
 		SymbolMapper symbolMapper = new();
 		MemberDependencyExtractor dependencyExtractor = new(symbolMapper);
-		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor);
+		RoslynSymbolProcessor symbolProcessor = new(symbolMapper, dependencyExtractor, new AccessibilityFilter());
 		RazorHandler sut = new(symbolProcessor, fileSystem, new TextSymbolMapper(), CreateConfigService());
 
 		var razorFilePath = "Pages/Index.razor";

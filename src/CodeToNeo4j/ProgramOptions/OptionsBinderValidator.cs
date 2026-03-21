@@ -5,9 +5,28 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeToNeo4j.ProgramOptions;
 
-public static class OptionsBinderValidator
+public interface IOptionsBinderValidator
 {
-	public static void Validate(
+	void Validate(
+		in CommandResult result,
+		Option<string?> inputOption,
+		Option<bool> noKeyOption,
+		Option<LogLevel> logLevelOption,
+		Option<bool> debugOption,
+		Option<bool> verboseOption,
+		Option<bool> quietOption,
+		Option<bool> purgeDataOption,
+		Option<bool> skipDependenciesOption,
+		Option<Accessibility> minAccessibilityOption,
+		Option<string> passOption,
+		Option<bool> showVersionOption,
+		Option<bool> showSupportedFilesOption,
+		Option<bool> showInfoOption);
+}
+
+public class OptionsBinderValidator : IOptionsBinderValidator
+{
+	public void Validate(
 		in CommandResult result,
 		Option<string?> inputOption,
 		Option<bool> noKeyOption,

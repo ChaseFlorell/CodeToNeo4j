@@ -2,7 +2,12 @@ using System.Text;
 
 namespace CodeToNeo4j.Graph;
 
-public static class NamespaceTagParser
+public interface INamespaceTagParser
+{
+	IReadOnlyList<string> ParseTags(string? @namespace);
+}
+
+public class NamespaceTagParser : INamespaceTagParser
 {
 	/// <summary>
 	/// Segments that must be returned exactly as written, bypassing all splitting rules.
@@ -21,7 +26,7 @@ public static class NamespaceTagParser
 	///   "MyApp.HTTPClient.Core"     → ["My_App", "HTTP_Client", "Core"]
 	///   "MyApp.iOS.Views"           → ["My_App", "iOS", "Views"]
 	/// </summary>
-	public static IReadOnlyList<string> ParseTags(string? @namespace)
+	public IReadOnlyList<string> ParseTags(string? @namespace)
 	{
 		if (string.IsNullOrWhiteSpace(@namespace))
 		{

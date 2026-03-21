@@ -2,14 +2,21 @@ using Microsoft.CodeAnalysis;
 
 namespace CodeToNeo4j.FileHandlers;
 
-internal static class AccessibilityFilter
+public interface IAccessibilityFilter
 {
-	internal static bool IsAccessibilityBelowMinimum(ISymbol symbol, Accessibility minAccessibility) =>
+	bool IsAccessibilityBelowMinimum(ISymbol symbol, Accessibility minAccessibility);
+
+	bool IsExplicitInterfaceImplementation(ISymbol symbol);
+}
+
+public class AccessibilityFilter : IAccessibilityFilter
+{
+	public bool IsAccessibilityBelowMinimum(ISymbol symbol, Accessibility minAccessibility) =>
 		symbol.DeclaredAccessibility < minAccessibility
 		&& symbol.DeclaredAccessibility != Accessibility.NotApplicable
 		&& !IsExplicitInterfaceImplementation(symbol);
 
-	internal static bool IsExplicitInterfaceImplementation(ISymbol symbol) =>
+	public bool IsExplicitInterfaceImplementation(ISymbol symbol) =>
 		symbol switch
 		{
 			IMethodSymbol method => method.ExplicitInterfaceImplementations.Any(),

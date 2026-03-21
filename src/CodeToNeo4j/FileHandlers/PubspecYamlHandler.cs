@@ -10,6 +10,7 @@ namespace CodeToNeo4j.FileHandlers;
 public class PubspecYamlHandler(
 	IFileSystem fileSystem,
 	ITextSymbolMapper textSymbolMapper,
+	IPubspecParser pubspecParser,
 	ILogger<PubspecYamlHandler> logger,
 	IConfigurationService configurationService) : DocumentHandlerBase(fileSystem, configurationService)
 {
@@ -39,7 +40,7 @@ public class PubspecYamlHandler(
 
 		try
 		{
-			var pubspec = PubspecParser.Parse(content);
+			var pubspec = pubspecParser.Parse(content);
 
 			foreach (var dep in pubspec.Dependencies)
 			{

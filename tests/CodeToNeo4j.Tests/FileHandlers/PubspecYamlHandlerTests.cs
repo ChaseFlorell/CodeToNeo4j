@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.Graph;
 using FakeItEasy;
@@ -25,7 +26,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		const string content = """
 		                       name: my_app
@@ -69,7 +70,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		const string content = "name: empty_app\n";
 		var filePath = "/project/pubspec.yaml";
@@ -103,7 +104,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		// Act & Assert
 		sut.CanHandle(filePath).ShouldBe(expected);
@@ -114,7 +115,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		// Dependency with no version value (empty after colon)
 		const string content = """
@@ -153,7 +154,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		const string content = "{ this is: [not valid yaml: - broken";
 		var filePath = "/project/pubspec.yaml";
@@ -185,7 +186,7 @@ public class PubspecYamlHandlerTests
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
+		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), new PubspecParser(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
 
 		const string content = """
 		                       name: test_app

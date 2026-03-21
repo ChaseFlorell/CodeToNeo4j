@@ -1,11 +1,31 @@
 using System.Xml.Linq;
-using CodeToNeo4j.Graph;
 
-namespace CodeToNeo4j.FileHandlers;
+namespace CodeToNeo4j.Graph;
 
-internal static class XmlAttributeExtractor
+public interface IXmlAttributeExtractor
 {
-	internal static void ExtractAttributes(
+	void ExtractAttributes(
+		XElement element,
+		string elementName,
+		string parentKey,
+		int startLine,
+		string fileKey,
+		string relativePath,
+		string? fileNamespace,
+		ITextSymbolMapper textSymbolMapper,
+		ICollection<Symbol> symbolBuffer,
+		ICollection<Relationship> relBuffer,
+		string kindToken,
+		string relType,
+		Func<XAttribute, bool>? skipPredicate,
+		Func<string, string?>? commentExtractor,
+		string language,
+		string technology);
+}
+
+public class XmlAttributeExtractor : IXmlAttributeExtractor
+{
+	public void ExtractAttributes(
 		XElement element,
 		string elementName,
 		string parentKey,
