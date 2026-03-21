@@ -10,7 +10,7 @@ namespace CodeToNeo4j.Tests.Validation;
 
 public class OptionsBinderValidatorTests
 {
-	private static (OptionsBinderValidator sut, Func<string[], CommandResult> getResult, Action<CommandResult> validate) CreateTestHarness()
+	private static (Func<string[], CommandResult> getResult, Action<CommandResult> validate) CreateTestHarness()
 	{
 		OptionsBinderValidator sut = new();
 
@@ -78,14 +78,14 @@ public class OptionsBinderValidatorTests
 				showInfoOption);
 		}
 
-		return (sut, GetCommandResult, Validate);
+		return (GetCommandResult, Validate);
 	}
 
 	[Fact]
 	public void GivenMultipleLogOptions_WhenValidating_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--input", "test.sln", "--password", "pass", "--debug", "--quiet"]);
 
 		// act
@@ -99,7 +99,7 @@ public class OptionsBinderValidatorTests
 	public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--input", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies"]);
 
 		// act
@@ -113,7 +113,7 @@ public class OptionsBinderValidatorTests
 	public void GivenPurgeWithMinAccessibility_WhenValidating_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--input", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public"]);
 
 		// act
@@ -127,7 +127,7 @@ public class OptionsBinderValidatorTests
 	public void GivenValidOptions_WhenValidating_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--input", "test.sln", "--password", "pass", "--debug", "--purge-data"]);
 
 		// act
@@ -141,7 +141,7 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenPurgeDataAndNoKey_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--purge-data", "--no-key", "--password", "pass"]);
 
 		// act
@@ -155,7 +155,7 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenPurgeDataWithoutNoKey_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange — --input is now optional; auto-detection provides the repo key
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--purge-data", "--password", "pass"]);
 
 		// act
@@ -169,7 +169,7 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenNoPurgeData_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange — --input is now optional; auto-detection resolves at bind time
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--password", "pass"]);
 
 		// act
@@ -183,7 +183,7 @@ public class OptionsBinderValidatorTests
 	public void GivenNoPassword_WhenNoPurgeData_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult(["--input", "test.sln"]);
 
 		// act
@@ -200,7 +200,7 @@ public class OptionsBinderValidatorTests
 	public void GivenInfoSwitch_WhenNoOtherRequiredOptions_ThenShouldNotHaveErrorMessage(string infoSwitch)
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult([infoSwitch]);
 
 		// act
@@ -216,7 +216,7 @@ public class OptionsBinderValidatorTests
 	public void GivenAlias_WhenUsedInsteadOfInput_ThenShouldNotHaveErrorMessage(string alias)
 	{
 		// arrange
-		var (_, getResult, validate) = CreateTestHarness();
+		var (getResult, validate) = CreateTestHarness();
 		var result = getResult([alias, "test.sln", "--password", "pass"]);
 
 		// act
