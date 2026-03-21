@@ -17,7 +17,8 @@ public interface IRoslynSymbolProcessor
 		ICollection<Symbol> symbolBuffer,
 		ICollection<Relationship> relBuffer,
 		Accessibility minAccessibility,
-		string language = "unknown");
+		string language = "unknown",
+		string technology = "unknown");
 }
 
 public class RoslynSymbolProcessor(
@@ -34,7 +35,8 @@ public class RoslynSymbolProcessor(
 		ICollection<Symbol> symbolBuffer,
 		ICollection<Relationship> relBuffer,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language = "unknown",
+		string technology = "unknown")
 	{
 		var rootNode = syntaxTree.GetRoot();
 
@@ -101,7 +103,7 @@ public class RoslynSymbolProcessor(
 				fileNamespace = symbol?.ContainingNamespace?.ToDisplayString();
 			}
 
-			ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, language);
+			ProcessTypeDeclaration(typeDecl, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility, language, technology);
 		}
 	}
 
@@ -115,14 +117,15 @@ public class RoslynSymbolProcessor(
 		ICollection<Symbol> symbolBuffer,
 		ICollection<Relationship> relBuffer,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language,
+		string technology)
 	{
 		if (semanticModel.GetDeclaredSymbol(typeDecl)
 				is INamedTypeSymbol typeSymbol
 			&& (typeSymbol.DeclaredAccessibility >= minAccessibility
 				|| typeSymbol.DeclaredAccessibility == Accessibility.NotApplicable))
 		{
-			var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, typeSymbol, typeDecl, language);
+			var typeRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, typeSymbol, typeDecl, language, technology);
 			symbolBuffer.Add(typeRec);
 
 			switch (typeDecl)
@@ -130,13 +133,13 @@ public class RoslynSymbolProcessor(
 				case TypeDeclarationSyntax tds:
 					{
 						ProcessTypeDeclarationSyntax(semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, tds, typeRec,
-							minAccessibility, language);
+							minAccessibility, language, technology);
 						break;
 					}
 				case EnumDeclarationSyntax eds:
 					{
 						ProcessEnumDeclarationSyntax(semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, eds, typeRec,
-							minAccessibility, language);
+							minAccessibility, language, technology);
 						break;
 					}
 			}
@@ -145,7 +148,7 @@ public class RoslynSymbolProcessor(
 
 	private void ProcessEnumDeclarationSyntax(SemanticModel semanticModel, string? repoKey, string fileKey, string relativePath,
 		string? fileNamespace, ICollection<Symbol> symbolBuffer, ICollection<Relationship> relBuffer, EnumDeclarationSyntax eds, Symbol typeRec,
-		Accessibility minAccessibility, string language = "unknown")
+		Accessibility minAccessibility, string language, string technology)
 	{
 		foreach (var member in eds.Members)
 		{
@@ -155,7 +158,7 @@ public class RoslynSymbolProcessor(
 				&& (memberSymbol.DeclaredAccessibility >= minAccessibility
 					|| memberSymbol.DeclaredAccessibility == Accessibility.NotApplicable))
 			{
-				var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, member, language);
+				var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, member, language, technology);
 				symbolBuffer.Add(memberRec);
 
 				relBuffer.Add(new(typeRec.Key, memberRec.Key, "CONTAINS"));
@@ -174,21 +177,22 @@ public class RoslynSymbolProcessor(
 		TypeDeclarationSyntax tds,
 		Symbol typeRec,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language,
+		string technology)
 	{
 		foreach (var member in tds.Members)
 		{
 			if (member is EventFieldDeclarationSyntax efds)
 			{
 				ProcessEventFieldDeclaration(efds, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, typeRec,
-					minAccessibility, language);
+					minAccessibility, language, technology);
 				continue;
 			}
 
 			if (member is FieldDeclarationSyntax fds)
 			{
 				ProcessFieldDeclaration(fds, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, typeRec,
-					minAccessibility, language);
+					minAccessibility, language, technology);
 				continue;
 			}
 
@@ -201,7 +205,7 @@ public class RoslynSymbolProcessor(
 			if (memberSymbol is not null)
 			{
 				ProcessMemberSymbol(memberSymbol, member, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-					typeRec, minAccessibility, language);
+					typeRec, minAccessibility, language, technology);
 			}
 		}
 	}
@@ -217,14 +221,15 @@ public class RoslynSymbolProcessor(
 		ICollection<Relationship> relBuffer,
 		Symbol typeRec,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language,
+		string technology)
 	{
 		foreach (var variable in fds.Declaration.Variables)
 		{
 			if (semanticModel.GetDeclaredSymbol(variable) is IFieldSymbol variableSymbol)
 			{
 				ProcessMemberSymbol(variableSymbol, variable, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-					typeRec, minAccessibility, language);
+					typeRec, minAccessibility, language, technology);
 			}
 		}
 	}
@@ -240,14 +245,15 @@ public class RoslynSymbolProcessor(
 		ICollection<Relationship> relBuffer,
 		Symbol typeRec,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language,
+		string technology)
 	{
 		foreach (var variable in efds.Declaration.Variables)
 		{
 			if (semanticModel.GetDeclaredSymbol(variable) is IEventSymbol variableSymbol)
 			{
 				ProcessMemberSymbol(variableSymbol, variable, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-					typeRec, minAccessibility, language);
+					typeRec, minAccessibility, language, technology);
 			}
 		}
 	}
@@ -264,14 +270,15 @@ public class RoslynSymbolProcessor(
 		ICollection<Relationship> relBuffer,
 		Symbol typeRec,
 		Accessibility minAccessibility,
-		string language = "unknown")
+		string language,
+		string technology)
 	{
 		if (AccessibilityFilter.IsAccessibilityBelowMinimum(memberSymbol, minAccessibility))
 		{
 			return;
 		}
 
-		var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, memberSyntax, language);
+		var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, memberSyntax, language, technology);
 		symbolBuffer.Add(memberRec);
 
 		relBuffer.Add(new(typeRec.Key, memberRec.Key, "CONTAINS"));

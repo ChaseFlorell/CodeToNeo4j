@@ -108,6 +108,27 @@ public class MyClass { }";
 	}
 
 	[Fact]
+	public void GivenTechnology_WhenToSymbolRecordCalled_ThenTechnologyIsSet()
+	{
+		// Arrange
+		SymbolMapper sut = new();
+		var code = "namespace MyNamespace; public class MyClass { }";
+		var syntaxTree = CSharpSyntaxTree.ParseText(code);
+		var compilation = CSharpCompilation.Create("Test")
+			.AddSyntaxTrees(syntaxTree);
+		var semanticModel = compilation.GetSemanticModel(syntaxTree);
+		var node = syntaxTree.GetRoot().DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().First();
+		var symbol = semanticModel.GetDeclaredSymbol(node);
+
+		// Act
+		var result = sut.ToSymbolRecord("repo", "file", "path.cs", "MyNamespace", symbol!, node, "csharp", "dotnet");
+
+		// Assert
+		result.Technology.ShouldBe("dotnet");
+		result.Language.ShouldBe("csharp");
+	}
+
+	[Fact]
 	public void GivenMethodSymbol_WhenToSymbolRecordCalled_ThenCorrectNamespaceReturned()
 	{
 		// Arrange

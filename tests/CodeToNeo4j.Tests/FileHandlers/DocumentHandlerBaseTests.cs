@@ -100,6 +100,21 @@ public class DocumentHandlerBaseTests
 		sut.Language.ShouldBe(language);
 	}
 
+	[Theory]
+	[InlineData("dotnet")]
+	[InlineData("node")]
+	[InlineData("flutter")]
+	public void GivenConfigWithTechnology_WhenTechnologyRead_ThenReturnsConfiguredTechnology(string technology)
+	{
+		IConfigurationService configService = A.Fake<IConfigurationService>();
+		A.CallTo(() => configService.GetHandlerConfiguration(A<string>._))
+			.Returns(new HandlerConfiguration([".test"], "test", technology));
+
+		TestHandler sut = new(new MockFileSystem(), configService);
+
+		sut.Technology.ShouldBe(technology);
+	}
+
 	[Fact]
 	public void GivenConfigWithMultipleExtensions_WhenFileExtensionsRead_ThenReturnsAllExtensions()
 	{

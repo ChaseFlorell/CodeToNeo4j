@@ -70,7 +70,7 @@ public partial class RazorHandler(
 					}
 
 					symbolProcessor.ProcessSyntaxTree(tree, semanticModel, repoKey, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer,
-						minAccessibility, Language);
+						minAccessibility, Language, Technology);
 				}
 			}
 		}
@@ -119,7 +119,7 @@ public partial class RazorHandler(
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));

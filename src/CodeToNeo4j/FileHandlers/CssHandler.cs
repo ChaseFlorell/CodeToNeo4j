@@ -76,7 +76,7 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 				relativePath,
 				fileNamespace,
 				startLine,
-				language: Language);
+				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
 			relBuffer.Add(new(fileKey, key, "CONTAINS"));

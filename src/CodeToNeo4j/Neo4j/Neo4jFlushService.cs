@@ -32,6 +32,7 @@ public class Neo4jFlushService(
 			["tags"] = file.Metadata.Tags.ToArray(),
 			["repoKey"] = file.RepoKey,
 			["language"] = file.Language,
+			["technology"] = file.Technology,
 			["targetFrameworks"] = file.TargetFrameworks?.ToArray() ?? Array.Empty<string>()
 		}).ToArray();
 
@@ -70,7 +71,8 @@ public class Neo4jFlushService(
 			["documentation"] = s.Documentation,
 			["comments"] = s.Comments,
 			["version"] = s.Version,
-			["language"] = s.Language
+			["language"] = s.Language,
+			["technology"] = s.Technology
 		}).ToArray();
 
 		var relBatch = relationships.Select(r => new Dictionary<string, object?>

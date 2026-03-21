@@ -11,6 +11,7 @@ public abstract class DocumentHandlerBase : IDocumentHandler
 	public string FileExtension => Configuration.FileExtensions[0];
 	public string[] FileExtensions => Configuration.FileExtensions;
 	public string Language => Configuration.Language;
+	public string Technology => Configuration.Technology;
 
 	protected HandlerConfiguration Configuration { get; }
 

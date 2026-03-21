@@ -108,6 +108,31 @@ public class TextSymbolMapperTests
 		symbol.EndLine.ShouldBe(5);
 	}
 
+	[Fact]
+	public void GivenTechnology_WhenCreateSymbol_ThenTechnologyIsSet()
+	{
+		var symbol = _sut.CreateSymbol(
+			"file:Kind:name:1",
+			"name",
+			"Kind",
+			"class",
+			"name",
+			"file",
+			"file",
+			null,
+			1,
+			technology: "dotnet");
+
+		symbol.Technology.ShouldBe("dotnet");
+	}
+
+	[Fact]
+	public void GivenNoTechnology_WhenCreateSymbol_ThenTechnologyDefaultsToUnknown()
+	{
+		var symbol = BuildSymbol();
+		symbol.Technology.ShouldBe("unknown");
+	}
+
 	private Symbol BuildSymbol(
 		int startLine = 1,
 		string accessibility = "Public",
