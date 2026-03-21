@@ -65,6 +65,7 @@ jobs:
       - name: Push to GitHub Packages
         env:
           REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/release_push-to-github-packages.sh
 
       - name: Generate Release Notes
