@@ -1,10 +1,14 @@
 using System.IO.Abstractions;
 using System.Threading.Channels;
-using CodeToNeo4j.FileHandlers;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
+using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Progress;
 using CodeToNeo4j.Solution;
+using CodeToNeo4j.Solution.Discovery;
+using CodeToNeo4j.Solution.Ingestion;
+using CodeToNeo4j.Solution.Workspace;
+using CodeToNeo4j.Technologies;
 using CodeToNeo4j.VersionControl;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;

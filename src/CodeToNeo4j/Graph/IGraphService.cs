@@ -1,5 +1,5 @@
+using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.VersionControl;
-
 namespace CodeToNeo4j.Graph;
 
 public interface IGraphService
