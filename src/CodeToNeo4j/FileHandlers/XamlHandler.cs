@@ -127,7 +127,7 @@ public partial class XamlHandler(
 			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
 		}
 
-		// Extract potential event handlers and property attributes
+		// Extract event handlers
 		foreach (var attr in element.Attributes())
 		{
 			if (IsEventHandler(attr.Name.LocalName))
@@ -153,33 +153,18 @@ public partial class XamlHandler(
 					relBuffer.Add(new(symbolKey, handlerKey, "BINDS_TO"));
 				}
 			}
-			else if (IsPropertyAttribute(attr))
-			{
-				if (Accessibility.Public >= minAccessibility)
-				{
-					var attrName = attr.Name.LocalName;
-					var attrValue = attr.Value;
-					var bindingPath = ExtractBindingPath(attrValue);
-					var attrKey = textSymbolMapper.BuildKey(fileKey, "XamlAttribute", $"{name}.{attrName}", startLine);
+		}
 
-					var attrRecord = textSymbolMapper.CreateSymbol(
-						attrKey,
-						attrName,
-						"XamlAttribute",
-						"attribute",
-						$"{name}.{attrName}={attrValue}",
-						fileKey,
-						relativePath,
-						fileNamespace,
-						startLine,
-						documentation: attrValue,
-						comments: bindingPath,
-						language: Language, technology: Technology);
-
-					symbolBuffer.Add(attrRecord);
-					relBuffer.Add(new(symbolKey, attrKey, "SETS_PROPERTY"));
-				}
-			}
+		// Extract property attributes
+		if (Accessibility.Public >= minAccessibility)
+		{
+			XmlAttributeExtractor.ExtractAttributes(
+				element, name, symbolKey, startLine,
+				fileKey, relativePath, fileNamespace,
+				textSymbolMapper, symbolBuffer, relBuffer,
+				"XamlAttribute", "SETS_PROPERTY",
+				skipPredicate: ShouldSkipAttribute, commentExtractor: ExtractBindingPath,
+				Language, Technology);
 		}
 
 		foreach (var child in element.Elements())
@@ -196,21 +181,27 @@ public partial class XamlHandler(
 		);
 	}
 
-	private static bool IsPropertyAttribute(XAttribute attr)
+	private static bool ShouldSkipAttribute(XAttribute attr)
 	{
 		// Skip namespace declarations (xmlns:x="..." or xmlns="...")
 		if (attr.IsNamespaceDeclaration)
 		{
-			return false;
+			return true;
 		}
 
 		// Skip x:-prefixed attributes (x:Class, x:Name, x:Key, etc.)
 		if (_xamlNamespaces.Contains(attr.Name.NamespaceName))
 		{
-			return false;
+			return true;
 		}
 
-		return true;
+		// Skip event handlers (already captured separately)
+		if (IsEventHandler(attr.Name.LocalName))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	internal static string? ExtractBindingPath(string value)
