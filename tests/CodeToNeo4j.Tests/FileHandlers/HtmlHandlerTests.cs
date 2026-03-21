@@ -93,31 +93,4 @@ public class HtmlHandlerTests
 		relBuffer.ShouldBeEmpty();
 	}
 
-	[Theory]
-	[InlineData("<!DOCTYPE html><html></html>", "html5")]
-	[InlineData("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\"><html></html>", "html4.01")]
-	[InlineData("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"><html></html>", "xhtml1.0")]
-	[InlineData("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\"><html></html>", "xhtml1.1")]
-	[InlineData("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"><html></html>", "html3.2")]
-	[InlineData("<html></html>", "html5")]
-	public void GivenHtmlContent_WhenDetectHtmlVersionCalled_ThenReturnsExpectedVersion(string content, string expected)
-	{
-		var result = HtmlHandler.DetectHtmlVersion(content);
-		result.ShouldContain(expected);
-	}
-
-	[Fact]
-	public async Task GivenHtml5Page_WhenHandleCalled_ThenFileResultContainsHtml5TargetFramework()
-	{
-		MockFileSystem fileSystem = new();
-		HtmlHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = "<!DOCTYPE html><html><body></body></html>";
-		var filePath = "index.html";
-		fileSystem.AddFile(filePath, new(content));
-
-		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
-
-		result.TargetFrameworks.ShouldNotBeNull();
-		result.TargetFrameworks.ShouldContain("html5");
-	}
 }

@@ -2,7 +2,6 @@ using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Models;
-using CodeToNeo4j.Dart.Yaml;
 using CodeToNeo4j.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
@@ -96,32 +95,7 @@ public class DartHandler(
 			relBuffer.Add(new(fromKey, toKey, rel.RelType));
 		}
 
-		return new(fileNamespace, fileKey, TargetFrameworks: GetDartSdkConstraint(projectRoot));
-	}
-
-	private HashSet<string>? GetDartSdkConstraint(string projectRoot)
-	{
-		var pubspecPath = _fileSystem.Path.Combine(projectRoot, "pubspec.yaml");
-		if (!_fileSystem.File.Exists(pubspecPath))
-		{
-			return null;
-		}
-
-		try
-		{
-			var content = _fileSystem.File.ReadAllText(pubspecPath);
-			var pubspec = PubspecParser.Parse(content);
-			if (!string.IsNullOrEmpty(pubspec.SdkConstraint))
-			{
-				return new HashSet<string>(StringComparer.Ordinal) { pubspec.SdkConstraint };
-			}
-		}
-		catch
-		{
-			// ignore parse errors
-		}
-
-		return null;
+		return new(fileNamespace, fileKey);
 	}
 
 	private readonly IFileSystem _fileSystem = fileSystem;

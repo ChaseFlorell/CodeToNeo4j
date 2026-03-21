@@ -11,6 +11,5 @@ public record FileMetaData(
 	string? RepoKey,
 	string? Namespace,
 	string Language = "unknown",
-	string Technology = "unknown",
-	IReadOnlySet<string>? TargetFrameworks = null
+	string Technology = "unknown"
 );

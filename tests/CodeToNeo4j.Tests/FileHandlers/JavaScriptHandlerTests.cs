@@ -514,21 +514,4 @@ function doWork() {
 		sut.CanHandle("app.ts").ShouldBeFalse();
 	}
 
-	[Theory]
-	[InlineData("const x = obj?.foo ?? 'default';", "es2020")]
-	[InlineData("async function foo() { await bar(); }", "es2017")]
-	[InlineData("import { x } from './x.js'; const y = () => {};", "es2015")]
-	[InlineData("function foo() { var x = 1; return x; }", "es5")]
-	public async Task GivenJsWithFeatures_WhenHandleCalled_ThenFileResultContainsExpectedEsVersion(string content, string expected)
-	{
-		MockFileSystem fileSystem = new();
-		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var filePath = "test.js";
-		fileSystem.AddFile(filePath, new(content));
-
-		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
-
-		result.TargetFrameworks.ShouldNotBeNull();
-		result.TargetFrameworks.ShouldContain(expected);
-	}
 }

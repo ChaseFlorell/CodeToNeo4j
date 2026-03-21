@@ -157,7 +157,6 @@ public class SolutionProcessor(
 		List<Symbol> symbolBuffer = new(batchSize);
 		List<Relationship> relBuffer = new(batchSize);
 		List<UrlNode> urlBuffer = new(batchSize);
-		List<TargetFrameworkBatch> tfmBuffer = new(batchSize);
 		var currentFileIndex = 0;
 		var totalSymbols = 0;
 		var totalRelationships = 0;
@@ -169,35 +168,27 @@ public class SolutionProcessor(
 			relBuffer.AddRange(result.Relationships);
 			urlBuffer.AddRange(result.UrlNodes);
 
-			if (result.TargetFrameworks is { Count: > 0 })
-			{
-				tfmBuffer.Add(new(
-					result.File.FileKey,
-					result.Symbols.Select(s => s.Key).ToArray(),
-					result.TargetFrameworks.ToArray()));
-			}
-
 			totalSymbols += result.Symbols.Count;
 			totalRelationships += result.Relationships.Count;
 
 			if (fileBuffer.Count >= batchSize || symbolBuffer.Count >= batchSize)
 			{
-				await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, tfmBuffer, databaseName).ConfigureAwait(false);
+				await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
 			}
 
 			progressService.ReportProgress(++currentFileIndex, totalFiles, result.RelativePath);
 		}
 
-		if (fileBuffer.Count > 0 || symbolBuffer.Count > 0 || urlBuffer.Count > 0 || tfmBuffer.Count > 0)
+		if (fileBuffer.Count > 0 || symbolBuffer.Count > 0 || urlBuffer.Count > 0)
 		{
-			await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, tfmBuffer, databaseName).ConfigureAwait(false);
+			await FlushBuffers(fileBuffer, symbolBuffer, relBuffer, urlBuffer, databaseName).ConfigureAwait(false);
 		}
 
 		return (totalSymbols, totalRelationships);
 	}
 
 	private async Task FlushBuffers(List<FileMetaData> files, List<Symbol> symbols, List<Relationship> relationships, List<UrlNode> urlNodes,
-		List<TargetFrameworkBatch> tfmBatches, string databaseName)
+		string databaseName)
 	{
 		if (files.Count > 0)
 		{
@@ -216,12 +207,6 @@ public class SolutionProcessor(
 		{
 			await graphService.UpsertDependencyUrls(urlNodes, databaseName).ConfigureAwait(false);
 			urlNodes.Clear();
-		}
-
-		if (tfmBatches.Count > 0)
-		{
-			await graphService.FlushTargetFrameworks(tfmBatches, databaseName).ConfigureAwait(false);
-			tfmBatches.Clear();
 		}
 	}
 
@@ -304,11 +289,9 @@ public class SolutionProcessor(
 
 		var language = handler?.Language ?? "unknown";
 		var technology = handler?.Technology ?? "unknown";
-		// MSBuild-discovered TFMs take priority; fall back to handler-detected TFMs
-		var effectiveTfms = file.TargetFrameworks is { Count: > 0 } ? file.TargetFrameworks : fileResult?.TargetFrameworks;
-		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, technology, effectiveTfms);
+		FileMetaData fileRecord = new(finalFileKey, fileName, relativePath, fileHash, metadata, repoKey, finalNamespace, language, technology);
 
-		return new(fileRecord, symbols, relationships, urlNodes, relativePath, effectiveTfms);
+		return new(fileRecord, symbols, relationships, urlNodes, relativePath);
 	}
 
 	internal static ProcessedFile[] FilterFiles(IEnumerable<ProcessedFile> discoveredFiles, HashSet<string>? changedFiles)
@@ -341,8 +324,7 @@ public class SolutionProcessor(
 		List<Symbol> Symbols,
 		List<Relationship> Relationships,
 		List<UrlNode> UrlNodes,
-		string RelativePath,
-		IReadOnlySet<string>? TargetFrameworks = null);
+		string RelativePath);
 
 	internal sealed class HandlerLookup
 	{

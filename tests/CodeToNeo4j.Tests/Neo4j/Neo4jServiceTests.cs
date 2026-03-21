@@ -180,21 +180,6 @@ public class Neo4jServiceTests
 	}
 
 
-	[Fact]
-	public async Task GivenFlushTargetFrameworks_WhenCalled_ThenDelegatesToFlushService()
-	{
-		// Arrange
-		var flushService = A.Fake<INeo4jFlushService>();
-		var sut = CreateService(flushService: flushService);
-		var batches = new[] { new TargetFrameworkBatch("fileKey", ["sym1"], ["net9.0"]) };
-
-		// Act
-		await sut.FlushTargetFrameworks(batches, "testdb");
-
-		// Assert
-		A.CallTo(() => flushService.FlushTargetFrameworks(A<IEnumerable<TargetFrameworkBatch>>._, "testdb")).MustHaveHappenedOnceExactly();
-	}
-
 	private static Neo4jService CreateService(
 		IDriver? driver = null,
 		ICypherService? cypherService = null,
