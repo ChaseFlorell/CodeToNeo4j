@@ -70,6 +70,30 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
 		symbolBuffer.Add(record);
 		relBuffer.Add(new(fileKey, key, "CONTAINS"));
 
+		// Extract attributes
+		foreach (var attr in element.Attributes())
+		{
+			var attrName = attr.Name.LocalName;
+			var attrValue = attr.Value;
+			var attrKey = textSymbolMapper.BuildKey(fileKey, "XmlAttribute", $"{name}.{attrName}", startLine);
+
+			var attrRecord = textSymbolMapper.CreateSymbol(
+				attrKey,
+				attrName,
+				"XmlAttribute",
+				"attribute",
+				$"{name}.{attrName}={attrValue}",
+				fileKey,
+				relativePath,
+				fileNamespace,
+				startLine,
+				documentation: attrValue,
+				language: Language, technology: Technology);
+
+			symbolBuffer.Add(attrRecord);
+			relBuffer.Add(new(key, attrKey, "HAS_ATTRIBUTE"));
+		}
+
 		foreach (var child in element.Elements())
 		{
 			ProcessElement(child, fileKey, relativePath, fileNamespace, symbolBuffer, relBuffer, minAccessibility);
