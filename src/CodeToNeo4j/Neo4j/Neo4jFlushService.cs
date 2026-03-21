@@ -40,7 +40,6 @@ public class Neo4jFlushService(
 			["repoKey"] = file.RepoKey,
 			["language"] = file.Language,
 			["technology"] = file.Technology,
-			["targetFrameworks"] = file.TargetFrameworks?.ToArray() ?? Array.Empty<string>()
 		}).ToArray();
 
 		if (fileBatch.Length == 0)
@@ -152,31 +151,4 @@ public class Neo4jFlushService(
 			.ConfigureAwait(false);
 	}
 
-	public async Task FlushTargetFrameworks(IEnumerable<TargetFrameworkBatch> batches, string databaseName)
-	{
-		var batchArray = batches.ToArray();
-		if (batchArray.Length == 0)
-		{
-			return;
-		}
-
-		var items = batchArray
-			.Select(b => new Dictionary<string, object?> { ["fileKey"] = b.FileKey, ["tfms"] = b.TargetFrameworks.ToArray() })
-			.ToArray();
-
-		var symbolItems = batchArray
-			.SelectMany(b => b.SymbolKeys
-				.Select(sk => new Dictionary<string, object?> { ["symbolKey"] = sk, ["tfms"] = b.TargetFrameworks.ToArray() }))
-			.ToArray();
-
-		logger.LogDebug(
-			"Setting targetFrameworks property on {FileCount} files and {SymbolCount} symbols in database: {DatabaseName}",
-			items.Length, symbolItems.Length, databaseName);
-
-		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
-		await session.ExecuteWriteAsync(async tx =>
-				await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertTargetFrameworks),
-					new { items, symbolItems }))
-			.ConfigureAwait(false);
-	}
 }

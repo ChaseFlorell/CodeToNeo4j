@@ -26,23 +26,8 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 
 		ExtractSelectors(content, fileKey, relativePath, fileNamespace ?? string.Empty, symbolBuffer, relBuffer, minAccessibility);
 
-		return new(fileNamespace, fileKey, TargetFrameworks: DetectCssVersion(content));
+		return new(fileNamespace, fileKey);
 	}
-
-	internal static IReadOnlySet<string> DetectCssVersion(string content)
-	{
-		if (Css3FeatureRegex().IsMatch(content))
-		{
-			return new HashSet<string>(StringComparer.Ordinal) { "css3" };
-		}
-
-		return new HashSet<string>(StringComparer.Ordinal) { "css2" };
-	}
-
-	[GeneratedRegex(
-		@"@keyframes|@supports|@layer|@container|var\(--|:root\b|transition\s*:|transform\s*:|animation\s*:|border-radius\s*:|box-shadow\s*:|flexbox|display\s*:\s*flex|display\s*:\s*grid",
-		RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-CA")]
-	private static partial Regex Css3FeatureRegex();
 
 	private void ExtractSelectors(string content, string fileKey, string relativePath, string fileNamespace, ICollection<Symbol> symbolBuffer,
 		ICollection<Relationship> relBuffer, Accessibility minAccessibility)

@@ -13,7 +13,6 @@ f.commits = file.commits,
 f.tags = file.tags,
 f.language = file.language,
 f.technology = file.technology,
-f.target_frameworks = file.targetFrameworks,
 f.CodeToNeo4j = true
 WITH f, file
 OPTIONAL MATCH (p:Project {key: file.repoKey})

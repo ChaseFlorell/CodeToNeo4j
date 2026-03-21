@@ -181,44 +181,6 @@ public class PubspecYamlHandlerTests
 	}
 
 	[Fact]
-	public async Task GivenPubspecWithSdkConstraint_WhenHandleCalled_ThenFileResultContainsSdkConstraint()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		PubspecYamlHandler sut = new(fileSystem, new TextSymbolMapper(), NullLogger<PubspecYamlHandler>.Instance, CreateConfigService());
-
-		const string content = """
-		                       name: my_app
-		                       environment:
-		                         sdk: ">=3.0.0 <4.0.0"
-		                       dependencies:
-		                         http: ^0.13.0
-		                       """;
-
-		var filePath = "/project/pubspec.yaml";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		var result = await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"pubspec.yaml",
-			filePath,
-			"pubspec.yaml",
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		result.TargetFrameworks.ShouldNotBeNull();
-		result.TargetFrameworks.ShouldContain(">=3.0.0 <4.0.0");
-	}
-
-	[Fact]
 	public async Task GivenDependencyWithVersion_WhenHandled_ThenVersionIsIncluded()
 	{
 		// Arrange

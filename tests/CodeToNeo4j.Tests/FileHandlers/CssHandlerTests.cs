@@ -109,28 +109,4 @@ public class CssHandlerTests
 		relBuffer.ShouldBeEmpty();
 	}
 
-	[Theory]
-	[InlineData("@keyframes spin { from { transform: rotate(0); } }", "css3")]
-	[InlineData("@supports (display: grid) { .foo { color: red; } }", "css3")]
-	[InlineData(":root { --primary: blue; }", "css3")]
-	[InlineData("body { color: black; font-size: 12px; }", "css2")]
-	public void GivenCssContent_WhenDetectCssVersionCalled_ThenReturnsExpectedVersion(string content, string expected)
-	{
-		CssHandler.DetectCssVersion(content).ShouldContain(expected);
-	}
-
-	[Fact]
-	public async Task GivenCss3Content_WhenHandleCalled_ThenFileResultContainsCss3TargetFramework()
-	{
-		MockFileSystem fileSystem = new();
-		CssHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = "@keyframes spin { from { transform: rotate(0deg); } }";
-		var filePath = "styles.css";
-		fileSystem.AddFile(filePath, new(content));
-
-		var result = await sut.Handle(null, null, null, "key", filePath, filePath, [], [], Accessibility.Public);
-
-		result.TargetFrameworks.ShouldNotBeNull();
-		result.TargetFrameworks.ShouldContain("css3");
-	}
 }
