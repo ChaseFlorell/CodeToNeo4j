@@ -56,6 +56,66 @@ public class SolutionFileDiscoveryServiceTests
 	}
 
 	[Fact]
+	public void GivenMultiTargetProjects_WhenGetFilesToProcessCalled_ThenDeduplicatesSharedFiles()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddDirectory("/solution");
+		fileSystem.AddFile("/solution/src/MyClass.cs", new("class MyClass {}"));
+
+		FileService fileService = new(fileSystem);
+		SolutionFileDiscoveryService sut = new(fileService, fileSystem);
+
+		AdhocWorkspace workspace = new();
+		ProjectId projectId1 = ProjectId.CreateNewId();
+		ProjectId projectId2 = ProjectId.CreateNewId();
+		DocumentId docId1 = DocumentId.CreateNewId(projectId1);
+		DocumentId docId2 = DocumentId.CreateNewId(projectId2);
+
+		var solution = workspace.CurrentSolution
+			.AddProject(ProjectInfo.Create(projectId1, VersionStamp.Default, "MyProject(net9.0)", "MyProject", LanguageNames.CSharp))
+			.AddDocument(DocumentInfo.Create(docId1, "MyClass.cs", filePath: "/solution/src/MyClass.cs"))
+			.AddProject(ProjectInfo.Create(projectId2, VersionStamp.Default, "MyProject(net8.0)", "MyProject", LanguageNames.CSharp))
+			.AddDocument(DocumentInfo.Create(docId2, "MyClass.cs", filePath: "/solution/src/MyClass.cs"));
+
+		// Act
+		var files = sut.GetFilesToProcess("/solution", solution, [".cs"]).ToArray();
+
+		// Assert — file appears only once despite being in two projects
+		files.Length.ShouldBe(1);
+		files[0].FilePath.ShouldEndWith("MyClass.cs");
+	}
+
+	[Fact]
+	public void GivenAdditionalDocuments_WhenGetFilesToProcessCalled_ThenIncludesAdditionalDocuments()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		fileSystem.AddDirectory("/solution");
+		fileSystem.AddFile("/solution/data/config.json", new("{}"));
+
+		FileService fileService = new(fileSystem);
+		SolutionFileDiscoveryService sut = new(fileService, fileSystem);
+
+		AdhocWorkspace workspace = new();
+		ProjectId projectId = ProjectId.CreateNewId();
+		DocumentId codeDocId = DocumentId.CreateNewId(projectId);
+		DocumentId additionalDocId = DocumentId.CreateNewId(projectId);
+
+		var solution = workspace.CurrentSolution
+			.AddProject(ProjectInfo.Create(projectId, VersionStamp.Default, "MyProject", "MyProject", LanguageNames.CSharp))
+			.AddDocument(DocumentInfo.Create(codeDocId, "Dummy.cs", filePath: "/solution/src/Dummy.cs"))
+			.AddAdditionalDocument(DocumentInfo.Create(additionalDocId, "config.json", filePath: "/solution/data/config.json"));
+
+		// Act
+		var files = sut.GetFilesToProcess("/solution", solution, [".cs", ".json"]).ToArray();
+
+		// Assert
+		files.Any(f => f.FilePath.EndsWith("config.json")).ShouldBeTrue();
+		files.Any(f => f.FilePath.EndsWith("Dummy.cs")).ShouldBeTrue();
+	}
+
+	[Fact]
 	public void GivenDirectoryWithDartFiles_WhenGetFilesToProcessByDirectoryCalled_ThenReturnsDartFiles()
 	{
 		// Arrange
