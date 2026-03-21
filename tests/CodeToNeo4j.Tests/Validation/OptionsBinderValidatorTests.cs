@@ -10,85 +10,86 @@ namespace CodeToNeo4j.Tests.Validation;
 
 public class OptionsBinderValidatorTests
 {
-	private readonly IOptionsBinderValidator _sut = new OptionsBinderValidator();
-	private readonly Option<string?> _inputOption = new("--input");
-	private readonly Option<bool> _noKeyOption = new("--no-key");
-	private readonly Option<LogLevel> _logLevelOption = new("--log-level");
-	private readonly Option<bool> _debugOption = new("--debug");
-	private readonly Option<bool> _verboseOption = new("--verbose");
-	private readonly Option<bool> _quietOption = new("--quiet");
-	private readonly Option<bool> _purgeDataOption = new("--purge-data");
-	private readonly Option<bool> _skipDependenciesOption = new("--skip-dependencies");
-	private readonly Option<Accessibility> _minAccessibilityOption;
-	private readonly Option<string> _passOption = new("--password");
-	private readonly Option<bool> _showVersionOption = new("--version");
-	private readonly Option<bool> _showSupportedFilesOption = new("--supported-files");
-	private readonly Option<bool> _showInfoOption = new("--info");
-
-	public OptionsBinderValidatorTests()
+	private static (OptionsBinderValidator sut, Func<string[], CommandResult> getResult, Action<CommandResult> validate) CreateTestHarness()
 	{
-		_inputOption.WithAlias("--sln");
-		_inputOption.WithAlias("-s");
-		_minAccessibilityOption = new("--min-accessibility");
-		_minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.Private);
-	}
+		OptionsBinderValidator sut = new();
 
-	private CommandResult GetCommandResult(params string[] args)
-	{
-		RootCommand root = new()
-		{
-			_inputOption,
-			_noKeyOption,
-			_logLevelOption,
-			_debugOption,
-			_verboseOption,
-			_quietOption,
-			_purgeDataOption,
-			_skipDependenciesOption,
-			_minAccessibilityOption,
-			_passOption,
-			_showVersionOption,
-			_showSupportedFilesOption,
-			_showInfoOption
-		};
+		Option<string?> inputOption = new("--input");
+		inputOption.WithAlias("--sln");
+		inputOption.WithAlias("-s");
+		Option<bool> noKeyOption = new("--no-key");
+		Option<LogLevel> logLevelOption = new("--log-level");
+		Option<bool> debugOption = new("--debug");
+		Option<bool> verboseOption = new("--verbose");
+		Option<bool> quietOption = new("--quiet");
+		Option<bool> purgeDataOption = new("--purge-data");
+		Option<bool> skipDependenciesOption = new("--skip-dependencies");
+		Option<Accessibility> minAccessibilityOption = new("--min-accessibility");
+		minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.Private);
+		Option<string> passOption = new("--password");
+		Option<bool> showVersionOption = new("--version");
+		Option<bool> showSupportedFilesOption = new("--supported-files");
+		Option<bool> showInfoOption = new("--info");
 
-		// Remove the built-in VersionOption to avoid conflict with our custom --version flag
-		var builtInVersion = root.Options.OfType<VersionOption>().FirstOrDefault();
-		if (builtInVersion is not null)
+		CommandResult GetCommandResult(string[] args)
 		{
-			root.Options.Remove(builtInVersion);
+			RootCommand root =
+			[
+				inputOption,
+				noKeyOption,
+				logLevelOption,
+				debugOption,
+				verboseOption,
+				quietOption,
+				purgeDataOption,
+				skipDependenciesOption,
+				minAccessibilityOption,
+				passOption,
+				showVersionOption,
+				showSupportedFilesOption,
+				showInfoOption
+			];
+
+			var builtInVersion = root.Options.OfType<VersionOption>().FirstOrDefault();
+			if (builtInVersion is not null)
+			{
+				root.Options.Remove(builtInVersion);
+			}
+
+			return root.Parse(args).CommandResult;
 		}
 
-		return root.Parse(args).CommandResult;
-	}
+		void Validate(CommandResult result)
+		{
+			sut.Validate(
+				result,
+				inputOption,
+				noKeyOption,
+				logLevelOption,
+				debugOption,
+				verboseOption,
+				quietOption,
+				purgeDataOption,
+				skipDependenciesOption,
+				minAccessibilityOption,
+				passOption,
+				showVersionOption,
+				showSupportedFilesOption,
+				showInfoOption);
+		}
 
-	private void Validate(CommandResult result)
-	{
-		_sut.Validate(
-			result,
-			_inputOption,
-			_noKeyOption,
-			_logLevelOption,
-			_debugOption,
-			_verboseOption,
-			_quietOption,
-			_purgeDataOption,
-			_skipDependenciesOption,
-			_minAccessibilityOption,
-			_passOption,
-			_showVersionOption,
-			_showSupportedFilesOption,
-			_showInfoOption);
+		return (sut, GetCommandResult, Validate);
 	}
 
 	[Fact]
 	public void GivenMultipleLogOptions_WhenValidating_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--debug", "--quiet");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln", "--password", "pass", "--debug", "--quiet"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldHaveSingleItem("Only one of --log-level, --debug, --verbose, or --quiet can be used.");
@@ -98,10 +99,11 @@ public class OptionsBinderValidatorTests
 	public void GivenPurgeWithSkipDependencies_WhenValidating_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln", "--password", "pass", "--purge-data", "--skip-dependencies"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -111,10 +113,11 @@ public class OptionsBinderValidatorTests
 	public void GivenPurgeWithMinAccessibility_WhenValidating_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln", "--password", "pass", "--purge-data", "--min-accessibility", "Public"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldHaveSingleItem("--min-accessibility is not allowed when using --purge-data");
@@ -124,10 +127,11 @@ public class OptionsBinderValidatorTests
 	public void GivenValidOptions_WhenValidating_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--input", "test.sln", "--password", "pass", "--debug", "--purge-data");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln", "--password", "pass", "--debug", "--purge-data"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -137,10 +141,11 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenPurgeDataAndNoKey_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--purge-data", "--no-key", "--password", "pass");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--purge-data", "--no-key", "--password", "pass"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -150,10 +155,11 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenPurgeDataWithoutNoKey_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange — --input is now optional; auto-detection provides the repo key
-		var result = GetCommandResult("--purge-data", "--password", "pass");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--purge-data", "--password", "pass"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -163,10 +169,11 @@ public class OptionsBinderValidatorTests
 	public void GivenNoInput_WhenNoPurgeData_ThenShouldNotHaveErrorMessage()
 	{
 		// arrange — --input is now optional; auto-detection resolves at bind time
-		var result = GetCommandResult("--password", "pass");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--password", "pass"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -176,10 +183,11 @@ public class OptionsBinderValidatorTests
 	public void GivenNoPassword_WhenNoPurgeData_ThenShouldHaveErrorMessage()
 	{
 		// arrange
-		var result = GetCommandResult("--input", "test.sln");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldHaveSingleItem("--password is required");
@@ -192,10 +200,11 @@ public class OptionsBinderValidatorTests
 	public void GivenInfoSwitch_WhenNoOtherRequiredOptions_ThenShouldNotHaveErrorMessage(string infoSwitch)
 	{
 		// arrange
-		var result = GetCommandResult(infoSwitch);
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult([infoSwitch]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();
@@ -207,10 +216,11 @@ public class OptionsBinderValidatorTests
 	public void GivenAlias_WhenUsedInsteadOfInput_ThenShouldNotHaveErrorMessage(string alias)
 	{
 		// arrange
-		var result = GetCommandResult(alias, "test.sln", "--password", "pass");
+		var (_, getResult, validate) = CreateTestHarness();
+		var result = getResult([alias, "test.sln", "--password", "pass"]);
 
 		// act
-		Validate(result);
+		validate(result);
 
 		// assert
 		result.Errors.ShouldBeEmpty();

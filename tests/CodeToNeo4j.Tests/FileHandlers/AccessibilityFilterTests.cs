@@ -8,8 +8,6 @@ namespace CodeToNeo4j.Tests.FileHandlers;
 
 public class AccessibilityFilterTests
 {
-	private readonly AccessibilityFilter _sut = new();
-
 	[Theory]
 	[InlineData("public int Foo { get; set; }", Accessibility.Public, false)]
 	[InlineData("private int Foo { get; set; }", Accessibility.Public, true)]
@@ -20,6 +18,7 @@ public class AccessibilityFilterTests
 		string memberDeclaration, Accessibility minAccessibility, bool expectedResult)
 	{
 		// Arrange
+		AccessibilityFilter sut = new();
 		var code = $"public class TestClass {{ {memberDeclaration} }}";
 		var tree = CSharpSyntaxTree.ParseText(code);
 		CSharpCompilation compilation = CSharpCompilation.Create("Test",
@@ -32,7 +31,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(memberNode)!;
 
 		// Act
-		var result = _sut.IsAccessibilityBelowMinimum(symbol, minAccessibility);
+		var result = sut.IsAccessibilityBelowMinimum(symbol, minAccessibility);
 
 		// Assert
 		result.ShouldBe(expectedResult);
@@ -42,6 +41,7 @@ public class AccessibilityFilterTests
 	public void GivenExplicitInterfaceImplementation_WhenIsAccessibilityBelowMinimumCalled_ThenReturnsFalse()
 	{
 		// Arrange
+		AccessibilityFilter sut = new();
 		var code = @"
             public interface IFoo { void Bar(); }
             public class TestClass : IFoo { void IFoo.Bar() {} }";
@@ -57,7 +57,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(methodNode)!;
 
 		// Act — explicit interface impl has Private accessibility, but should NOT be filtered
-		var result = _sut.IsAccessibilityBelowMinimum(symbol, Accessibility.Public);
+		var result = sut.IsAccessibilityBelowMinimum(symbol, Accessibility.Public);
 
 		// Assert
 		result.ShouldBeFalse();
@@ -70,6 +70,7 @@ public class AccessibilityFilterTests
 		string memberDeclaration, bool expected)
 	{
 		// Arrange
+		AccessibilityFilter sut = new();
 		var code = $"public class TestClass {{ {memberDeclaration} }}";
 		var tree = CSharpSyntaxTree.ParseText(code);
 		CSharpCompilation compilation = CSharpCompilation.Create("Test",
@@ -82,7 +83,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(memberNode)!;
 
 		// Act
-		var result = _sut.IsExplicitInterfaceImplementation(symbol);
+		var result = sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBe(expected);
@@ -92,6 +93,7 @@ public class AccessibilityFilterTests
 	public void GivenExplicitInterfacePropertyImplementation_WhenIsExplicitInterfaceImplementationCalled_ThenReturnsTrue()
 	{
 		// Arrange
+		AccessibilityFilter sut = new();
 		var code = @"
             public interface IFoo { int Prop { get; set; } }
             public class TestClass : IFoo { int IFoo.Prop { get; set; } }";
@@ -107,7 +109,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(propertyNode)!;
 
 		// Act
-		var result = _sut.IsExplicitInterfaceImplementation(symbol);
+		var result = sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBeTrue();
@@ -117,6 +119,7 @@ public class AccessibilityFilterTests
 	public void GivenExplicitInterfaceEventImplementation_WhenIsExplicitInterfaceImplementationCalled_ThenReturnsTrue()
 	{
 		// Arrange
+		AccessibilityFilter sut = new();
 		var code = @"
             public interface IFoo { event System.Action OnBar; }
             public class TestClass : IFoo { event System.Action IFoo.OnBar { add {} remove {} } }";
@@ -132,7 +135,7 @@ public class AccessibilityFilterTests
 		var symbol = model.GetDeclaredSymbol(eventNode)!;
 
 		// Act
-		var result = _sut.IsExplicitInterfaceImplementation(symbol);
+		var result = sut.IsExplicitInterfaceImplementation(symbol);
 
 		// Assert
 		result.ShouldBeTrue();
