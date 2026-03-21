@@ -28,11 +28,15 @@ FOR (d:Dependency) REQUIRE d.key IS UNIQUE;
 CREATE INDEX dependency_name IF NOT EXISTS
 FOR (d:Dependency) ON (d.name);
 
-// Full-text indexes for comments and documentation to support advanced search
-CREATE INDEX symbol_documentation IF NOT EXISTS
+// Drop legacy RANGE indexes that fail on large values (>8 KB)
+DROP INDEX symbol_documentation IF EXISTS;
+DROP INDEX symbol_comments IF EXISTS;
+
+// TEXT indexes for comments and documentation to support advanced search (no size limit)
+CREATE TEXT INDEX symbol_documentation_text IF NOT EXISTS
 FOR (s:Symbol) ON (s.documentation);
 
-CREATE INDEX symbol_comments IF NOT EXISTS
+CREATE TEXT INDEX symbol_comments_text IF NOT EXISTS
 FOR (s:Symbol) ON (s.comments);
 
 CREATE CONSTRAINT author_name IF NOT EXISTS

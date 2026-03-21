@@ -10,6 +10,13 @@ public class Neo4jFlushService(
 	ICypherService cypherService,
 	ILogger<Neo4jFlushService> logger) : INeo4jFlushService
 {
+	internal const int MaxIndexedStringLength = 8000;
+
+	internal static string? Truncate(string? value)
+		=> value is { Length: > MaxIndexedStringLength }
+			? value[..MaxIndexedStringLength]
+			: value;
+
 	public async Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName)
 	{
 		var fileBatch = files.Select(file => new Dictionary<string, object?>
@@ -68,8 +75,8 @@ public class Neo4jFlushService(
 			["namespace"] = s.Namespace,
 			["startLine"] = s.StartLine,
 			["endLine"] = s.EndLine,
-			["documentation"] = s.Documentation,
-			["comments"] = s.Comments,
+			["documentation"] = Truncate(s.Documentation),
+			["comments"] = Truncate(s.Comments),
 			["version"] = s.Version,
 			["language"] = s.Language,
 			["technology"] = s.Technology
