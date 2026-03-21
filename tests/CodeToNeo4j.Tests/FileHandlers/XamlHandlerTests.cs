@@ -297,6 +297,33 @@ public class XamlHandlerTests
 		relBuffer.ShouldNotContain(r => r.RelType == "SETS_PROPERTY");
 	}
 
+	[Fact]
+	public async Task GivenXamlWithNamedPathBinding_WhenHandleCalled_ThenExtractsPathValue()
+	{
+		// Arrange
+		var (sut, fileSystem) = CreateSut();
+		var content = @"
+<ContentPage x:Class=""MyApp.Views.MyPage""
+             xmlns=""http://schemas.microsoft.com/dotnet/2021/maui""
+             xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml"">
+    <Label Text=""{Binding Path=UserName}"" />
+</ContentPage>";
+		var filePath = "test.xaml";
+		fileSystem.AddFile(filePath, new(content));
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(null, null, "test-repo", "test-file", filePath, filePath, symbolBuffer, relBuffer, Accessibility.Private);
+
+		// Assert
+		var textAttr = symbolBuffer.FirstOrDefault(s => s.Kind == "XamlAttribute" && s.Name == "Text");
+		textAttr.ShouldNotBeNull();
+		textAttr.Documentation.ShouldBe("{Binding Path=UserName}");
+		textAttr.Comments.ShouldBe("UserName");
+	}
+
 	private static IConfigurationService CreateConfigService()
 	{
 		IConfigurationService fake = A.Fake<IConfigurationService>();
