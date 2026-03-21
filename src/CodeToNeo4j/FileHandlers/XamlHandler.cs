@@ -31,11 +31,10 @@ public partial class XamlHandler(
 	{
 		var content = await GetContent(document, filePath).ConfigureAwait(false);
 		string? fileNamespace = null;
-		XDocument? xdoc = null;
 
 		try
 		{
-			xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
+			XDocument xdoc = XDocument.Parse(content, LoadOptions.SetLineInfo);
 			if (xdoc.Root != null)
 			{
 				var xClass = GetXamlAttribute(xdoc.Root, "Class")?.Value;
@@ -207,12 +206,6 @@ public partial class XamlHandler(
 
 		// Skip x:-prefixed attributes (x:Class, x:Name, x:Key, etc.)
 		if (_xamlNamespaces.Contains(attr.Name.NamespaceName))
-		{
-			return false;
-		}
-
-		// Skip event handlers (already captured separately)
-		if (IsEventHandler(attr.Name.LocalName))
 		{
 			return false;
 		}
