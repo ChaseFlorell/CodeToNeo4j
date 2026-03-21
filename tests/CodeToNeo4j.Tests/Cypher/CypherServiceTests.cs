@@ -49,4 +49,36 @@ public class CypherServiceTests
 		// Assert
 		first.ShouldBe(second);
 	}
+
+	[Theory]
+	[InlineData("CREATE TEXT INDEX symbol_documentation_text IF NOT EXISTS")]
+	[InlineData("CREATE TEXT INDEX symbol_comments_text IF NOT EXISTS")]
+	[InlineData("DROP INDEX symbol_documentation IF EXISTS")]
+	[InlineData("DROP INDEX symbol_comments IF EXISTS")]
+	public void GivenSchema_WhenGetCypherCalled_ThenContainsTextIndexStatements(string expected)
+	{
+		// Arrange
+		CypherService sut = new();
+
+		// Act
+		var schema = sut.GetCypher(Queries.Schema);
+
+		// Assert
+		schema.ShouldContain(expected);
+	}
+
+	[Theory]
+	[InlineData("CREATE INDEX symbol_documentation IF NOT EXISTS")]
+	[InlineData("CREATE INDEX symbol_comments IF NOT EXISTS")]
+	public void GivenSchema_WhenGetCypherCalled_ThenDoesNotContainLegacyRangeIndexes(string legacy)
+	{
+		// Arrange
+		CypherService sut = new();
+
+		// Act
+		var schema = sut.GetCypher(Queries.Schema);
+
+		// Assert
+		schema.ShouldNotContain(legacy);
+	}
 }
