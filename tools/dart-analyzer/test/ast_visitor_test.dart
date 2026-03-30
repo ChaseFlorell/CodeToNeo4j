@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 
 import '../lib/src/ast_visitor.dart';
 import '../lib/src/models.dart';
+import '../lib/src/schema.dart';
 
 DartAstVisitor _visit(String source, {
   String filePath = '/proj/lib/foo.dart',
@@ -54,26 +55,26 @@ void main() {
 
     test('extends produces DEPENDS_ON relationship', () {
       final v = _visit('class A {} class B extends A {}');
-      final rel = _rels(v, from: 'B', to: 'A', type: 'DEPENDS_ON');
+      final rel = _rels(v, from: 'B', to: 'A', type: GraphSchema.dependsOn);
       expect(rel, hasLength(1));
     });
 
     test('implements produces DEPENDS_ON relationship', () {
       final v = _visit('abstract class I {} class C implements I {}');
-      final rel = _rels(v, from: 'C', to: 'I', type: 'DEPENDS_ON');
+      final rel = _rels(v, from: 'C', to: 'I', type: GraphSchema.dependsOn);
       expect(rel, hasLength(1));
     });
 
     test('with (mixin) produces DEPENDS_ON relationship', () {
       final v = _visit('mixin M {} class C with M {}');
-      final rel = _rels(v, from: 'C', to: 'M', type: 'DEPENDS_ON');
+      final rel = _rels(v, from: 'C', to: 'M', type: GraphSchema.dependsOn);
       expect(rel, hasLength(1));
     });
 
     test('multiple implements produce one DEPENDS_ON each', () {
       final v = _visit(
           'abstract class I1 {} abstract class I2 {} class C implements I1, I2 {}');
-      expect(_rels(v, from: 'C', type: 'DEPENDS_ON'), hasLength(2));
+      expect(_rels(v, from: 'C', type: GraphSchema.dependsOn), hasLength(2));
     });
   });
 
@@ -114,7 +115,7 @@ void main() {
 
     test('method produces CONTAINS relationship from class', () {
       final v = _visit('class C { void doThing() {} }');
-      expect(_rels(v, from: 'C', to: 'doThing', type: 'CONTAINS'), hasLength(1));
+      expect(_rels(v, from: 'C', to: 'doThing', type: GraphSchema.contains), hasLength(1));
     });
 
     test('getter produces DartProperty symbol', () {
@@ -157,7 +158,7 @@ void main() {
 
     test('constructor produces CONTAINS relationship from class', () {
       final v = _visit('class C { C(); }');
-      expect(_rels(v, from: 'C', type: 'CONTAINS'), isNotEmpty);
+      expect(_rels(v, from: 'C', type: GraphSchema.contains), isNotEmpty);
     });
   });
 
@@ -171,17 +172,17 @@ void main() {
 
     test('typed field produces DEPENDS_ON relationship to its type', () {
       final v = _visit('class C { String name = ""; }');
-      expect(_rels(v, from: 'name', to: 'String', type: 'DEPENDS_ON'), hasLength(1));
+      expect(_rels(v, from: 'name', to: 'String', type: GraphSchema.dependsOn), hasLength(1));
     });
 
     test('field produces CONTAINS relationship from class', () {
       final v = _visit('class C { int x = 0; }');
-      expect(_rels(v, from: 'C', to: 'x', type: 'CONTAINS'), hasLength(1));
+      expect(_rels(v, from: 'C', to: 'x', type: GraphSchema.contains), hasLength(1));
     });
 
     test('untyped field produces no DEPENDS_ON', () {
       final v = _visit('class C { var x = 0; }');
-      expect(_rels(v, from: 'x', type: 'DEPENDS_ON'), isEmpty);
+      expect(_rels(v, from: 'x', type: GraphSchema.dependsOn), isEmpty);
     });
   });
 
@@ -208,7 +209,7 @@ void main() {
   group('import directives', () {
     test('import produces DEPENDS_ON relationship', () {
       final v = _visit("import 'dart:io';");
-      expect(_rels(v, to: 'dart:io', type: 'DEPENDS_ON'), hasLength(1));
+      expect(_rels(v, to: 'dart:io', type: GraphSchema.dependsOn), hasLength(1));
     });
 
     test('import fromKind is file', () {
@@ -222,21 +223,21 @@ void main() {
   group('method invocations', () {
     test('method call produces INVOKES relationship', () {
       final v = _visit('void run() { print("hi"); }');
-      expect(_rels(v, to: 'print', type: 'INVOKES'), hasLength(1));
+      expect(_rels(v, to: 'print', type: GraphSchema.invokes), hasLength(1));
     });
   });
 
   group('instance creation', () {
     test('new expression produces INVOKES relationship', () {
       final v = _visit('class Foo {} void run() { var f = new Foo(); }');
-      expect(_rels(v, to: 'Foo', type: 'INVOKES'), hasLength(1));
+      expect(_rels(v, to: 'Foo', type: GraphSchema.invokes), hasLength(1));
     });
   });
 
   group('function expression invocations', () {
     test('simple identifier call produces INVOKES relationship', () {
       final v = _visit('void run() { final fn = () {}; fn(); }');
-      expect(_rels(v, to: 'fn', type: 'INVOKES'), hasLength(1));
+      expect(_rels(v, to: 'fn', type: GraphSchema.invokes), hasLength(1));
     });
   });
 

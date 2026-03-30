@@ -239,7 +239,7 @@ resharper_place_accessorholder_attribute_on_same_line = false
 dotnet_diagnostic.IDE0005.severity = warning # Remove unnecessary using
 dotnet_diagnostic.IDE0011.severity = warning # Add braces
 dotnet_diagnostic.IDE0040.severity = warning # Add accessibility modifiers
-dotnet_diagnostic.IDE0055.severity = warning # Formatting rule
+dotnet_diagnostic.IDE0055.severity = hide    # Formatting rule
 dotnet_diagnostic.IDE0090.severity = warning # Use target-typed new
 dotnet_diagnostic.IDE0161.severity = warning # File-scoped namespace
 

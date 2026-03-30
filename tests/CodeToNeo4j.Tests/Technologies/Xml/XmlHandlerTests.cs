@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Graph.Xml;
@@ -46,8 +47,8 @@ public class XmlHandlerTests
 		childSymbol.ShouldNotBeNull();
 		childSymbol.Kind.ShouldBe("XmlElement");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == rootSymbol.Key && r.RelType == "CONTAINS");
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == childSymbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == rootSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == childSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 
 	[Fact]

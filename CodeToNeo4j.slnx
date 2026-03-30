@@ -54,6 +54,8 @@
 		<File Path=".github\scripts\renovate_configure-git-user.sh" />
 		<File Path=".github\scripts\renovate_install-dependencies.sh" />
 		<File Path=".github\scripts\renovate_run-renovate.sh" />
+		<File Path=".github\scripts\setup-gh-cli_install-gh.sh" />
+		<File Path=".github\scripts\setup-gh-cli_install-homebrew.sh" />
 		<File Path=".github\scripts\test-summary-comment.js" />
 		<File Path=".github\scripts\verify_dart-test.sh" />
 		<File Path=".github\scripts\verify_dotnet-build.sh" />
@@ -66,6 +68,7 @@
 		<File Path=".github\workflows\pr-requirements.yml" />
 		<File Path=".github\workflows\release.yml" />
 		<File Path=".github\workflows\renovate.yml" />
+		<File Path=".github\workflows\setup-gh-cli.yml" />
 		<File Path=".github\workflows\verify.yml" />
 	</Folder>
 	<Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />

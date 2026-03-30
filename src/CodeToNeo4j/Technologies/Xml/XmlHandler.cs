@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using System.Xml.Linq;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Graph.Xml;
@@ -70,7 +71,7 @@ public class XmlHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolMapp
 			language: Language, technology: Technology);
 
 		symbolBuffer.Add(record);
-		relBuffer.Add(new(fileKey, key, "CONTAINS"));
+		relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.Contains));
 
 		xmlAttributeExtractor.ExtractAttributes(
 			element, name, key, startLine,

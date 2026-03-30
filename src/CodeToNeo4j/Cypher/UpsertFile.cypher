@@ -1,5 +1,5 @@
 UNWIND $files AS file
-MERGE (f:File {key: file.fileKey})
+MERGE (f:src__File {key: file.fileKey})
 SET f.path = file.path,
 f.fileName = file.fileName,
 f.namespace = file.namespace,
@@ -15,12 +15,12 @@ f.language = file.language,
 f.technology = file.technology,
 f.CodeToNeo4j = true
 WITH f, file
-OPTIONAL MATCH (p:Project {key: file.repoKey})
+OPTIONAL MATCH (p:src__Project {key: file.repoKey})
 	WHERE file.repoKey IS NOT NULL
 FOREACH (ignoreMe IN CASE WHEN p IS NOT NULL THEN [1]
 	ELSE []
 	END |
-	MERGE (p)-[:HAS_FILE]->(f)
+	MERGE (p)-[:src__HAS_FILE]->(f)
 )
 WITH f, file
 UNWIND (CASE WHEN file.authors IS NULL OR size(file.authors) = 0 THEN [null]
@@ -28,9 +28,9 @@ UNWIND (CASE WHEN file.authors IS NULL OR size(file.authors) = 0 THEN [null]
 	END) AS author
 WITH f, author
 	WHERE author IS NOT NULL
-MERGE (a:Author {name: author.name})
+MERGE (a:src__Author {name: author.name})
 SET a.CodeToNeo4j = true
-MERGE (a)-[r:AUTHORED]->(f)
+MERGE (a)-[r:src__AUTHORED]->(f)
 SET r.firstCommit = datetime(author.firstCommit),
 r.lastCommit = datetime(author.lastCommit),
 r.commitCount = author.commitCount

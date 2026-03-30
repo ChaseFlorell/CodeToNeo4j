@@ -1,0 +1,20 @@
+name: Setup gh CLI
+
+on:
+  workflow_call:
+
+jobs:
+  setup-gh-cli:
+    name: Ensure Homebrew and gh CLI are installed
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: true
+
+      - name: Install Homebrew if missing
+        run: ./.github/scripts/setup-gh-cli_install-homebrew.sh
+
+      - name: Install gh CLI if missing
+        run: ./.github/scripts/setup-gh-cli_install-gh.sh

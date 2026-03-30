@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -67,7 +68,7 @@ public class Foo
 		relBuffer.ShouldContain(r =>
 			r.FromKey == expectedFileKey &&
 			r.ToKey.Contains("Microsoft.CodeAnalysis") &&
-			r.RelType == "DEPENDS_ON");
+			r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -118,7 +119,7 @@ public class Foo
 		relBuffer.ShouldContain(r =>
 			r.FromKey == expectedFileKey &&
 			r.ToKey.Contains("Microsoft.CodeAnalysis.CSharp.SyntaxKind") &&
-			r.RelType == "DEPENDS_ON");
+			r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -167,7 +168,7 @@ public class Foo
 		relBuffer.ShouldContain(r =>
 			r.FromKey == expectedFileKey &&
 			r.ToKey.Contains("Microsoft.CodeAnalysis") &&
-			r.RelType == "DEPENDS_ON");
+			r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -218,6 +219,6 @@ public class Foo
 		relBuffer.ShouldContain(r =>
 			r.FromKey == ExpectedFileKey &&
 			r.ToKey.Contains("Microsoft.CodeAnalysis") &&
-			r.RelType == "DEPENDS_ON");
+			r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 }

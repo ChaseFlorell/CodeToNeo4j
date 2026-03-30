@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Web.npm;
@@ -100,9 +101,9 @@ public class PackageJsonHandlerTests
 		typescript.Key.ShouldBe("pkg:typescript");
 		typescript.Kind.ShouldBe("Dependency");
 
-		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:lodash" && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:axios" && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:typescript" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:lodash" && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:axios" && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "package.json" && r.ToKey == "pkg:typescript" && r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]

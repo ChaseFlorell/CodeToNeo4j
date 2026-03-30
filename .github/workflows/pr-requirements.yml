@@ -38,9 +38,13 @@ jobs:
           LABELS: ${{ toJson(github.event.pull_request.labels) }}
         run: ./.github/scripts/pr-requirements_check-label.sh
 
+  setup-gh-cli:
+    name: Ensure gh CLI is available
+    uses: ./.github/workflows/setup-gh-cli.yml
+
   check-issue-reference:
     name: Check for issue reference in PR body
-    needs: [ create-and-link-issue ]
+    needs: [ create-and-link-issue, setup-gh-cli ]
     if: always() && !cancelled()
     runs-on: self-hosted
     steps:

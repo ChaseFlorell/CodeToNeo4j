@@ -1,6 +1,7 @@
 import 'package:test/test.dart';
 
 import '../lib/src/models.dart';
+import '../lib/src/schema.dart';
 
 void main() {
   group('SymbolInfo.toJson', () {
@@ -69,7 +70,7 @@ void main() {
         fromLine: 3,
         toSymbol: 'A',
         toKind: 'class',
-        relType: 'DEPENDS_ON',
+        relType: GraphSchema.dependsOn,
       );
       final json = r.toJson();
       expect(json['fromSymbol'], 'B');
@@ -77,7 +78,7 @@ void main() {
       expect(json['fromLine'], 3);
       expect(json['toSymbol'], 'A');
       expect(json['toKind'], 'class');
-      expect(json['relType'], 'DEPENDS_ON');
+      expect(json['relType'], GraphSchema.dependsOn);
     });
 
     test('optional toLine and toFile default to null', () {
@@ -87,7 +88,7 @@ void main() {
         fromLine: 1,
         toSymbol: 'Y',
         toKind: 'class',
-        relType: 'CONTAINS',
+        relType: GraphSchema.contains,
       );
       final json = r.toJson();
       expect(json['toLine'], isNull);
@@ -103,7 +104,7 @@ void main() {
         toKind: 'file',
         toLine: 42,
         toFile: 'other.dart',
-        relType: 'DEPENDS_ON',
+        relType: GraphSchema.dependsOn,
       );
       final json = r.toJson();
       expect(json['toLine'], 42);

@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 
@@ -41,6 +42,6 @@ public abstract class PackageDependencyHandlerBase(IFileSystem fileSystem, IText
 			language: Language, technology: Technology);
 
 		symbolBuffer.Add(record);
-		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
+		relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.DependsOn));
 	}
 }

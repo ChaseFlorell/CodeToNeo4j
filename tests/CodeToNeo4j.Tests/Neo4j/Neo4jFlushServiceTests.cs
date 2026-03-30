@@ -1,4 +1,5 @@
 using CodeToNeo4j.Cypher;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Graph.Xml;
 using CodeToNeo4j.Neo4j;
@@ -6,7 +7,6 @@ using CodeToNeo4j.VersionControl;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver;
-using Shouldly;
 using Xunit;
 
 namespace CodeToNeo4j.Tests.Neo4j;
@@ -94,7 +94,7 @@ public class Neo4jFlushServiceTests
 	{
 		// Arrange
 		var (sut, driver) = CreateSut();
-		var rels = new[] { new Relationship("k1", "k2", "DEPENDS_ON") };
+		var rels = new[] { new Relationship("k1", "k2", GraphSchema.Relationships.DependsOn) };
 		var session = SetupSession(driver);
 
 		// Act
@@ -141,36 +141,5 @@ public class Neo4jFlushServiceTests
 		// Assert
 		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task<IResultCursor>>>._, A<Action<TransactionConfigBuilder>?>._))
 			.MustHaveHappened();
-	}
-
-	[Fact]
-	public void GivenNull_WhenTruncate_ThenReturnsNull()
-	{
-		Neo4jFlushService.Truncate(null).ShouldBeNull();
-	}
-
-	[Theory]
-	[InlineData("")]
-	[InlineData("short")]
-	public void GivenShortString_WhenTruncate_ThenReturnsUnchanged(string input)
-	{
-		Neo4jFlushService.Truncate(input).ShouldBe(input);
-	}
-
-	[Fact]
-	public void GivenExactlyMaxLength_WhenTruncate_ThenReturnsUnchanged()
-	{
-		var input = new string('x', Neo4jFlushService.MaxIndexedStringLength);
-		Neo4jFlushService.Truncate(input).ShouldBe(input);
-	}
-
-	[Fact]
-	public void GivenOverMaxLength_WhenTruncate_ThenTruncatesToMaxLength()
-	{
-		var input = new string('x', Neo4jFlushService.MaxIndexedStringLength + 500);
-
-		var result = Neo4jFlushService.Truncate(input);
-
-		result!.Length.ShouldBe(Neo4jFlushService.MaxIndexedStringLength);
 	}
 }

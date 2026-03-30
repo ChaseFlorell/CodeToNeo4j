@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -54,9 +55,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 			if (nsSymbol.ContainingAssembly != null && !SymbolEqualityComparer.Default.Equals(nsSymbol.ContainingAssembly, currentAssembly))
 			{
 				var depKey = $"{repoKey}:{nsSymbol.ToDisplayString()}";
-				if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+				if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == GraphSchema.Relationships.DependsOn))
 				{
-					relBuffer.Add(new(fromKey, depKey, "DEPENDS_ON"));
+					relBuffer.Add(new Relationship(fromKey, depKey, GraphSchema.Relationships.DependsOn));
 				}
 			}
 		}
@@ -65,9 +66,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 			if (typeSymbol.ContainingAssembly != null && !SymbolEqualityComparer.Default.Equals(typeSymbol.ContainingAssembly, currentAssembly))
 			{
 				var depKey = $"{repoKey}:{typeSymbol.ToDisplayString()}";
-				if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+				if (!relBuffer.Any(r => r.FromKey == fromKey && r.ToKey == depKey && r.RelType == GraphSchema.Relationships.DependsOn))
 				{
-					relBuffer.Add(new(fromKey, depKey, "DEPENDS_ON"));
+					relBuffer.Add(new Relationship(fromKey, depKey, GraphSchema.Relationships.DependsOn));
 				}
 			}
 		}
@@ -112,8 +113,10 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 
 				// Binary operators (==, !=, >, <, >=, <=, |, &, ^) and 'as' expressions
 				case BinaryExpressionSyntax binary:
-					if (semanticModel.GetSymbolInfo(binary).Symbol is IMethodSymbol binSymbol
-						&& binSymbol.MethodKind is MethodKind.UserDefinedOperator or MethodKind.Conversion)
+					if (semanticModel.GetSymbolInfo(binary).Symbol is IMethodSymbol
+					    {
+						    MethodKind: MethodKind.UserDefinedOperator or MethodKind.Conversion
+					    } binSymbol)
 					{
 						AddInvokes(binSymbol, callerRec, repoKey, relBuffer, seenCallees);
 					}
@@ -189,9 +192,9 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 		// Identifier is the Name part of a MemberAccessExpression that is itself an invocation target
 		// e.g. `this.DoWork()` — `DoWork` is IdentifierNameSyntax, parent is MemberAccessExpressionSyntax
 		if (node is IdentifierNameSyntax
-			&& node.Parent is MemberAccessExpressionSyntax parentMember
-			&& parentMember.Parent is InvocationExpressionSyntax parentInvocation
-			&& parentInvocation.Expression == parentMember)
+		    && node.Parent is MemberAccessExpressionSyntax parentMember
+		    && parentMember.Parent is InvocationExpressionSyntax parentInvocation
+		    && parentInvocation.Expression == parentMember)
 		{
 			return true;
 		}
@@ -222,7 +225,7 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 		var calleeKey = symbolMapper.BuildStableSymbolKey(repoKey, calleeSymbol);
 		if (seenCallees.Add(calleeKey))
 		{
-			relBuffer.Add(new(callerRec.Key, calleeKey, "INVOKES"));
+			relBuffer.Add(new(callerRec.Key, calleeKey, GraphSchema.Relationships.Invokes));
 		}
 	}
 
@@ -235,15 +238,15 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 	{
 		foreach (var parameter in bmds.ParameterList.Parameters)
 		{
-			IParameterSymbol? parameterSymbol = semanticModel.GetDeclaredSymbol(parameter) as IParameterSymbol;
+			IParameterSymbol? parameterSymbol = semanticModel.GetDeclaredSymbol(parameter);
 			if (parameterSymbol?.Type is not (null or IErrorTypeSymbol))
 			{
 				AddDependsOnRelationship(typeRec.Key, parameterSymbol.Type, repoKey, relBuffer);
 			}
 		}
 
-		if (semanticModel.GetDeclaredSymbol(bmds) is IMethodSymbol { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
-			&& baseMethodSymbol.MethodKind != MethodKind.Constructor)
+		if (semanticModel.GetDeclaredSymbol(bmds) is { ReturnType: not null and not IErrorTypeSymbol } baseMethodSymbol
+		    && baseMethodSymbol.MethodKind != MethodKind.Constructor)
 		{
 			AddDependsOnRelationship(typeRec.Key, baseMethodSymbol.ReturnType, repoKey, relBuffer);
 		}
@@ -295,6 +298,6 @@ public class MemberDependencyExtractor(ISymbolMapper symbolMapper) : IMemberDepe
 		ICollection<Relationship> relBuffer)
 	{
 		var depKey = symbolMapper.BuildStableSymbolKey(repoKey, typeSymbol);
-		relBuffer.Add(new(fromKey, depKey, "DEPENDS_ON"));
+		relBuffer.Add(new(fromKey, depKey, GraphSchema.Relationships.DependsOn));
 	}
 }

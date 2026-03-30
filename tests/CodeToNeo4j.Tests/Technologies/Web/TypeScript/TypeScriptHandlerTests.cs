@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Web.TypeScript;
@@ -97,7 +98,7 @@ const myArrow = (x: number): number => x * 2;";
 
 		// Assert — @angular/core is a bare module specifier, so it links directly to pkg: without creating a symbol
 		symbolBuffer.ShouldNotContain(s => s.Kind == "TypeScriptImport");
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == "pkg:@angular/core" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == "pkg:@angular/core" && r.RelType == GraphSchema.Relationships.DependsOn);
 
 		var functionSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "myFunction");
 		functionSymbol.ShouldNotBeNull();
@@ -107,7 +108,7 @@ const myArrow = (x: number): number => x * 2;";
 		arrowSymbol.ShouldNotBeNull();
 		arrowSymbol.Kind.ShouldBe("TypeScriptFunction");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == functionSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 
 	[Fact]
@@ -145,7 +146,7 @@ interface User {
 		interfaceSymbol.Name.ShouldBe("User");
 		interfaceSymbol.Class.ShouldBe("interface");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == interfaceSymbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == interfaceSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 
 	[Fact]
@@ -224,7 +225,7 @@ const enum Status {
 		enums.ShouldContain(s => s.Name == "Status");
 		enums.ForEach(e => e.Class.ShouldBe("enum"));
 
-		relBuffer.ShouldContain(r => r.RelType == "CONTAINS" && enums.Any(e => e.Key == r.ToKey));
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && enums.Any(e => e.Key == r.ToKey));
 	}
 
 	[Fact]
@@ -269,8 +270,8 @@ function save(order: Order): void {}";
 		validate.ShouldNotBeNull();
 		save.ShouldNotBeNull();
 
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == "INVOKES");
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == "INVOKES");
+		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == GraphSchema.Relationships.Invokes);
+		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -316,7 +317,7 @@ function createUser(name: string): User {
 
 		// Assert
 		// @angular/core is a bare module specifier — links directly to pkg: node, no symbol created
-		relBuffer.ShouldContain(r => r.ToKey == "pkg:@angular/core" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.ToKey == "pkg:@angular/core" && r.RelType == GraphSchema.Relationships.DependsOn);
 		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptInterface" && s.Name == "UserService");
 		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptTypeAlias" && s.Name == "UserId");
 		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptEnum" && s.Name == "Role");

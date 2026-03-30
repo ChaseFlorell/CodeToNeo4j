@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Web.JavaScript;
@@ -91,8 +92,8 @@ const myArrow = () => {};";
 		arrowSymbol.ShouldNotBeNull();
 		arrowSymbol.Kind.ShouldBe("JavaScriptFunction");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == importSymbol.Key && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == functionSymbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == importSymbol.Key && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == functionSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 
 	[Fact]
@@ -136,8 +137,8 @@ function save(order) {}";
 		validate.ShouldNotBeNull();
 		save.ShouldNotBeNull();
 
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == "INVOKES");
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == "INVOKES");
+		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == GraphSchema.Relationships.Invokes);
+		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -165,7 +166,7 @@ function save(order) {}";
 			Accessibility.Private);
 
 		// Assert
-		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -197,7 +198,7 @@ function caller() { to(1); }";
 
 		// Assert
 		symbolBuffer.Where(s => s.Name == "to").ShouldNotBeEmpty();
-		relBuffer.ShouldContain(r => r.RelType == "INVOKES");
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -228,7 +229,7 @@ function doWork() {
 			Accessibility.Private);
 
 		// Assert
-		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -315,7 +316,7 @@ function doWork() {
 
 		// Assert
 		symbolBuffer.Count(s => s.Kind == "JavaScriptImport").ShouldBe(2);
-		relBuffer.Count(r => r.RelType == "DEPENDS_ON").ShouldBe(2);
+		relBuffer.Count(r => r.RelType == GraphSchema.Relationships.DependsOn).ShouldBe(2);
 	}
 
 	[Fact]
@@ -371,7 +372,7 @@ function doWork() {
 			Accessibility.Private);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == $"pkg:{moduleName}" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test.js" && r.ToKey == $"pkg:{moduleName}" && r.RelType == GraphSchema.Relationships.DependsOn);
 		symbolBuffer.ShouldNotContain(s => s.Kind == "JavaScriptImport");
 	}
 
@@ -422,7 +423,7 @@ function doWork() {
 			Accessibility.Private);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.ToKey.Contains("Import") && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.ToKey.Contains("Import") && r.RelType == GraphSchema.Relationships.DependsOn);
 		relBuffer.ShouldNotContain(r => r.ToKey == "pkg:/abs/path");
 	}
 
@@ -449,7 +450,7 @@ function doWork() {
 
 		// Assert
 		symbolBuffer.ShouldContain(s => s.Name == "main");
-		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]
@@ -476,7 +477,7 @@ function doWork() {
 		// Assert
 		var main = symbolBuffer.First(s => s.Name == "main");
 		var someCall = symbolBuffer.First(s => s.Name == "someCall");
-		relBuffer.ShouldContain(r => r.FromKey == main.Key && r.ToKey == someCall.Key && r.RelType == "INVOKES");
+		relBuffer.ShouldContain(r => r.FromKey == main.Key && r.ToKey == someCall.Key && r.RelType == GraphSchema.Relationships.Invokes);
 		relBuffer.ShouldNotContain(r => r.ToKey.Contains("if") || r.ToKey.Contains("while"));
 	}
 

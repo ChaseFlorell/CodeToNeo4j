@@ -3,6 +3,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:path/path.dart' as p;
 import 'models.dart';
+import 'schema.dart';
 
 /// Recursive AST visitor that extracts symbols and relationships from Dart source.
 class DartAstVisitor extends RecursiveAstVisitor<void> {
@@ -71,7 +72,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
         fromLine: _lineNumber(node.offset),
         toSymbol: superName,
         toKind: 'class',
-        relType: 'DEPENDS_ON',
+        relType: GraphSchema.dependsOn,
       ));
     }
 
@@ -84,7 +85,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromLine: _lineNumber(node.offset),
           toSymbol: iface.name.lexeme,
           toKind: 'class',
-          relType: 'DEPENDS_ON',
+          relType: GraphSchema.dependsOn,
         ));
       }
     }
@@ -98,7 +99,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromLine: _lineNumber(node.offset),
           toSymbol: mixin.name.lexeme,
           toKind: 'mixin',
-          relType: 'DEPENDS_ON',
+          relType: GraphSchema.dependsOn,
         ));
       }
     }
@@ -307,7 +308,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
         fromLine: _lineNumber(node.offset),
         toSymbol: name,
         toKind: node.isGetter || node.isSetter ? 'property' : 'method',
-        relType: 'CONTAINS',
+        relType: GraphSchema.contains,
       ));
     }
 
@@ -338,7 +339,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
         fromLine: _lineNumber(node.offset),
         toSymbol: displayName,
         toKind: 'constructor',
-        relType: 'CONTAINS',
+        relType: GraphSchema.contains,
       ));
     }
 
@@ -369,7 +370,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromLine: _lineNumber(variable.offset),
           toSymbol: name,
           toKind: 'field',
-          relType: 'CONTAINS',
+          relType: GraphSchema.contains,
         ));
       }
 
@@ -383,7 +384,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
           fromLine: _lineNumber(variable.offset),
           toSymbol: typeName,
           toKind: 'class',
-          relType: 'DEPENDS_ON',
+          relType: GraphSchema.dependsOn,
         ));
       }
     }
@@ -420,7 +421,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
         fromLine: _lineNumber(node.offset),
         toSymbol: uri,
         toKind: 'file',
-        relType: 'DEPENDS_ON',
+        relType: GraphSchema.dependsOn,
       ));
     }
     super.visitImportDirective(node);
@@ -439,7 +440,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
       fromLine: _lineNumber(node.offset),
       toSymbol: methodName,
       toKind: 'method',
-      relType: 'INVOKES',
+      relType: GraphSchema.invokes,
     ));
 
     super.visitMethodInvocation(node);
@@ -457,7 +458,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
       fromLine: _lineNumber(node.offset),
       toSymbol: typeName,
       toKind: 'constructor',
-      relType: 'INVOKES',
+      relType: GraphSchema.invokes,
     ));
 
     super.visitInstanceCreationExpression(node);
@@ -476,7 +477,7 @@ class DartAstVisitor extends RecursiveAstVisitor<void> {
         fromLine: _lineNumber(node.offset),
         toSymbol: function.name,
         toKind: 'function',
-        relType: 'INVOKES',
+        relType: GraphSchema.invokes,
       ));
     }
 

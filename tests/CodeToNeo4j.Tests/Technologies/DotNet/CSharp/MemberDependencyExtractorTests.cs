@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -45,7 +46,7 @@ public class MemberDependencyExtractorTests
 		sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON" && r.FromKey == typeRec.Key);
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn && r.FromKey == typeRec.Key);
 	}
 
 	[Fact]
@@ -82,7 +83,7 @@ public class MemberDependencyExtractorTests
 		sut.ExtractMemberDependencies(methodSymbol, methodNode, model, "test", relBuffer, typeRec, memberRec);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.RelType == "INVOKES" && r.FromKey == memberRec.Key);
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.Invokes && r.FromKey == memberRec.Key);
 	}
 
 	[Fact]
@@ -119,7 +120,7 @@ public class MemberDependencyExtractorTests
 		sut.ExtractMemberDependencies(propSymbol, propNode, model, "test", relBuffer, typeRec, memberRec);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON" && r.FromKey == typeRec.Key);
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn && r.FromKey == typeRec.Key);
 	}
 
 	[Fact]
@@ -157,7 +158,7 @@ public class MemberDependencyExtractorTests
 		sut.ExtractMemberDependencies(fieldSymbol, variableNode, model, "test", relBuffer, typeRec, memberRec);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON" && r.FromKey == typeRec.Key);
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn && r.FromKey == typeRec.Key);
 	}
 
 	[Theory]
@@ -243,7 +244,7 @@ public class MemberDependencyExtractorTests
 
 		// Assert – should have an INVOKES for the method group target
 		relBuffer.ShouldContain(
-			r => r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains(expectedMethodName),
+			r => r.RelType == GraphSchema.Relationships.Invokes && r.FromKey == memberRec.Key && r.ToKey.Contains(expectedMethodName),
 			$"Scenario '{scenario}' should create INVOKES for {expectedMethodName}");
 	}
 
@@ -288,7 +289,7 @@ public class MemberDependencyExtractorTests
 
 		// Assert — HandleValue should appear exactly once as an INVOKES target
 		List<Relationship> handleValueInvokes = relBuffer.Where(r =>
-			r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue")).ToList();
+			r.RelType == GraphSchema.Relationships.Invokes && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue")).ToList();
 		handleValueInvokes.Count.ShouldBe(1, "HandleValue should have exactly one INVOKES relationship (no duplicates)");
 	}
 
@@ -328,7 +329,7 @@ public class MemberDependencyExtractorTests
 
 		// Assert — DoWork should appear exactly once
 		List<Relationship> doWorkInvokes = relBuffer.Where(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains("DoWork")).ToList();
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("DoWork")).ToList();
 		doWorkInvokes.Count.ShouldBe(1, "Direct call should produce exactly one INVOKES, not double-counted by method group detection");
 	}
 
@@ -370,7 +371,7 @@ public class MemberDependencyExtractorTests
 
 		// Assert
 		relBuffer.ShouldContain(
-			r => r.RelType == "INVOKES" && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue"),
+			r => r.RelType == GraphSchema.Relationships.Invokes && r.FromKey == memberRec.Key && r.ToKey.Contains("HandleValue"),
 			"Lambda body invocation of HandleValue should be detected");
 	}
 
@@ -396,7 +397,7 @@ public class MemberDependencyExtractorTests
 		sut.AddDependsOnIfExternal(usingSymbol, compilation.Assembly, "test", "file.cs", relBuffer);
 
 		// Assert
-		relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON" && r.FromKey == "file.cs");
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn && r.FromKey == "file.cs");
 	}
 
 	[Fact]
@@ -441,7 +442,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -467,7 +468,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -491,7 +492,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -519,7 +520,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -541,7 +542,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -563,7 +564,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Theory]
@@ -585,7 +586,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains(expectedFragment));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains(expectedFragment));
 	}
 
 	[Fact]
@@ -604,7 +605,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains("explicit operator int(Foo)"));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("explicit operator int(Foo)"));
 	}
 
 	[Fact]
@@ -625,7 +626,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains("implicit operator string(Foo)"));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("implicit operator string(Foo)"));
 	}
 
 	[Fact]
@@ -646,7 +647,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.ShouldContain(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains("implicit operator Foo(FooFixture)"));
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("implicit operator Foo(FooFixture)"));
 	}
 
 	[Fact]
@@ -660,7 +661,7 @@ public class MemberDependencyExtractorTests
 
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
-		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES" && r.ToKey.Contains("operator"));
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("operator"));
 	}
 
 	[Fact]
@@ -682,7 +683,7 @@ public class MemberDependencyExtractorTests
 		var relBuffer = ExtractRelationships(code, "TestClass", "Use");
 
 		relBuffer.Count(r =>
-			r.RelType == "INVOKES" && r.ToKey.Contains("operator ==(Foo, Foo)")).ShouldBe(1);
+			r.RelType == GraphSchema.Relationships.Invokes && r.ToKey.Contains("operator ==(Foo, Foo)")).ShouldBe(1);
 	}
 
 	private static List<Relationship> ExtractRelationships(string code, string className, string methodName)

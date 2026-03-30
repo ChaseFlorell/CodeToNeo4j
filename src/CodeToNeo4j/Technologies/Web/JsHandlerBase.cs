@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -100,7 +101,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 				language: Language);
 
 			symbolBuffer.Add(record);
-			relBuffer.Add(new(fileKey, key, "CONTAINS"));
+			relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.Contains));
 
 			var (bodyStart, bodyEnd) = FindFunctionBody(content, match.Index + match.Length);
 			if (bodyStart >= 0)
@@ -140,7 +141,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 	{
 		if (IsBareModuleSpecifier(module))
 		{
-			relBuffer.Add(new(fileKey, $"pkg:{module}", "DEPENDS_ON"));
+			relBuffer.Add(new(fileKey, $"pkg:{module}", GraphSchema.Relationships.DependsOn));
 			return;
 		}
 
@@ -159,7 +160,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 			language: Language);
 
 		symbolBuffer.Add(record);
-		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
+		relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.DependsOn));
 	}
 
 	private static readonly HashSet<string> JsKeywords = new(StringComparer.Ordinal)
@@ -239,7 +240,7 @@ public abstract partial class JsHandlerBase(IFileSystem fileSystem, ITextSymbolM
 
 				if (functionLookup.TryGetValue(calledName, out var calleeKey) && seen.Add(calleeKey))
 				{
-					relBuffer.Add(new(caller.Key, calleeKey, "INVOKES"));
+					relBuffer.Add(new(caller.Key, calleeKey, GraphSchema.Relationships.Invokes));
 				}
 			}
 		}

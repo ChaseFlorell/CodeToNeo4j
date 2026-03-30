@@ -1,3 +1,4 @@
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -59,7 +60,7 @@ public class RoslynSymbolProcessor(
 			else
 			{
 				var depKey = $"{repoKey}:{usingDirective.Name}";
-				relBuffer.Add(new(fileKey, depKey, "DEPENDS_ON"));
+				relBuffer.Add(new(fileKey, depKey, GraphSchema.Relationships.DependsOn));
 			}
 		}
 
@@ -83,9 +84,9 @@ public class RoslynSymbolProcessor(
 						if (globalSymbol == null)
 						{
 							var depKey = $"{repoKey}:{u.Name}";
-							if (!relBuffer.Any(r => r.FromKey == fileKey && r.ToKey == depKey && r.RelType == "DEPENDS_ON"))
+							if (!relBuffer.Any(r => r.FromKey == fileKey && r.ToKey == depKey && r.RelType == GraphSchema.Relationships.DependsOn))
 							{
-								relBuffer.Add(new(fileKey, depKey, "DEPENDS_ON"));
+								relBuffer.Add(new(fileKey, depKey, GraphSchema.Relationships.DependsOn));
 							}
 						}
 						else
@@ -123,7 +124,7 @@ public class RoslynSymbolProcessor(
 		string technology)
 	{
 		if (semanticModel.GetDeclaredSymbol(typeDecl)
-				is INamedTypeSymbol typeSymbol
+				is { } typeSymbol
 			&& (typeSymbol.DeclaredAccessibility >= minAccessibility
 				|| typeSymbol.DeclaredAccessibility == Accessibility.NotApplicable))
 		{
@@ -163,7 +164,7 @@ public class RoslynSymbolProcessor(
 				var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, member, language, technology);
 				symbolBuffer.Add(memberRec);
 
-				relBuffer.Add(new(typeRec.Key, memberRec.Key, "CONTAINS"));
+				relBuffer.Add(new(typeRec.Key, memberRec.Key, GraphSchema.Relationships.Contains));
 			}
 		}
 	}
@@ -283,7 +284,7 @@ public class RoslynSymbolProcessor(
 		var memberRec = symbolMapper.ToSymbolRecord(repoKey, fileKey, relativePath, fileNamespace, memberSymbol, memberSyntax, language, technology);
 		symbolBuffer.Add(memberRec);
 
-		relBuffer.Add(new(typeRec.Key, memberRec.Key, "CONTAINS"));
+		relBuffer.Add(new(typeRec.Key, memberRec.Key, GraphSchema.Relationships.Contains));
 
 		dependencyExtractor.ExtractMemberDependencies(memberSymbol, memberSyntax, semanticModel, repoKey, relBuffer, typeRec, memberRec);
 	}

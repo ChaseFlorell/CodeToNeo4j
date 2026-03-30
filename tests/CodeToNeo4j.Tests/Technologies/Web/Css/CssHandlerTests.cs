@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Web.Css;
@@ -49,7 +50,7 @@ public class CssHandlerTests
 		symbol.ShouldNotBeNull();
 		symbol.Kind.ShouldBe("CssSelector");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == symbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == symbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 
 	[Fact]

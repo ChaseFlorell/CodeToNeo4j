@@ -51,8 +51,8 @@ public class CypherServiceTests
 	}
 
 	[Theory]
-	[InlineData("CREATE TEXT INDEX symbol_documentation_text IF NOT EXISTS")]
-	[InlineData("CREATE TEXT INDEX symbol_comments_text IF NOT EXISTS")]
+	[InlineData("CREATE TEXT INDEX src__symbol_documentation IF NOT EXISTS")]
+	[InlineData("CREATE TEXT INDEX src__symbol_comments IF NOT EXISTS")]
 	[InlineData("DROP INDEX symbol_documentation IF EXISTS")]
 	[InlineData("DROP INDEX symbol_comments IF EXISTS")]
 	public void GivenSchema_WhenGetCypherCalled_ThenContainsTextIndexStatements(string expected)
