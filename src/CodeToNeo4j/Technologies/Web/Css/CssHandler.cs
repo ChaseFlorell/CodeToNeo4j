@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -65,7 +66,7 @@ public partial class CssHandler(IFileSystem fileSystem, ITextSymbolMapper textSy
 				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
-			relBuffer.Add(new(fileKey, key, "CONTAINS"));
+			relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.Contains));
 		}
 	}
 

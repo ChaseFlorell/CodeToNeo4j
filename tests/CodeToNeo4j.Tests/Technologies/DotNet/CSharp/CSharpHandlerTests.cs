@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -179,7 +180,7 @@ public class Foo
 		relBuffer.ShouldContain(r =>
 			r.FromKey == fooSymbol.Key &&
 			r.ToKey == barServiceSymbol.Key &&
-			r.RelType == "DEPENDS_ON");
+			r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -231,7 +232,7 @@ public class Foo
 
 		// Check dependencies for operator parameters
 		// For 'operator ==(Foo a, Foo b)', Foo should be a dependency
-		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo" && r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -280,10 +281,10 @@ public class Foo
 
 		// Check dependencies for event types
 		// MyEvent depends on MyHandler
-		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == GraphSchema.Relationships.DependsOn);
 
 		// OtherEvent depends on MyHandler
-		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test-repo:Foo" && r.ToKey == "test-repo:Foo.MyHandler" && r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -334,7 +335,7 @@ public class Foo
 		// but we now allow ErrorTypes to be processed if they are Nullable<T>, it should be there.
 		relBuffer.ShouldContain(r =>
 			r.FromKey == "test-repo:Foo" &&
-			r.RelType == "DEPENDS_ON" &&
+			r.RelType == GraphSchema.Relationships.DependsOn &&
 			r.ToKey.Contains("EventHandler"));
 	}
 
@@ -384,7 +385,7 @@ public class Foo
 		// Check for dependency on EventHandler
 		relBuffer.ShouldContain(r =>
 			r.FromKey == "test-repo:Foo" &&
-			r.RelType == "DEPENDS_ON" &&
+			r.RelType == GraphSchema.Relationships.DependsOn &&
 			r.ToKey.Contains("EventHandler"));
 	}
 
@@ -438,7 +439,7 @@ public class Foo
 		// Depending on how SymbolMapper builds the key, it should at least contain EventHandler and MyEventArgs
 		relBuffer.ShouldContain(r =>
 			r.FromKey == "test-repo:Foo" &&
-			r.RelType == "DEPENDS_ON" &&
+			r.RelType == GraphSchema.Relationships.DependsOn &&
 			r.ToKey.Contains("EventHandler") &&
 			r.ToKey.Contains("MyEventArgs"));
 	}
@@ -491,12 +492,12 @@ public class OrderService
 
 		relBuffer.ShouldContain(r =>
 			r.FromKey == processOrder.Key &&
-			r.RelType == "INVOKES" &&
+			r.RelType == GraphSchema.Relationships.Invokes &&
 			r.ToKey.Contains("Validate"));
 
 		relBuffer.ShouldContain(r =>
 			r.FromKey == processOrder.Key &&
-			r.RelType == "INVOKES" &&
+			r.RelType == GraphSchema.Relationships.Invokes &&
 			r.ToKey.Contains("Save"));
 	}
 
@@ -548,7 +549,7 @@ public class Factory
 
 		relBuffer.ShouldContain(r =>
 			r.FromKey == createMethod.Key &&
-			r.RelType == "INVOKES" &&
+			r.RelType == GraphSchema.Relationships.Invokes &&
 			r.ToKey.Contains("Widget"));
 	}
 
@@ -600,7 +601,7 @@ public class Pure
 			Accessibility.Private);
 
 		// Assert
-		relBuffer.ShouldNotContain(r => r.RelType == "INVOKES");
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.Invokes);
 	}
 
 	[Fact]

@@ -1,6 +1,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Yaml;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Dart;
@@ -61,9 +62,9 @@ public class PubspecYamlHandlerTests
 		symbolBuffer.ShouldContain(s => s.Name == "path" && s.Key == "pkg:path" && s.Kind == "Dependency");
 		symbolBuffer.ShouldContain(s => s.Name == "mockito" && s.Key == "pkg:mockito" && s.Kind == "Dependency");
 
-		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:http" && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:path" && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:mockito" && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:http" && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:path" && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "pubspec.yaml" && r.ToKey == "pkg:mockito" && r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]

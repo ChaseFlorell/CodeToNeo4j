@@ -1,5 +1,6 @@
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.FileSystem;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Neo4j;
 using CodeToNeo4j.VersionControl;
@@ -63,7 +64,7 @@ public class Neo4jServiceTests
 		var flushService = A.Fake<INeo4jFlushService>();
 		var sut = CreateService(flushService: flushService);
 		var symbols = new[] { new Symbol("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns") };
-		var rels = new[] { new Relationship("k1", "k2", "CONTAINS") };
+		var rels = new[] { new Relationship("k1", "k2", GraphSchema.Relationships.Contains) };
 
 		// Act
 		await sut.FlushSymbols(symbols, rels, "testdb");

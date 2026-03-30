@@ -1,20 +1,20 @@
 UNWIND $commits AS commit
-MERGE (c:Commit {hash: commit.hash})
+MERGE (c:src__Commit {hash: commit.hash})
 SET c.date = datetime(commit.date), c.message = commit.message, c.author = commit.authorName, c.CodeToNeo4j = true
 WITH c, commit
-OPTIONAL MATCH (p:Project {key: commit.repoKey})
+OPTIONAL MATCH (p:src__Project {key: commit.repoKey})
 	WHERE commit.repoKey IS NOT NULL
 FOREACH (ignoreMe IN CASE WHEN p IS NOT NULL THEN [1]
 	ELSE []
 	END |
-	MERGE (c)-[:PART_OF_PROJECT]->(p)
+	MERGE (c)-[:src__PART_OF_PROJECT]->(p)
 )
 WITH c, commit
-MERGE (a:Author {name: commit.authorName})
+MERGE (a:src__Author {name: commit.authorName})
 SET a.email = commit.authorEmail, a.CodeToNeo4j = true
-MERGE (a)-[:COMMITTED]->(c)
+MERGE (a)-[:src__COMMITTED]->(c)
 WITH c, commit
 UNWIND commit.changedFiles AS fileInfo
-MERGE (f:File {key: fileInfo.key})
+MERGE (f:src__File {key: fileInfo.key})
 SET f.path = fileInfo.path, f.namespace = fileInfo.namespace, f.deleted = fileInfo.deleted, f.CodeToNeo4j = true
-MERGE (c)-[:MODIFIED_FILE]->(f)
+MERGE (c)-[:src__MODIFIED_FILE]->(f)

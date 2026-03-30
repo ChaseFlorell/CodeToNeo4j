@@ -1,4 +1,5 @@
 using CodeToNeo4j.Cypher;
+using CodeToNeo4j.Extensions;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Graph.Xml;
 using Microsoft.Extensions.Logging;
@@ -13,11 +14,6 @@ public class Neo4jFlushService(
 	ILogger<Neo4jFlushService> logger) : INeo4jFlushService
 {
 	internal const int MaxIndexedStringLength = 8000;
-
-	internal static string? Truncate(string? value)
-		=> value is { Length: > MaxIndexedStringLength }
-			? value[..MaxIndexedStringLength]
-			: value;
 
 	public async Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName)
 	{
@@ -63,7 +59,8 @@ public class Neo4jFlushService(
 
 	public async Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName)
 	{
-		var symbolBatch = symbols.Select(s => new Dictionary<string, object?>
+		var symbolArray = symbols.ToArray();
+		var symbolBatch = symbolArray.Select(s => new Dictionary<string, object?>
 		{
 			["key"] = s.Key,
 			["name"] = s.Name,
@@ -76,8 +73,8 @@ public class Neo4jFlushService(
 			["namespace"] = s.Namespace,
 			["startLine"] = s.StartLine,
 			["endLine"] = s.EndLine,
-			["documentation"] = Truncate(s.Documentation),
-			["comments"] = Truncate(s.Comments),
+			["documentation"] = s.Documentation.Truncate(),
+			["comments"] = s.Comments.Truncate(),
 			["version"] = s.Version,
 			["language"] = s.Language,
 			["technology"] = s.Technology
@@ -90,7 +87,7 @@ public class Neo4jFlushService(
 			["relType"] = r.RelType
 		}).ToArray();
 
-		var tagBatch = symbols
+		var tagBatch = symbolArray
 			.Where(s => !string.IsNullOrWhiteSpace(s.Namespace))
 			.Select(s => new Dictionary<string, object?> { ["symbolKey"] = s.Key, ["tags"] = namespaceTagParser.ParseTags(s.Namespace).ToArray() })
 			.Where(x => ((string[])x["tags"]!).Length > 0)
@@ -152,5 +149,4 @@ public class Neo4jFlushService(
 				await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch }))
 			.ConfigureAwait(false);
 	}
-
 }

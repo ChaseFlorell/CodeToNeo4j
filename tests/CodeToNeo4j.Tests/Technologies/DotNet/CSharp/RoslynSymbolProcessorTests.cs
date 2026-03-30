@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -40,7 +41,7 @@ public class RoslynSymbolProcessorTests
 		// Assert
 		symbols.ShouldContain(s => s.Name == "Container" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == propName && s.Kind == "Property");
-		rels.ShouldContain(r => r.RelType == "CONTAINS" && r.ToKey.Contains(propName));
+		rels.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && r.ToKey.Contains(propName));
 	}
 
 	[Fact]
@@ -83,7 +84,7 @@ public class RoslynSymbolProcessorTests
 		symbols.ShouldContain(s => s.Name == "Outer" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == "Inner" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == "InnerMethod");
-		rels.ShouldContain(r => r.RelType == "CONTAINS" && r.ToKey.Contains("Inner"));
+		rels.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && r.ToKey.Contains("Inner"));
 	}
 
 	[Theory]
@@ -115,7 +116,7 @@ public class RoslynSymbolProcessorTests
 		// Assert
 		symbols.ShouldContain(s => s.Name == "Person" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == "FullName");
-		rels.ShouldContain(r => r.RelType == "CONTAINS" && r.ToKey.Contains("FullName"));
+		rels.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && r.ToKey.Contains("FullName"));
 	}
 
 	[Fact]
@@ -134,7 +135,7 @@ public class RoslynSymbolProcessorTests
 		// Assert
 		symbols.ShouldContain(s => s.Name == "StringExtensions" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == "Reverse" && s.Kind == "Method");
-		rels.ShouldContain(r => r.RelType == "CONTAINS" && r.ToKey.Contains("Reverse"));
+		rels.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && r.ToKey.Contains("Reverse"));
 	}
 
 	[Fact]
@@ -157,7 +158,7 @@ public class RoslynSymbolProcessorTests
 		symbols.ShouldContain(s => s.Name == "Red");
 		symbols.ShouldContain(s => s.Name == "Green");
 		symbols.ShouldContain(s => s.Name == "Blue");
-		rels.Count(r => r.RelType == "CONTAINS").ShouldBeGreaterThanOrEqualTo(3);
+		rels.Count(r => r.RelType == GraphSchema.Relationships.Contains).ShouldBeGreaterThanOrEqualTo(3);
 	}
 
 	[Fact]
@@ -178,7 +179,7 @@ public class RoslynSymbolProcessorTests
 		symbols.ShouldContain(s => s.Name == "IRepository" && s.Kind == "NamedType");
 		symbols.ShouldContain(s => s.Name == "GetById");
 		symbols.ShouldContain(s => s.Name == "Save");
-		rels.Count(r => r.RelType == "CONTAINS").ShouldBeGreaterThanOrEqualTo(2);
+		rels.Count(r => r.RelType == GraphSchema.Relationships.Contains).ShouldBeGreaterThanOrEqualTo(2);
 	}
 
 	[Fact]

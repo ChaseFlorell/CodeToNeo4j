@@ -41,7 +41,7 @@ public class DartAnalysisResultDeserializationTests
 		                              "toKind": "class",
 		                              "toLine": null,
 		                              "toFile": "lib/src/base.dart",
-		                              "relType": "DEPENDS_ON"
+		                              "relType": "src__DEPENDS_ON"
 		                            }
 		                          ]
 		                        }
@@ -71,7 +71,7 @@ public class DartAnalysisResultDeserializationTests
 		file.Relationships.Count.ShouldBe(1);
 		file.Relationships[0].FromSymbol.ShouldBe("MyClass");
 		file.Relationships[0].ToSymbol.ShouldBe("BaseClass");
-		file.Relationships[0].RelType.ShouldBe("DEPENDS_ON");
+		file.Relationships[0].RelType.ShouldBe("src__DEPENDS_ON");
 	}
 
 	[Fact]

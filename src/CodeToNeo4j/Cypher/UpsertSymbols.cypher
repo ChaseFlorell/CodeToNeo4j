@@ -1,5 +1,5 @@
 UNWIND $symbols AS s
-MERGE (n:Symbol {key: s.key})
+MERGE (n:src__Symbol {key: s.key})
 SET n.name = s.name,
 n.kind = s.kind,
 n.class = s.class,
@@ -18,5 +18,5 @@ n.technology = s.technology,
 n.updatedAt = datetime(),
 n.CodeToNeo4j = true
 WITH n, s
-MATCH (f:File {key: s.fileKey})
-MERGE (f)-[:DECLARES]->(n)
+MATCH (f:src__File {key: s.fileKey})
+MERGE (f)-[:src__DECLARES]->(n)

@@ -2,6 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Models;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Dart;
@@ -66,7 +67,7 @@ public class DartHandlerTests
 							FromLine = 1,
 							ToSymbol = "Bar",
 							ToKind = "class",
-							RelType = "DEPENDS_ON"
+							RelType = GraphSchema.Relationships.DependsOn
 						}
 					]
 				}
@@ -92,7 +93,7 @@ public class DartHandlerTests
 
 		// Assert
 		symbolBuffer.ShouldContain(s => s.Name == "Foo" && s.Kind == "DartClass");
-		relBuffer.ShouldContain(r => r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]

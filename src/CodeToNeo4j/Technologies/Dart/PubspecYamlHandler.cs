@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Dart.Yaml;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -86,6 +87,6 @@ public class PubspecYamlHandler(
 			language: Language, technology: Technology);
 
 		symbolBuffer.Add(symbol);
-		relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
+		relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.DependsOn));
 	}
 }

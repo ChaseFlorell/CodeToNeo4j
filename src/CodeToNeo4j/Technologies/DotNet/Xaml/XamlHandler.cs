@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Graph.Xml;
@@ -127,7 +128,7 @@ public partial class XamlHandler(
 				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
-			relBuffer.Add(new(fileKey, symbolKey, "CONTAINS"));
+			relBuffer.Add(new(fileKey, symbolKey, GraphSchema.Relationships.Contains));
 		}
 
 		// Extract event handlers

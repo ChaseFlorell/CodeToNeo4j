@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.Xml;
 using System.Xml.Linq;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using Microsoft.CodeAnalysis;
@@ -84,7 +85,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 					documentation: value);
 
 				symbolBuffer.Add(record);
-				relBuffer.Add(new(fileKey, key, "HAS_PROPERTY"));
+				relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.HasProperty));
 			}
 		}
 
@@ -131,7 +132,7 @@ public class CsprojHandler(IFileSystem fileSystem, ITextSymbolMapper textSymbolM
 				startLine);
 
 			symbolBuffer.Add(record);
-			relBuffer.Add(new(fileKey, key, "DEPENDS_ON"));
+			relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.DependsOn));
 		}
 	}
 

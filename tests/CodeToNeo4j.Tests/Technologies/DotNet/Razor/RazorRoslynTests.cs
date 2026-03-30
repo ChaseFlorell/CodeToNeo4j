@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -86,6 +87,6 @@ namespace MyProject.Pages
 		methodSymbol.ShouldNotBeNull();
 		methodSymbol.StartLine.ShouldBe(4); // Mapped line
 
-		relBuffer.ShouldContain(r => r.FromKey == classSymbol.Key && r.ToKey == methodSymbol.Key && r.RelType == "CONTAINS");
+		relBuffer.ShouldContain(r => r.FromKey == classSymbol.Key && r.ToKey == methodSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
 	}
 }

@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.CSharp;
@@ -123,7 +124,7 @@ public partial class RazorHandler(
 				language: Language, technology: Technology);
 
 			symbolBuffer.Add(record);
-			relBuffer.Add(new(fileKey, key, "CONTAINS"));
+			relBuffer.Add(new(fileKey, key, GraphSchema.Relationships.Contains));
 		}
 	}
 

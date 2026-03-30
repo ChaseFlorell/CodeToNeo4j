@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using CodeToNeo4j.Configuration;
+using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.DotNet.Csproj;
@@ -72,9 +73,9 @@ public class CsprojHandlerTests
 		projectSymbol.ShouldNotBeNull();
 		projectSymbol.Kind.ShouldBe("ProjectReference");
 
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == propertySymbol.Key && r.RelType == "HAS_PROPERTY");
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == packageSymbol.Key && r.RelType == "DEPENDS_ON");
-		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == projectSymbol.Key && r.RelType == "DEPENDS_ON");
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == propertySymbol.Key && r.RelType == GraphSchema.Relationships.HasProperty);
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == packageSymbol.Key && r.RelType == GraphSchema.Relationships.DependsOn);
+		relBuffer.ShouldContain(r => r.FromKey == "test-file" && r.ToKey == projectSymbol.Key && r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
@@ -130,7 +131,7 @@ public class CsprojHandlerTests
 
 		// URL data must NOT appear in the symbol or relationship buffers
 		symbolBuffer.ShouldNotContain(s => s.Kind == "Url");
-		relBuffer.ShouldNotContain(r => r.RelType == "HAS_URL");
+		relBuffer.ShouldNotContain(r => r.RelType == GraphSchema.Relationships.HasUrl);
 	}
 
 	[Fact]

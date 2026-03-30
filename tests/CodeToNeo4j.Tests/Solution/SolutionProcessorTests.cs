@@ -76,7 +76,7 @@ public class SolutionProcessorTests
 		FileMetadata metadata = new(DateTimeOffset.Now, DateTimeOffset.Now, [], [], []);
 		FileMetaData fileMetaData = new("key", "file.cs", "file.cs", "hash", metadata, "repo", "ns");
 		List<Symbol> symbols = [new("k1", "Foo", "NamedType", "class", "Foo", "Public", "key", "file.cs", 1, 10, null, null, "ns")];
-		List<Relationship> rels = [new("k1", "k2", "CONTAINS")];
+		List<Relationship> rels = [new("k1", "k2", GraphSchema.Relationships.Contains)];
 
 		SolutionProcessor.ProcessResult result = new(fileMetaData, symbols, rels, [], "file.cs");
 		await channel.Writer.WriteAsync(result);
