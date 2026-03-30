@@ -24,6 +24,7 @@ jobs:
 
       - name: Run CodeToNeo4j
         env:
+          NEO4J_URI: ${{ vars.NEO4J_URI }}
           NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
           DIFF_BASE: ${{ github.event.before }}
         run: ./.github/scripts/index-to-neo4j_run-codetoneo4j.sh
