@@ -3,7 +3,7 @@ description: CLI bridge for CodeToNeo4j Dart analysis
 environment:
   sdk: ^3.9.0
 dependencies:
-  analyzer: 12.0.0
+  analyzer: 12.1.0
   path: ^1.9.0
 
 dev_dependencies:
