@@ -77,7 +77,7 @@ jobs:
         run: ./.github/scripts/release_generate-release-notes.sh
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
           name: Release v${{ vars.MAJOR }}.${{ vars.MINOR }}.${{ github.run_number }}
