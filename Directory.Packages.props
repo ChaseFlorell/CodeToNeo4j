@@ -35,7 +35,7 @@
 		<PackageVersion Include="Shouldly" Version="4.3.0" />
 	</ItemGroup>
 	<ItemGroup Label="Spectre.Console">
-		<PackageVersion Include="Spectre.Console" Version="0.55.0" />
+		<PackageVersion Include="Spectre.Console" Version="0.55.2" />
 	</ItemGroup>
 	<ItemGroup Label="System.IO.Abstractions">
 		<PackageVersion Include="System.IO.Abstractions" Version="22.1.1" />
