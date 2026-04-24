@@ -60,6 +60,17 @@
 			]
 		},
 		{
+			"description": "Group Dart analyzer with test so they resolve together",
+			"groupName": "dart analyzer + test",
+			"matchManagers": [
+				"pub"
+			],
+			"matchPackageNames": [
+				"analyzer",
+				"test"
+			]
+		},
+		{
 			"groupName": "FakeItEasy",
 			"matchPackageNames": [
 				"/^FakeItEasy/"
