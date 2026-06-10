@@ -146,7 +146,9 @@ public class Neo4jFlushService(
 		logger.LogDebug("Upserting {Count} dependency URL nodes in database: {DatabaseName}", urlBatch.Length, databaseName);
 		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 		await session.ExecuteWriteAsync(async tx =>
-				await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch }))
-			.ConfigureAwait(false);
+			{
+				var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencyUrls), new { urls = urlBatch });
+				await cursor.ConsumeAsync();
+			}).ConfigureAwait(false);
 	}
 }

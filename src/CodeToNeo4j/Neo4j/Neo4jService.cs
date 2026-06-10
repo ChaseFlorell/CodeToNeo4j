@@ -93,8 +93,10 @@ public class Neo4jService(
 		logger.LogDebug("Upserting {Count} dependencies for {RepositoryKey} in database: {DatabaseName}", depBatch.Length, repoKey, databaseName);
 		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 		await session.ExecuteWriteAsync(async tx =>
-				await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch }))
-			.ConfigureAwait(false);
+			{
+				var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertDependencies), new { dependencies = depBatch });
+				await cursor.ConsumeAsync();
+			}).ConfigureAwait(false);
 	}
 
 	public Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName) =>
