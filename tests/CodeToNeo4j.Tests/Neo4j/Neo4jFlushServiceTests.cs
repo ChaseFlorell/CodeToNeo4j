@@ -139,7 +139,7 @@ public class Neo4jFlushServiceTests
 		await sut.UpsertDependencyUrls(urls, "testdb");
 
 		// Assert
-		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task<IResultCursor>>>._, A<Action<TransactionConfigBuilder>?>._))
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
 			.MustHaveHappened();
 	}
 }

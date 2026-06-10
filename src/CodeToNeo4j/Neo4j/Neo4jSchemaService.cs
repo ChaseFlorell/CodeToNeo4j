@@ -89,7 +89,9 @@ public class Neo4jSchemaService(
 		logger.LogDebug("Upserting project: {RepoKey} in database: {DatabaseName}", repoKey, databaseName);
 		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 		await session.ExecuteWriteAsync(async tx =>
-				await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey }))
-			.ConfigureAwait(false);
+			{
+				var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.UpsertProject), new { key = repoKey, name = repoKey });
+				await cursor.ConsumeAsync();
+			}).ConfigureAwait(false);
 	}
 }
