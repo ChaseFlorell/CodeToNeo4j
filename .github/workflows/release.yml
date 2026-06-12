@@ -30,6 +30,15 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build TS Analyzer
+        working-directory: tools/ts-analyzer
+        run: npm ci && npm run build
+
       - name: Restore dependencies
         run: ./.github/scripts/release_restore-dependencies.sh
 
