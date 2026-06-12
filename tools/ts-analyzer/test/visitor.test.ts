@@ -58,6 +58,21 @@ describe('visitor - class declarations', () => {
     assert.equal(result.symbols.length, 1);
     assert.equal(result.symbols[0]!.fqn, `@${PROJECT}/${REL_PATH}#default`);
   });
+
+  it('emits TypeScriptAbstractClass kind for abstract classes', () => {
+    const sf = makeSourceFile('abstract class Base { abstract doWork(): void; }');
+    const result = visitFile(sf, REL_PATH, PROJECT);
+    const cls = result.symbols.find((s) => s.name === 'Base');
+    assert.ok(cls);
+    assert.equal(cls.kind, 'TypeScriptAbstractClass');
+    assert.equal(cls.class, 'class');
+  });
+
+  it('emits TypeScriptClass kind for non-abstract classes', () => {
+    const sf = makeSourceFile('class Concrete {}');
+    const result = visitFile(sf, REL_PATH, PROJECT);
+    assert.equal(result.symbols[0]!.kind, 'TypeScriptClass');
+  });
 });
 
 describe('visitor - interface declarations', () => {

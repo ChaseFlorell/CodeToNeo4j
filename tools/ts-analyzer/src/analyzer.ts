@@ -68,8 +68,18 @@ function readProjectName(projectRoot: string): string {
 function globSourceFiles(dir: string): string[] {
   const results: string[] = [];
   const skipDirs = new Set(['node_modules', 'dist', 'build', '.next', '.nuxt', 'coverage', '.git']);
+  const visited = new Set<string>();
 
   function walk(current: string): void {
+    let real: string;
+    try {
+      real = fs.realpathSync(current);
+    } catch {
+      return;
+    }
+    if (visited.has(real)) return;
+    visited.add(real);
+
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(current, { withFileTypes: true });
@@ -83,7 +93,7 @@ function globSourceFiles(dir: string): string[] {
         }
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name);
-        if (['.ts', '.tsx', '.js', '.jsx'].includes(ext) && !entry.name.endsWith('.d.ts')) {
+        if (['.ts', '.tsx', '.cts', '.mts', '.js', '.jsx'].includes(ext) && !entry.name.endsWith('.d.ts')) {
           results.push(path.join(current, entry.name));
         }
       }

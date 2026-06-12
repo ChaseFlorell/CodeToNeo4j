@@ -121,6 +121,8 @@ public class TypeScriptHandlerTests
 		// Assert
 		symbolBuffer.ShouldContain(s => s.Name == "Foo" && s.Kind == "TypeScriptClass");
 		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn);
+		symbolBuffer.First().Language.ShouldBe("typescript");
+		symbolBuffer.First().Technology.ShouldBe("node");
 	}
 
 	[Fact]
@@ -345,5 +347,91 @@ public class TypeScriptHandlerTests
 
 		// Assert
 		symbolBuffer.Count.ShouldBe(expectedCount);
+	}
+
+	[Fact]
+	public async Task GivenMultipleSymbolsAndRelationships_WhenHandled_ThenAllPopulated()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/foo.ts"] = new()
+				{
+					Symbols =
+					[
+						new() { Name = "Foo", Kind = "TypeScriptClass", Class = "class", Fqn = "@my-app/src/foo.ts::Foo", Accessibility = "Public", StartLine = 1, EndLine = 10 },
+						new() { Name = "Bar", Kind = "TypeScriptInterface", Class = "interface", Fqn = "@my-app/src/foo.ts::Bar", Accessibility = "Public", StartLine = 12, EndLine = 15 },
+						new() { Name = "doWork", Kind = "TypeScriptMethod", Class = "method", Fqn = "@my-app/src/foo.ts::Foo.doWork", Accessibility = "Public", StartLine = 3, EndLine = 5 },
+					],
+					Relationships =
+					[
+						new() { FromSymbol = "Foo", FromKind = "class", FromLine = 1, ToSymbol = "Bar", ToKind = "interface", RelType = GraphSchema.Relationships.DependsOn },
+						new() { FromSymbol = "Foo", FromKind = "class", FromLine = 1, ToSymbol = "doWork", ToKind = "method", RelType = GraphSchema.Relationships.Contains },
+					]
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/foo.ts", "/project/src/foo.ts", "src/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert
+		symbolBuffer.Count.ShouldBe(3);
+		relBuffer.Count.ShouldBe(2);
+	}
+
+	[Fact]
+	public async Task GivenAnalysisKeyWithDifferentCasing_WhenHandled_ThenFileIsMatched()
+	{
+		// Arrange — bridge returns key with different casing than the relativePath argument
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["Src/Foo.ts"] = new()   // uppercase key
+				{
+					Symbols = [ new() { Name = "Foo", Kind = "TypeScriptClass", Class = "class", Fqn = "@my-app/Src/Foo.ts::Foo", Accessibility = "Public", StartLine = 1, EndLine = 1 } ],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act — relativePath is lowercase, key is uppercase
+		await sut.Handle(
+			null, null, "test-repo", "src/foo.ts", "/project/src/foo.ts", "src/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — OrdinalIgnoreCase match finds the symbol
+		symbolBuffer.ShouldContain(s => s.Name == "Foo");
 	}
 }

@@ -109,6 +109,8 @@ public class JavaScriptHandlerTests
 		// Assert
 		symbolBuffer.ShouldContain(s => s.Name == "foo" && s.Kind == "JavaScriptFunction");
 		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.Invokes);
+		symbolBuffer.First().Language.ShouldBe("javascript");
+		symbolBuffer.First().Technology.ShouldBe("node");
 	}
 
 	[Fact]
@@ -274,5 +276,91 @@ public class JavaScriptHandlerTests
 
 		// Assert
 		symbolBuffer.Count.ShouldBe(expectedCount);
+	}
+
+	[Fact]
+	public async Task GivenMultipleSymbolsAndRelationships_WhenHandled_ThenAllPopulated()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<JavaScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/test.js", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/test.js"] = new()
+				{
+					Symbols =
+					[
+						new() { Name = "a", Kind = "JavaScriptFunction", Class = "function", Fqn = "@my-app/src/test.js::a", Accessibility = "Public", StartLine = 1, EndLine = 1 },
+						new() { Name = "b", Kind = "JavaScriptFunction", Class = "function", Fqn = "@my-app/src/test.js::b", Accessibility = "Public", StartLine = 3, EndLine = 3 },
+						new() { Name = "c", Kind = "JavaScriptFunction", Class = "function", Fqn = "@my-app/src/test.js::c", Accessibility = "Public", StartLine = 5, EndLine = 5 },
+					],
+					Relationships =
+					[
+						new() { FromSymbol = "a", FromKind = "function", FromLine = 1, ToSymbol = "b", ToKind = "function", RelType = GraphSchema.Relationships.Invokes },
+						new() { FromSymbol = "b", FromKind = "function", FromLine = 3, ToSymbol = "c", ToKind = "function", RelType = GraphSchema.Relationships.Invokes },
+					]
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/test.js", "/project/src/test.js", "src/test.js",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert
+		symbolBuffer.Count.ShouldBe(3);
+		relBuffer.Count.ShouldBe(2);
+	}
+
+	[Fact]
+	public async Task GivenAnalysisKeyWithDifferentCasing_WhenHandled_ThenFileIsMatched()
+	{
+		// Arrange — bridge returns key with different casing than the relativePath argument
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		JavaScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<JavaScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/test.js", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["Src/Test.js"] = new()   // uppercase key
+				{
+					Symbols = [ new() { Name = "foo", Kind = "JavaScriptFunction", Class = "function", Fqn = "@my-app/Src/Test.js::foo", Accessibility = "Public", StartLine = 1, EndLine = 1 } ],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act — relativePath is lowercase, key is uppercase
+		await sut.Handle(
+			null, null, "test-repo", "src/test.js", "/project/src/test.js", "src/test.js",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — OrdinalIgnoreCase match finds the symbol
+		symbolBuffer.ShouldContain(s => s.Name == "foo");
 	}
 }

@@ -99,10 +99,11 @@ function visitNode(node: ts.Node, ctx: VisitorContext): void {
 function handleClass(node: ts.ClassDeclaration, ctx: VisitorContext): void {
   const name = node.name?.text ?? 'default';
   const fqn = node.name ? buildFqn(ctx, name) : `@${ctx.projectName}/${ctx.relativePath}#default`;
+  const isAbstract = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.AbstractKeyword) ?? false;
 
   ctx.symbols.push({
     name,
-    kind: 'TypeScriptClass',
+    kind: isAbstract ? 'TypeScriptAbstractClass' : 'TypeScriptClass',
     class: 'class',
     fqn,
     accessibility: getAccessibility(node),

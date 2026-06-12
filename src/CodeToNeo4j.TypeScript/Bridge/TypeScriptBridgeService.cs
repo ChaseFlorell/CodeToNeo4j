@@ -97,6 +97,10 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 		}
 	}
 
+	/// <summary>
+	/// Searches PATH for a <c>node</c> (or <c>node.exe</c> on Windows) executable.
+	/// Returns the full path, or <see langword="null"/> if Node.js is not installed.
+	/// </summary>
 	internal string? FindNodeExecutable()
 	{
 		var pathVar = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
