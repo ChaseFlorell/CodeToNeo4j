@@ -1,0 +1,23 @@
+{
+  "name": "ts-analyzer-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CLI bridge for CodeToNeo4j TypeScript/JavaScript semantic analysis",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js",
+    "test": "tsx --test test/models.test.ts test/visitor.test.ts test/analyzer.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "esbuild": "^0.25.5",
+    "tsx": "^4.19.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

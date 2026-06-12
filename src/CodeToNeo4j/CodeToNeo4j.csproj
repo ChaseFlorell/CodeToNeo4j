@@ -44,6 +44,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\CodeToNeo4j.Dart\CodeToNeo4j.Dart.csproj" />
+		<ProjectReference Include="..\CodeToNeo4j.TypeScript\CodeToNeo4j.TypeScript.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -4,8 +4,11 @@ using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
 using CodeToNeo4j.Graph.Models;
 using CodeToNeo4j.Technologies.Web.TypeScript;
+using CodeToNeo4j.TypeScript.Bridge;
+using CodeToNeo4j.TypeScript.Models;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
 
@@ -24,62 +27,114 @@ public class TypeScriptHandlerTests
 	[Theory]
 	[InlineData("test.ts")]
 	[InlineData("test.tsx")]
-	public void GivenTsOrTsxFile_WhenCanHandleCalled_ThenReturnsTrue(string filePath)
+	public void GivenTsOrTsxFile_WhenCanHandleCalled_ThenReturnsTrue(string fileName)
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
-		sut.CanHandle(filePath).ShouldBeTrue();
+		TypeScriptHandler sut = new(
+			new MockFileSystem(),
+			new TextSymbolMapper(),
+			A.Fake<ITypeScriptBridgeService>(),
+			NullLogger<TypeScriptHandler>.Instance,
+			CreateConfigService());
+
+		sut.CanHandle(fileName).ShouldBeTrue();
 	}
 
 	[Fact]
 	public void GivenJsFile_WhenCanHandleCalled_ThenReturnsFalse()
 	{
-		TypeScriptHandler sut = new(new MockFileSystem(), new TextSymbolMapper(), CreateConfigService());
+		TypeScriptHandler sut = new(
+			new MockFileSystem(),
+			new TextSymbolMapper(),
+			A.Fake<ITypeScriptBridgeService>(),
+			NullLogger<TypeScriptHandler>.Instance,
+			CreateConfigService());
+
 		sut.CanHandle("test.js").ShouldBeFalse();
 	}
 
 	[Fact]
-	public async Task GivenTsInSubfolder_WhenHandleCalled_ThenNamespaceIsDirectory()
+	public async Task GivenTsFile_WhenBridgeReturnsResult_ThenExtractsSymbolsAndRelationships()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var filePath = "src/utils/test.ts";
-		fileSystem.AddFile(filePath, new("function foo() {}"));
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new("export class Foo {}"));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/foo.ts"] = new()
+				{
+					Symbols =
+					[
+						new()
+						{
+							Name = "Foo",
+							Kind = "TypeScriptClass",
+							Class = "class",
+							Fqn = "@my-app/src/foo.ts::Foo",
+							Accessibility = "Public",
+							StartLine = 1,
+							EndLine = 1,
+							Namespace = "@my-app/src"
+						}
+					],
+					Relationships =
+					[
+						new()
+						{
+							FromSymbol = "Foo",
+							FromKind = "class",
+							FromLine = 1,
+							ToSymbol = "Bar",
+							ToKind = "class",
+							RelType = GraphSchema.Relationships.DependsOn
+						}
+					]
+				}
+			}
+		};
+
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
 		List<Symbol> symbolBuffer = [];
 		List<Relationship> relBuffer = [];
 
 		// Act
-		var result = await sut.Handle(
+		await sut.Handle(
 			null,
 			null,
 			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
+			"src/foo.ts",
+			"/project/src/foo.ts",
+			"src/foo.ts",
 			symbolBuffer,
 			relBuffer,
-			Accessibility.Private);
+			Accessibility.NotApplicable);
 
 		// Assert
-		result.Namespace.ShouldBe("src/utils");
-		symbolBuffer.First().Namespace.ShouldBe("src/utils");
+		symbolBuffer.ShouldContain(s => s.Name == "Foo" && s.Kind == "TypeScriptClass");
+		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.DependsOn);
 	}
 
 	[Fact]
-	public async Task GivenTsWithFunctionAndImport_WhenHandleCalled_ThenAddsSymbolsAndRelationships()
+	public async Task GivenTsFile_WhenBridgeReturnsNull_ThenReturnsEmptyResult()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-import { Component } from '@angular/core';
-function myFunction(value: string): void {
-    console.log(value);
-}
-const myArrow = (x: number): number => x * 2;";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new("export class Foo {}"));
+
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns((TsAnalysisResult?)null);
 
 		List<Symbol> symbolBuffer = [];
 		List<Relationship> relBuffer = [];
@@ -89,265 +144,12 @@ const myArrow = (x: number): number => x * 2;";
 			null,
 			null,
 			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
+			"src/foo.ts",
+			"/project/src/foo.ts",
+			"src/foo.ts",
 			symbolBuffer,
 			relBuffer,
-			Accessibility.Private);
-
-		// Assert — @angular/core is a bare module specifier, so it links directly to pkg: without creating a symbol
-		symbolBuffer.ShouldNotContain(s => s.Kind == "TypeScriptImport");
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == "pkg:@angular/core" && r.RelType == GraphSchema.Relationships.DependsOn);
-
-		var functionSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "myFunction");
-		functionSymbol.ShouldNotBeNull();
-		functionSymbol.Kind.ShouldBe("TypeScriptFunction");
-
-		var arrowSymbol = symbolBuffer.FirstOrDefault(s => s.Name == "myArrow");
-		arrowSymbol.ShouldNotBeNull();
-		arrowSymbol.Kind.ShouldBe("TypeScriptFunction");
-
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == functionSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
-	}
-
-	[Fact]
-	public async Task GivenTsWithInterface_WhenHandleCalled_ThenAddsInterfaceSymbol()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-interface User {
-    id: number;
-    name: string;
-}";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		var interfaceSymbol = symbolBuffer.FirstOrDefault(s => s.Kind == "TypeScriptInterface");
-		interfaceSymbol.ShouldNotBeNull();
-		interfaceSymbol.Name.ShouldBe("User");
-		interfaceSymbol.Class.ShouldBe("interface");
-
-		relBuffer.ShouldContain(r => r.FromKey == "test.ts" && r.ToKey == interfaceSymbol.Key && r.RelType == GraphSchema.Relationships.Contains);
-	}
-
-	[Fact]
-	public async Task GivenTsWithTypeAlias_WhenHandleCalled_ThenAddsTypeAliasSymbol()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-type UserId = string | number;
-type Result<T> = { value: T; error?: string };";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		List<Symbol> typeAliases = symbolBuffer.Where(s => s.Kind == "TypeScriptTypeAlias").ToList();
-		typeAliases.Count.ShouldBe(2);
-		typeAliases.ShouldContain(s => s.Name == "UserId");
-		typeAliases.ShouldContain(s => s.Name == "Result");
-	}
-
-	[Fact]
-	public async Task GivenTsWithEnum_WhenHandleCalled_ThenAddsEnumSymbol()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right
-}
-const enum Status {
-    Active = 'active',
-    Inactive = 'inactive'
-}";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		List<Symbol> enums = symbolBuffer.Where(s => s.Kind == "TypeScriptEnum").ToList();
-		enums.Count.ShouldBe(2);
-		enums.ShouldContain(s => s.Name == "Direction");
-		enums.ShouldContain(s => s.Name == "Status");
-		enums.ForEach(e => e.Class.ShouldBe("enum"));
-
-		relBuffer.ShouldContain(r => r.RelType == GraphSchema.Relationships.Contains && enums.Any(e => e.Key == r.ToKey));
-	}
-
-	[Fact]
-	public async Task GivenTsWithFunctionCallGraph_WhenHandleCalled_ThenAddsInvokesRelationship()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-function validate(order: Order): boolean {
-    return order != null;
-}
-function processOrder(order: Order): void {
-    validate(order);
-    save(order);
-}
-function save(order: Order): void {}";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		var processOrder = symbolBuffer.FirstOrDefault(s => s.Name == "processOrder");
-		var validate = symbolBuffer.FirstOrDefault(s => s.Name == "validate");
-		var save = symbolBuffer.FirstOrDefault(s => s.Name == "save");
-
-		processOrder.ShouldNotBeNull();
-		validate.ShouldNotBeNull();
-		save.ShouldNotBeNull();
-
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == validate!.Key && r.RelType == GraphSchema.Relationships.Invokes);
-		relBuffer.ShouldContain(r => r.FromKey == processOrder!.Key && r.ToKey == save!.Key && r.RelType == GraphSchema.Relationships.Invokes);
-	}
-
-	[Fact]
-	public async Task GivenTsWithMixedConstructs_WhenHandleCalled_ThenExtractsAll()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = @"
-import { Injectable } from '@angular/core';
-
-interface UserService {
-    getUser(id: string): Promise<User>;
-}
-
-type UserId = string;
-
-enum Role {
-    Admin,
-    User
-}
-
-function createUser(name: string): User {
-    return { name };
-}";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
-
-		// Assert
-		// @angular/core is a bare module specifier — links directly to pkg: node, no symbol created
-		relBuffer.ShouldContain(r => r.ToKey == "pkg:@angular/core" && r.RelType == GraphSchema.Relationships.DependsOn);
-		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptInterface" && s.Name == "UserService");
-		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptTypeAlias" && s.Name == "UserId");
-		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptEnum" && s.Name == "Role");
-		symbolBuffer.ShouldContain(s => s.Kind == "TypeScriptFunction" && s.Name == "createUser");
-	}
-
-	[Fact]
-	public async Task GivenTsWithNoConstructs_WhenHandleCalled_ThenNoSymbols()
-	{
-		// Arrange
-		MockFileSystem fileSystem = new();
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
-		var content = "// just a comment\nconst x = 42;";
-		var filePath = "test.ts";
-		fileSystem.AddFile(filePath, new(content));
-
-		List<Symbol> symbolBuffer = [];
-		List<Relationship> relBuffer = [];
-
-		// Act
-		await sut.Handle(
-			null,
-			null,
-			"test-repo",
-			"test.ts",
-			filePath,
-			filePath,
-			symbolBuffer,
-			relBuffer,
-			Accessibility.Private);
+			Accessibility.NotApplicable);
 
 		// Assert
 		symbolBuffer.ShouldBeEmpty();
@@ -355,40 +157,193 @@ function createUser(name: string): User {
 	}
 
 	[Fact]
-	public async Task GivenTypeScriptHandler_WhenHandleCalled_ThenAllSymbolsHaveLanguageTypescript()
+	public async Task GivenNoPackageJsonFound_WhenHandled_ThenSkipsBridgeAndReturnsEmpty()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		fileSystem.AddFile("src/app.ts", new("export interface IFoo { }"));
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/orphan/foo.ts", new("export class Foo {}"));
 
 		List<Symbol> symbolBuffer = [];
 		List<Relationship> relBuffer = [];
 
 		// Act
-		await sut.Handle(null, null, null, "src/app.ts", "src/app.ts", "src/app.ts", symbolBuffer, relBuffer, Accessibility.Public);
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"orphan/foo.ts",
+			"/orphan/foo.ts",
+			"orphan/foo.ts",
+			symbolBuffer,
+			relBuffer,
+			Accessibility.NotApplicable);
 
 		// Assert
-		symbolBuffer.ShouldNotBeEmpty();
-		symbolBuffer.ShouldAllBe(s => s.Language == "typescript");
+		symbolBuffer.ShouldBeEmpty();
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
-	public async Task GivenTypeScriptHandler_WhenHandleCalled_ThenAllSymbolsHaveTechnologyNode()
+	public async Task GivenFileNotInBridgeResult_WhenHandled_ThenReturnsEmptyResult()
 	{
 		// Arrange
 		MockFileSystem fileSystem = new();
-		fileSystem.AddFile("src/app.ts", new("export interface IFoo { }"));
-		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), CreateConfigService());
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new() { ["src/other.ts"] = new() { Symbols = [], Relationships = [] } }
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
 
 		List<Symbol> symbolBuffer = [];
 		List<Relationship> relBuffer = [];
 
 		// Act
-		await sut.Handle(null, null, null, "src/app.ts", "src/app.ts", "src/app.ts", symbolBuffer, relBuffer, Accessibility.Public);
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"src/foo.ts",
+			"/project/src/foo.ts",
+			"src/foo.ts",
+			symbolBuffer,
+			relBuffer,
+			Accessibility.NotApplicable);
 
 		// Assert
-		symbolBuffer.ShouldNotBeEmpty();
-		symbolBuffer.ShouldAllBe(s => s.Technology == "node");
+		symbolBuffer.ShouldBeEmpty();
+		relBuffer.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public async Task GivenFileInRootDirectory_WhenHandled_ThenNamespaceIsNullOrEmpty()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/root.ts", new("export class Root {}"));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["root.ts"] = new()
+				{
+					Symbols =
+					[
+						new()
+						{
+							Name = "Root",
+							Kind = "TypeScriptClass",
+							Class = "class",
+							Fqn = "@my-app/root.ts::Root",
+							Accessibility = "Public",
+							StartLine = 1,
+							EndLine = 1,
+							Namespace = null
+						}
+					],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act — relativePath has no directory component
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"root.ts",
+			"/project/root.ts",
+			"root.ts",
+			symbolBuffer,
+			relBuffer,
+			Accessibility.NotApplicable);
+
+		// Assert
+		symbolBuffer.ShouldContain(s => s.Name == "Root");
+		symbolBuffer.First(s => s.Name == "Root").Namespace.ShouldBeNullOrEmpty();
+	}
+
+	[Theory]
+	[InlineData("Protected", Accessibility.Public, 0)]
+	[InlineData("Private", Accessibility.Public, 0)]
+	[InlineData("Protected", Accessibility.Protected, 1)]
+	[InlineData("Public", Accessibility.Public, 1)]
+	[InlineData("UnknownAccess", Accessibility.Public, 1)]
+	public async Task GivenSymbolAccessibility_WhenMinAccessibilityFilters_ThenIncludesOrExcludesCorrectly(
+		string symbolAccessibility, Accessibility minAccessibility, int expectedCount)
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/foo.ts"] = new()
+				{
+					Symbols =
+					[
+						new()
+						{
+							Name = "Foo",
+							Kind = "TypeScriptClass",
+							Class = "class",
+							Fqn = "@my-app/src/foo.ts::Foo",
+							Accessibility = symbolAccessibility,
+							StartLine = 1,
+							EndLine = 1
+						}
+					],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null,
+			null,
+			"test-repo",
+			"src/foo.ts",
+			"/project/src/foo.ts",
+			"src/foo.ts",
+			symbolBuffer,
+			relBuffer,
+			minAccessibility);
+
+		// Assert
+		symbolBuffer.Count.ShouldBe(expectedCount);
 	}
 }
