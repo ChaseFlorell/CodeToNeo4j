@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework />
+		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging" />
+		<PackageReference Include="System.IO.Abstractions" />
+	</ItemGroup>
+
+	<!-- Build the ts-analyzer bundle if it hasn't been built yet.
+	     CI runs `npm ci && npm run build` explicitly before `dotnet build`;
+	     this target handles the local-dev case where npm build hasn't been run. -->
+	<Target Name="BuildTsAnalyzerBundle" BeforeTargets="BeforeBuild"
+	        Condition="!Exists('$(MSBuildThisFileDirectory)..\..\tools\ts-analyzer\dist\index.js')">
+		<Message Text="ts-analyzer bundle not found — running npm build..." Importance="high" />
+		<Exec Command="npm ci" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\tools\ts-analyzer" />
+		<Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\tools\ts-analyzer" />
+	</Target>
+
+	<!-- Embed the bundled ts-analyzer so it ships inside the assembly.
+	     At runtime TypeScriptBridgeService extracts dist/index.js to a versioned cache dir.
+	     The bundle is self-contained (esbuild output) — no npm install step needed at runtime. -->
+	<ItemGroup>
+		<None Remove="..\..\tools\ts-analyzer\dist\index.js" />
+		<EmbeddedResource Include="..\..\tools\ts-analyzer\dist\index.js" LogicalName="ts-bridge.dist.index.js" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="CodeToNeo4j.TypeScript.Tests" />
+	</ItemGroup>
+
+</Project>

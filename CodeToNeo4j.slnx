@@ -73,6 +73,8 @@
 	</Folder>
 	<Project Path="src/CodeToNeo4j/CodeToNeo4j.csproj" />
 	<Project Path="src/CodeToNeo4j.Dart/CodeToNeo4j.Dart.csproj" />
+	<Project Path="src/CodeToNeo4j.TypeScript/CodeToNeo4j.TypeScript.csproj" />
 	<Project Path="tests/CodeToNeo4j.Tests/CodeToNeo4j.Tests.csproj" />
 	<Project Path="tests/CodeToNeo4j.Dart.Tests/CodeToNeo4j.Dart.Tests.csproj" />
+	<Project Path="tests/CodeToNeo4j.TypeScript.Tests/CodeToNeo4j.TypeScript.Tests.csproj" />
 </Solution>

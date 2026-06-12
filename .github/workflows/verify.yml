@@ -30,6 +30,19 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build TS Analyzer
+        working-directory: tools/ts-analyzer
+        run: npm ci && npm run build
+
+      - name: Test TS Analyzer
+        working-directory: tools/ts-analyzer
+        run: npm test
+
       - name: Dart Test
         working-directory: tools/dart-analyzer
         run: ${{ github.workspace }}/.github/scripts/verify_dart-test.sh

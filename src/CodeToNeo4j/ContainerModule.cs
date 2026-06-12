@@ -4,6 +4,7 @@ using CodeToNeo4j.Configuration;
 using CodeToNeo4j.Cypher;
 using CodeToNeo4j.Dart.Bridge;
 using CodeToNeo4j.Dart.Yaml;
+using CodeToNeo4j.TypeScript.Bridge;
 using CodeToNeo4j.FileSystem;
 using CodeToNeo4j.Graph;
 using CodeToNeo4j.Graph.Mapping;
@@ -106,6 +107,7 @@ public static class ContainerModule
 		services.AddSingleton<IDocumentHandler, PubspecYamlHandler>();
 
 		services.AddSingleton<IDartBridgeService, DartBridgeService>();
+		services.AddSingleton<ITypeScriptBridgeService, TypeScriptBridgeService>();
 
 		services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
 		services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
