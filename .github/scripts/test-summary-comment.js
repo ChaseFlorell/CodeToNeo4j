@@ -1,4 +1,4 @@
-module.exports = async ({github, context}) => {
+module.exports = async ({github, context, prNumber}) => {
 	const fs = require('fs');
 	const path = require('path');
 
@@ -23,7 +23,7 @@ module.exports = async ({github, context}) => {
 	const {data: comments} = await github.rest.issues.listComments({
 		owner: context.repo.owner,
 		repo: context.repo.repo,
-		issue_number: context.payload.pull_request.number,
+		issue_number: prNumber,
 		per_page: 100
 	});
 
@@ -40,7 +40,7 @@ module.exports = async ({github, context}) => {
 		await github.rest.issues.createComment({
 			owner: context.repo.owner,
 			repo: context.repo.repo,
-			issue_number: context.payload.pull_request.number,
+			issue_number: prNumber,
 			body: body
 		});
 	}

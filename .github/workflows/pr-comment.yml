@@ -1,0 +1,48 @@
+name: PR Test Summary Comment
+
+on:
+  workflow_run:
+    workflows: [ "Build, Test, and Cover" ]
+    types: [ completed ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Download Test Summary
+        uses: actions/download-artifact@v4
+        with:
+          name: test-summary
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test Summary PR Comment
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            let prNumber = context.payload.workflow_run.pull_requests[0]?.number
+
+            if (!prNumber) {
+              const {data} = await github.rest.search.issuesAndPullRequests({
+                q: `${context.payload.workflow_run.head_sha} repo:${context.repo.owner}/${context.repo.repo} type:pr`
+              })
+              prNumber = data.items[0]?.number
+            }
+
+            if (!prNumber) {
+              core.warning('Could not determine PR number for this workflow_run; skipping comment')
+              return
+            }
+
+            const script = require('./.github/scripts/test-summary-comment.js')
+            await script({github, context, prNumber})
