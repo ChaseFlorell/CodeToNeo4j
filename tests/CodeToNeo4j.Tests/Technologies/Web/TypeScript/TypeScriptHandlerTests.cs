@@ -286,12 +286,107 @@ public class TypeScriptHandlerTests
 		symbolBuffer.First(s => s.Name == "Root").Namespace.ShouldBeNullOrEmpty();
 	}
 
+	[Fact]
+	public async Task GivenSymbolWithNoExplicitNamespace_WhenHandledInSubdirectory_ThenFallsBackToFileNamespace()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/nested/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/nested/foo.ts"] = new()
+				{
+					Symbols =
+					[
+						new()
+						{
+							Name = "Foo",
+							Kind = "TypeScriptClass",
+							Class = "class",
+							Fqn = "@my-app/src/nested/foo.ts::Foo",
+							Accessibility = "Public",
+							StartLine = 1,
+							EndLine = 1,
+							Namespace = null
+						}
+					],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/nested/foo.ts", "/project/src/nested/foo.ts", "src/nested/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — symbol.Namespace falls back to the directory-derived namespace ("src/nested")
+		symbolBuffer.First(s => s.Name == "Foo").Namespace.ShouldBe("src/nested");
+	}
+
+	[Fact]
+	public async Task GivenPackageJsonSeveralDirectoriesAbove_WhenHandled_ThenProjectRootIsFound()
+	{
+		// Arrange — package.json lives two levels above the file being handled
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/nested/deep/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/nested/deep/foo.ts"] = new()
+				{
+					Symbols = [new() { Name = "Foo", Kind = "TypeScriptClass", Class = "class", Fqn = "@my-app/src/nested/deep/foo.ts::Foo", Accessibility = "Public", StartLine = 1, EndLine = 1 }],
+					Relationships = []
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/nested/deep/foo.ts", "/project/src/nested/deep/foo.ts", "src/nested/deep/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — the bridge was invoked with the project root found several directories up
+		A.CallTo(() => bridgeService.AnalyzeProject("/project")).MustHaveHappened();
+		symbolBuffer.ShouldContain(s => s.Name == "Foo");
+	}
+
 	[Theory]
 	[InlineData("Protected", Accessibility.Public, 0)]
 	[InlineData("Private", Accessibility.Public, 0)]
 	[InlineData("Protected", Accessibility.Protected, 1)]
 	[InlineData("Public", Accessibility.Public, 1)]
 	[InlineData("UnknownAccess", Accessibility.Public, 1)]
+	[InlineData("Internal", Accessibility.Internal, 1)]
+	[InlineData("Internal", Accessibility.Public, 0)]
+	[InlineData("Private", Accessibility.Protected, 0)]
+	[InlineData("UnknownAccess", Accessibility.Internal, 1)]
+	[InlineData("UnknownAccess", Accessibility.Private, 1)]
 	public async Task GivenSymbolAccessibility_WhenMinAccessibilityFilters_ThenIncludesOrExcludesCorrectly(
 		string symbolAccessibility, Accessibility minAccessibility, int expectedCount)
 	{
@@ -433,6 +528,110 @@ public class TypeScriptHandlerTests
 
 		// Assert — OrdinalIgnoreCase match finds the symbol
 		symbolBuffer.ShouldContain(s => s.Name == "Foo");
+	}
+
+	[Fact]
+	public async Task GivenRelationshipWithToFileSet_WhenHandled_ThenToKeyUsesResolvedCrossFileKey()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/foo.ts"] = new()
+				{
+					Symbols = [],
+					Relationships =
+					[
+						new()
+						{
+							FromSymbol = "Foo",
+							FromKind = "class",
+							FromLine = 1,
+							ToSymbol = "Base",
+							ToKind = "class",
+							ToFile = "src/base.ts",
+							RelType = GraphSchema.Relationships.DependsOn
+						}
+					]
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/foo.ts", "/project/src/foo.ts", "src/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — toKey is built from the cross-file key (src/base.ts), not the current file's key
+		TextSymbolMapper mapper = new();
+		var expectedToKey = mapper.BuildKey("src/base.ts", "class", "Base", null);
+		relBuffer.ShouldContain(r => r.ToKey == expectedToKey);
+	}
+
+	[Fact]
+	public async Task GivenRelationshipWithNoToFile_WhenHandled_ThenToKeyUsesCurrentFileKey()
+	{
+		// Arrange
+		MockFileSystem fileSystem = new();
+		ITypeScriptBridgeService bridgeService = A.Fake<ITypeScriptBridgeService>();
+		TypeScriptHandler sut = new(fileSystem, new TextSymbolMapper(), bridgeService, NullLogger<TypeScriptHandler>.Instance, CreateConfigService());
+
+		fileSystem.AddFile("/project/package.json", new("{}"));
+		fileSystem.AddFile("/project/src/foo.ts", new(""));
+
+		TsAnalysisResult analysisResult = new()
+		{
+			ProjectName = "my-app",
+			ProjectRoot = "/project",
+			Files = new()
+			{
+				["src/foo.ts"] = new()
+				{
+					Symbols = [],
+					Relationships =
+					[
+						new()
+						{
+							FromSymbol = "Foo",
+							FromKind = "class",
+							FromLine = 1,
+							ToSymbol = "Bar",
+							ToKind = "class",
+							ToFile = null,
+							RelType = GraphSchema.Relationships.DependsOn
+						}
+					]
+				}
+			}
+		};
+		A.CallTo(() => bridgeService.AnalyzeProject(A<string>._)).Returns(analysisResult);
+
+		List<Symbol> symbolBuffer = [];
+		List<Relationship> relBuffer = [];
+
+		// Act
+		await sut.Handle(
+			null, null, "test-repo", "src/foo.ts", "/project/src/foo.ts", "src/foo.ts",
+			symbolBuffer, relBuffer, Accessibility.NotApplicable);
+
+		// Assert — toKey falls back to the current file's key (src/foo.ts)
+		TextSymbolMapper mapper = new();
+		var expectedToKey = mapper.BuildKey("src/foo.ts", "class", "Bar", null);
+		relBuffer.ShouldContain(r => r.ToKey == expectedToKey);
 	}
 
 	[Fact]

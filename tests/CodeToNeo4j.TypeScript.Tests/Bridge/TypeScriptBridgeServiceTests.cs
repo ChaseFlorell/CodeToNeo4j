@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Reflection;
 using CodeToNeo4j.TypeScript.Bridge;
+using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using Xunit;
@@ -184,5 +185,61 @@ public class TypeScriptBridgeServiceTests
 		var result = sut.EnsureBridgeExtracted();
 
 		result.ShouldBe(cacheRoot);
+	}
+
+	[Fact]
+	public void GivenStaleCacheDirWithoutSentinel_WhenEnsureBridgeExtractedCalled_ThenDeletesAndReExtracts()
+	{
+		// Arrange
+		var assembly = typeof(TypeScriptBridgeService).Assembly;
+		var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+					  ?? assembly.GetName().Version?.ToString()
+					  ?? "0.0.0";
+		var safeVersion = string.Concat(version.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+		var cacheRoot = Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+			".codetoneo4j", "ts-analyzer", safeVersion);
+		var staleFile = Path.Combine(cacheRoot, "stale-leftover.txt");
+
+		// Pre-populate the cache directory with a leftover file, but no ".extracted" sentinel
+		MockFileSystem fs = new(new Dictionary<string, MockFileData>
+		{
+			[staleFile] = new MockFileData("leftover")
+		});
+
+		TypeScriptBridgeService sut = new(fs, NullLogger<TypeScriptBridgeService>.Instance);
+
+		// Act
+		var result = sut.EnsureBridgeExtracted();
+
+		// Assert — stale directory was deleted and the bridge re-extracted from the embedded resource
+		result.ShouldBe(cacheRoot);
+		fs.File.Exists(staleFile).ShouldBeFalse();
+		fs.File.Exists(Path.Combine(cacheRoot, "dist", "index.js")).ShouldBeTrue();
+		fs.File.Exists(Path.Combine(cacheRoot, ".extracted")).ShouldBeTrue();
+	}
+
+	[Fact]
+	public void GivenDirectoryCreationThrows_WhenEnsureBridgeExtractedCalled_ThenReturnsNull()
+	{
+		// Arrange — fake IFileSystem whose Directory.CreateDirectory throws mid-extraction
+		var fileFake = A.Fake<IFile>();
+		var directoryFake = A.Fake<IDirectory>();
+		var fsFake = A.Fake<IFileSystem>();
+
+		A.CallTo(() => fsFake.Path).Returns(new FileSystem().Path);
+		A.CallTo(() => fsFake.File).Returns(fileFake);
+		A.CallTo(() => fsFake.Directory).Returns(directoryFake);
+		A.CallTo(() => fileFake.Exists(A<string>._)).Returns(false);
+		A.CallTo(() => directoryFake.Exists(A<string>._)).Returns(false);
+		A.CallTo(() => directoryFake.CreateDirectory(A<string>._)).Throws(new IOException("simulated extraction failure"));
+
+		TypeScriptBridgeService sut = new(fsFake, NullLogger<TypeScriptBridgeService>.Instance);
+
+		// Act
+		var result = sut.EnsureBridgeExtracted();
+
+		// Assert
+		result.ShouldBeNull();
 	}
 }

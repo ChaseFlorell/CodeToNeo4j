@@ -110,3 +110,95 @@ describe('analyzer - symbol extraction integration', () => {
     assert.ok(path.isAbsolute(result.projectRoot));
   });
 });
+
+describe('analyzer - tsconfig handling', () => {
+  it('uses tsconfig.json root files when present', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'tsconfig-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'tsconfig-proj' }), 'utf-8');
+    fs.writeFileSync(
+      path.join(dir, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { target: 'es2020' }, include: ['*.ts'] }),
+      'utf-8',
+    );
+    fs.writeFileSync(path.join(dir, 'main.ts'), 'export class FromTsconfig {}', 'utf-8');
+    const result = await analyze(dir);
+    const fileResult = result.files['main.ts'];
+    assert.ok(fileResult);
+    assert.ok(fileResult.symbols.some((s) => s.name === 'FromTsconfig'));
+  });
+
+  it('warns on stderr but still analyzes when tsconfig.json is malformed', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'bad-tsconfig-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'bad-tsconfig-proj' }), 'utf-8');
+    fs.writeFileSync(path.join(dir, 'tsconfig.json'), '{ this is not valid json', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'main.ts'), 'export class Fallback {}', 'utf-8');
+
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    let stderrOutput = '';
+    process.stderr.write = ((chunk: string) => {
+      stderrOutput += chunk;
+      return true;
+    }) as typeof process.stderr.write;
+
+    try {
+      const result = await analyze(dir);
+      assert.ok(result.projectName === 'bad-tsconfig-proj');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+    assert.ok(stderrOutput.includes('Could not read tsconfig.json'));
+  });
+});
+
+describe('analyzer - project name resolution edge cases', () => {
+  it('falls back to directory name when package.json is malformed', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'bad-pkg-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), '{ not valid json', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'a.ts'), 'export class A {}', 'utf-8');
+    const result = await analyze(dir);
+    assert.equal(result.projectName, path.basename(dir));
+  });
+});
+
+describe('analyzer - generated file exclusion', () => {
+  it('excludes files matching generated-file name suffixes', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'generated-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'gen-proj' }), 'utf-8');
+    fs.writeFileSync(path.join(dir, 'schema.generated.ts'), 'export class Generated {}', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'api.gen.ts'), 'export class Gen {}', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'real.ts'), 'export class Real {}', 'utf-8');
+    const result = await analyze(dir);
+    assert.ok(!('schema.generated.ts' in result.files));
+    assert.ok(!('api.gen.ts' in result.files));
+    assert.ok('real.ts' in result.files);
+  });
+
+  it('excludes files under dist/build/.next/coverage directories', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'gen-dirs-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'gen-dirs-proj' }), 'utf-8');
+    fs.writeFileSync(path.join(dir, 'real.ts'), 'export class Real {}', 'utf-8');
+    for (const skipDir of ['dist', 'build', '.next', 'coverage']) {
+      fs.mkdirSync(path.join(dir, skipDir), { recursive: true });
+      fs.writeFileSync(path.join(dir, skipDir, 'output.ts'), 'export class Output {}', 'utf-8');
+    }
+    const result = await analyze(dir);
+    assert.ok('real.ts' in result.files);
+    assert.ok(!Object.keys(result.files).some((f) => f.includes('output.ts')));
+  });
+});
+
+describe('analyzer - glob fallback extension handling', () => {
+  it('includes .tsx, .jsx, .cts, and .mts files in glob fallback', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpDir, 'ext-'));
+    fs.writeFileSync(path.join(dir, 'a.tsx'), 'export class Tsx {}', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'b.jsx'), 'function Jsx() {}', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'c.cts'), 'export class Cts {}', 'utf-8');
+    fs.writeFileSync(path.join(dir, 'd.mts'), 'export class Mts {}', 'utf-8');
+    const result = await analyze(dir);
+    const names = Object.keys(result.files);
+    assert.ok(names.some((f) => f.endsWith('.tsx')));
+    assert.ok(names.some((f) => f.endsWith('.jsx')));
+    assert.ok(names.some((f) => f.endsWith('.cts')));
+    assert.ok(names.some((f) => f.endsWith('.mts')));
+  });
+});

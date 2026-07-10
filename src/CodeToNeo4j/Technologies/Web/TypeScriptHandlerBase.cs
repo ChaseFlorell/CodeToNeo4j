@@ -90,10 +90,20 @@ public abstract class TypeScriptHandlerBase(
 			symbolBuffer.Add(symbol);
 		}
 
+		var currentFileProjectRelative = _fileSystem.Path.GetRelativePath(projectRoot, filePath).Replace('\\', '/');
+		var solutionRelativeNormalized = relativePath.Replace('\\', '/');
+		var projectRootPrefix = solutionRelativeNormalized.Length > currentFileProjectRelative.Length
+			? solutionRelativeNormalized[..^currentFileProjectRelative.Length]
+			: string.Empty;
+
 		foreach (var rel in fileResult.Relationships)
 		{
+			var toFileKey = string.IsNullOrEmpty(rel.ToFile)
+				? fileKey
+				: projectRootPrefix + rel.ToFile.Replace('\\', '/');
+
 			var fromKey = textSymbolMapper.BuildKey(fileKey, rel.FromKind, rel.FromSymbol, rel.FromLine);
-			var toKey = textSymbolMapper.BuildKey(fileKey, rel.ToKind, rel.ToSymbol, rel.ToLine);
+			var toKey = textSymbolMapper.BuildKey(toFileKey, rel.ToKind, rel.ToSymbol, rel.ToLine);
 
 			relBuffer.Add(new(fromKey, toKey, rel.RelType));
 		}
