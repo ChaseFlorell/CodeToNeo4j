@@ -49,6 +49,7 @@ jobs:
           files: tools/dart-analyzer/coverage/lcov.info
           flags: dart
           fail_ci_if_error: false
+          skip_validation: true
 
       - name: Upload .NET Coverage to Codecov
         if: always()
@@ -58,6 +59,7 @@ jobs:
           directory: ./TestResults
           flags: dotnet
           fail_ci_if_error: false
+          skip_validation: true
 
       - name: Collect Test Results
         if: always()
