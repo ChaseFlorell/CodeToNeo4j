@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download Test Summary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: test-summary
           run-id: ${{ github.event.workflow_run.id }}
