@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
@@ -11,18 +12,15 @@ namespace CodeToNeo4j.TypeScript.Bridge;
 public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptBridgeService> logger) : ITypeScriptBridgeService
 {
 	[ExcludeFromCodeCoverage(Justification = "Requires live Node.js runtime and OS process execution")]
-	public async Task<TsAnalysisResult?> AnalyzeProject(string projectRoot)
-	{
-		if (_cache.TryGetValue(projectRoot, out var cached))
-		{
-			return cached;
-		}
+	public Task<TsAnalysisResult?> AnalyzeProject(string projectRoot) =>
+		_cache.GetOrAdd(projectRoot, key => new Lazy<Task<TsAnalysisResult?>>(() => AnalyzeProjectCore(key))).Value;
 
+	private async Task<TsAnalysisResult?> AnalyzeProjectCore(string projectRoot)
+	{
 		var nodeExecutable = FindNodeExecutable();
 		if (nodeExecutable is null)
 		{
 			logger.LogWarning("Node.js not found on PATH. Skipping TypeScript/JavaScript analysis for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 
@@ -30,7 +28,6 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 		if (bridgeDir is null)
 		{
 			logger.LogWarning("Failed to extract TypeScript analyzer bridge. Skipping analysis for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 
@@ -54,19 +51,21 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 			if (process is null)
 			{
 				logger.LogWarning("Failed to start TypeScript analyzer bridge process");
-				_cache[projectRoot] = null;
 				return null;
 			}
 
 			var stdoutTask = process.StandardOutput.ReadToEndAsync();
 			var stderrTask = process.StandardError.ReadToEndAsync();
 
-			var completed = process.WaitForExit((int)_defaultTimeout.TotalMilliseconds);
-			if (!completed)
+			using CancellationTokenSource cts = new(_defaultTimeout);
+			try
+			{
+				await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
 			{
 				process.Kill(entireProcessTree: true);
 				logger.LogWarning("TypeScript analyzer bridge timed out after {Timeout}", _defaultTimeout);
-				_cache[projectRoot] = null;
 				return null;
 			}
 
@@ -79,20 +78,17 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 			if (process.ExitCode != 0)
 			{
 				logger.LogWarning("TypeScript analyzer bridge exited with code {ExitCode}", process.ExitCode);
-				_cache[projectRoot] = null;
 				return null;
 			}
 
 			var stdout = await stdoutTask.ConfigureAwait(false);
 			var result = JsonSerializer.Deserialize<TsAnalysisResult>(stdout);
-			_cache[projectRoot] = result;
 			logger.LogInformation("TypeScript analysis complete: {FileCount} files analyzed", result?.Files.Count ?? 0);
 			return result;
 		}
 		catch (Exception ex)
 		{
 			logger.LogWarning(ex, "Error running TypeScript analyzer bridge for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 	}
@@ -202,7 +198,7 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 		}
 	}
 
-	private readonly Dictionary<string, TsAnalysisResult?> _cache = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, Lazy<Task<TsAnalysisResult?>>> _cache = new(StringComparer.OrdinalIgnoreCase);
 	private string? _bridgeDir;
 
 	private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);

@@ -89,7 +89,7 @@ public class SolutionProcessorTests
 		totalSymbols.ShouldBe(1);
 		totalRels.ShouldBe(1);
 		A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb")).MustHaveHappenedOnceExactly();
-		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb")).MustHaveHappenedOnceExactly();
+		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<string>>._, A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb")).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -119,7 +119,7 @@ public class SolutionProcessorTests
 		// Assert
 		totalSymbols.ShouldBe(3);
 		A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb")).MustHaveHappened(2, Times.Exactly);
-		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb"))
+		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<string>>._, A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb"))
 			.MustHaveHappened(2, Times.Exactly);
 	}
 
@@ -417,7 +417,7 @@ public class SolutionProcessorTests
 
 		// assert — no flushing happened
 		A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, A<string>._)).MustNotHaveHappened();
-		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, A<string>._)).MustNotHaveHappened();
+		A.CallTo(() => graphService.FlushSymbols(A<IEnumerable<string>>._, A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, A<string>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
