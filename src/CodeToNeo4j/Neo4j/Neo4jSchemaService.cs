@@ -76,12 +76,15 @@ public class Neo4jSchemaService(
 		}
 
 		logger.LogDebug("Ensuring schema for database: {DatabaseName}", databaseName);
-		var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
 		var schema = cypherService.GetCypher(Queries.Schema);
 		var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-		await Task.WhenAll(statements.Select(cypher => session.RunWithRetry(cypher)))
-			.ContinueWith(async _ => await session.DisposeAsync());
+		foreach (var cypher in statements)
+		{
+			var cursor = await session.RunWithRetry(cypher).ConfigureAwait(false);
+			await cursor.ConsumeAsync().ConfigureAwait(false);
+		}
 	}
 
 	private async Task UpsertProject(string repoKey, string databaseName)

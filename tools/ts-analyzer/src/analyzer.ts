@@ -8,7 +8,15 @@ export async function analyze(projectRoot: string): Promise<AnalysisResult> {
   const normalizedRoot = path.resolve(projectRoot);
   const projectName = readProjectName(normalizedRoot);
 
-  const configPath = ts.findConfigFile(normalizedRoot, ts.sys.fileExists, 'tsconfig.json');
+  // ts.findConfigFile walks UP the directory tree with no ceiling. If normalizedRoot has no
+  // tsconfig.json of its own, it will keep ascending past the project root -- potentially
+  // reaching a home-directory or system-level tsconfig -- and that ancestor's `include`/`files`
+  // patterns would then be parsed and enumerated (via ts.createProgram below) across a directory
+  // tree far broader than this project, before the startsWith(normalizedRoot) filter at output
+  // time discards the irrelevant results. Reject any config found outside normalizedRoot so we
+  // fall back to the bounded glob instead.
+  const foundConfigPath = ts.findConfigFile(normalizedRoot, ts.sys.fileExists, 'tsconfig.json');
+  const configPath = foundConfigPath && path.resolve(foundConfigPath).startsWith(normalizedRoot) ? foundConfigPath : undefined;
 
   let compilerOptions: ts.CompilerOptions;
   let rootFileNames: string[];

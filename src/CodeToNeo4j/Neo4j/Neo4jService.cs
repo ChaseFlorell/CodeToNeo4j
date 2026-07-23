@@ -102,8 +102,8 @@ public class Neo4jService(
 	public Task FlushFiles(IEnumerable<FileMetaData> files, string databaseName) =>
 		flushService.FlushFiles(files, databaseName);
 
-	public Task FlushSymbols(IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName) =>
-		flushService.FlushSymbols(symbols, relationships, databaseName);
+	public Task FlushSymbols(IEnumerable<string> fileKeys, IEnumerable<Symbol> symbols, IEnumerable<Relationship> relationships, string databaseName) =>
+		flushService.FlushSymbols(fileKeys, symbols, relationships, databaseName);
 
 	public Task UpsertDependencyUrls(IEnumerable<UrlNode> urlNodes, string databaseName) =>
 		flushService.UpsertDependencyUrls(urlNodes, databaseName);

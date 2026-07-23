@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
@@ -11,18 +12,15 @@ namespace CodeToNeo4j.Dart.Bridge;
 public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService> logger) : IDartBridgeService
 {
 	[ExcludeFromCodeCoverage(Justification = "Requires live Dart SDK and OS process execution")]
-	public async Task<DartAnalysisResult?> AnalyzeProject(string projectRoot)
-	{
-		if (_cache.TryGetValue(projectRoot, out var cached))
-		{
-			return cached;
-		}
+	public Task<DartAnalysisResult?> AnalyzeProject(string projectRoot) =>
+		_cache.GetOrAdd(projectRoot, key => new Lazy<Task<DartAnalysisResult?>>(() => AnalyzeProjectCore(key))).Value;
 
+	private async Task<DartAnalysisResult?> AnalyzeProjectCore(string projectRoot)
+	{
 		var dartExecutable = FindDartExecutable();
 		if (dartExecutable is null)
 		{
 			logger.LogWarning("Dart SDK not found on PATH. Skipping Dart analysis for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 
@@ -30,14 +28,12 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 		if (bridgeDir is null)
 		{
 			logger.LogWarning("Failed to extract Dart analyzer bridge. Skipping Dart analysis for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 
 		if (!await EnsureDartPubGet(dartExecutable, bridgeDir).ConfigureAwait(false))
 		{
 			logger.LogWarning("dart pub get failed for the analyzer bridge. Skipping Dart analysis for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 
@@ -61,19 +57,21 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 			if (process is null)
 			{
 				logger.LogWarning("Failed to start Dart analyzer bridge process");
-				_cache[projectRoot] = null;
 				return null;
 			}
 
 			var stdoutTask = process.StandardOutput.ReadToEndAsync();
 			var stderrTask = process.StandardError.ReadToEndAsync();
 
-			var completed = process.WaitForExit((int)_defaultTimeout.TotalMilliseconds);
-			if (!completed)
+			using CancellationTokenSource cts = new(_defaultTimeout);
+			try
+			{
+				await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
 			{
 				process.Kill(true);
 				logger.LogWarning("Dart analyzer bridge timed out after {Timeout}", _defaultTimeout);
-				_cache[projectRoot] = null;
 				return null;
 			}
 
@@ -86,20 +84,17 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 			if (process.ExitCode != 0)
 			{
 				logger.LogWarning("Dart analyzer bridge exited with code {ExitCode}", process.ExitCode);
-				_cache[projectRoot] = null;
 				return null;
 			}
 
 			var stdout = await stdoutTask.ConfigureAwait(false);
 			var result = JsonSerializer.Deserialize<DartAnalysisResult>(stdout);
-			_cache[projectRoot] = result;
 			logger.LogInformation("Dart analysis complete: {FileCount} files analyzed", result?.Files.Count ?? 0);
 			return result;
 		}
 		catch (Exception ex)
 		{
 			logger.LogWarning(ex, "Error running Dart analyzer bridge for {ProjectRoot}", projectRoot);
-			_cache[projectRoot] = null;
 			return null;
 		}
 	}
@@ -251,8 +246,12 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 			}
 
 			var stderrTask = process.StandardError.ReadToEndAsync();
-			var completed = process.WaitForExit(60_000);
-			if (!completed)
+			using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
+			try
+			{
+				await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
 			{
 				process.Kill(true);
 				logger.LogWarning("dart pub get timed out");
@@ -279,7 +278,7 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 		}
 	}
 
-	private readonly Dictionary<string, DartAnalysisResult?> _cache = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, Lazy<Task<DartAnalysisResult?>>> _cache = new(StringComparer.OrdinalIgnoreCase);
 	private string? _bridgeDir;
 
 	private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);

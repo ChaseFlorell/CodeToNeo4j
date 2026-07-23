@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace CodeToNeo4j.VersionControl;
 
 public class GitMetadataCache : IGitMetadataCache
@@ -13,5 +15,5 @@ public class GitMetadataCache : IGitMetadataCache
 
 	public int Count => _cache.Count;
 
-	private readonly Dictionary<string, FileMetadata> _cache = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, FileMetadata> _cache = new(StringComparer.OrdinalIgnoreCase);
 }
