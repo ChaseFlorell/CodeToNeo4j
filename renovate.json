@@ -131,6 +131,19 @@
 				"renovate"
 			],
 			"automerge": true
+		},
+		{
+			"description": "TypeScript 7 dropped the classic Compiler API that ts-analyzer depends on (ts.sys, ts.ScriptTarget, ts.findConfigFile, etc.); pinned to ^5.x until a migration is done",
+			"matchManagers": [
+				"npm"
+			],
+			"matchPackageNames": [
+				"typescript"
+			],
+			"matchUpdateTypes": [
+				"major"
+			],
+			"enabled": false
 		}
 	]
 }

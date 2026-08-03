@@ -24,15 +24,14 @@ jobs:
           channel: 'stable'
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
-
+          node-version: '24'
       - name: Build TS Analyzer
         working-directory: tools/ts-analyzer
         run: npm ci && npm run build
@@ -94,7 +93,7 @@ jobs:
 
       - name: Upload Test Summary
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-summary
           path: test-summary.json
