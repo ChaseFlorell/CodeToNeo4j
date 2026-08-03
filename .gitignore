@@ -239,6 +239,10 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# ts-analyzer test/coverage output
+tools/ts-analyzer/coverage/
+tools/ts-analyzer/ts-test-results.xml
+
 # Typescript v1 declaration files
 typings/
 
