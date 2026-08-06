@@ -28,6 +28,21 @@ public class Neo4jFlushServiceTests
 		var session = A.Fake<IAsyncSession>();
 		A.CallTo(() => driver.AsyncSession()).Returns(session);
 		A.CallTo(() => driver.AsyncSession(A<Action<SessionConfigBuilder>>._)).Returns(session);
+
+		// Actually invokes the ExecuteWriteAsync callback (instead of just recording the call), so the
+		// tx.RunWithRetry(...) + cursor.ConsumeAsync() lines inside each callback — the code this PR
+		// added to fix the unconsumed-cursor deadlock — get exercised for real, not just referenced.
+		var cursor = A.Fake<IResultCursor>();
+		A.CallTo(() => cursor.ConsumeAsync()).Returns(A.Fake<IResultSummary>());
+		var runner = A.Fake<IAsyncQueryRunner>();
+		A.CallTo(() => runner.RunAsync(A<string>._, A<object>._)).Returns(cursor);
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
+			.ReturnsLazily(async call =>
+			{
+				var work = call.GetArgument<Func<IAsyncQueryRunner, Task>>(0)!;
+				await work(runner);
+			});
+
 		return session;
 	}
 
@@ -68,7 +83,7 @@ public class Neo4jFlushServiceTests
 		var (sut, driver) = CreateSut();
 
 		// Act
-		await sut.FlushSymbols([], [], "testdb");
+		await sut.FlushSymbols([], [], [], "testdb");
 
 		// Assert
 		A.CallTo(() => driver.AsyncSession()).MustNotHaveHappened();
@@ -83,7 +98,7 @@ public class Neo4jFlushServiceTests
 		var session = SetupSession(driver);
 
 		// Act
-		await sut.FlushSymbols(symbols, [], "testdb");
+		await sut.FlushSymbols([], symbols, [], "testdb");
 
 		// Assert
 		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._)).MustHaveHappened();
@@ -98,7 +113,7 @@ public class Neo4jFlushServiceTests
 		var session = SetupSession(driver);
 
 		// Act
-		await sut.FlushSymbols([], rels, "testdb");
+		await sut.FlushSymbols([], [], rels, "testdb");
 
 		// Assert
 		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._)).MustHaveHappened();
@@ -119,12 +134,63 @@ public class Neo4jFlushServiceTests
 		var session = SetupSession(driver);
 
 		// Act
-		await sut.FlushSymbols(symbols, [], "testdb");
+		await sut.FlushSymbols([], symbols, [], "testdb");
 
 		// Assert
 		// 1 for symbols/rels, 1 for tags
 		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
 			.MustHaveHappened(2, Times.Exactly);
+	}
+
+	[Fact]
+	public async Task GivenFileKeys_WhenFlushSymbolsCalled_ThenSweepsStaleSymbolsAfterUpserts()
+	{
+		// Arrange
+		var (sut, driver) = CreateSut();
+		var symbols = new[] { new Symbol("k1", "Foo", "NamedType", "class", "Foo", "Public", "f1", "f1.cs", 1, 10, null, null, "ns") };
+		var session = SetupSession(driver);
+		List<string> callOrder = [];
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
+			.Invokes((Func<IAsyncQueryRunner, Task> _, Action<TransactionConfigBuilder>? _) => callOrder.Add("write"));
+
+		// Act
+		await sut.FlushSymbols(["f1"], symbols, [], "testdb");
+
+		// Assert
+		A.CallTo(() => driver.AsyncSession(A<Action<SessionConfigBuilder>>._)).MustHaveHappened(2, Times.Exactly);
+		Assert.Equal(2, callOrder.Count);
+	}
+
+	[Fact]
+	public async Task GivenFileKeysExceedingChunkSize_WhenFlushSymbolsCalled_ThenSweepsInMultipleChunkedTransactions()
+	{
+		// Arrange
+		var (sut, driver) = CreateSut();
+		var symbols = new[] { new Symbol("k1", "Foo", "NamedType", "class", "Foo", "Public", "f1", "f1.cs", 1, 10, null, null, "ns") };
+		var session = SetupSession(driver);
+		var fileKeys = Enumerable.Range(0, Neo4jFlushService.MaxRowsPerQuery + 1).Select(i => $"f{i}").ToArray();
+
+		// Act
+		await sut.FlushSymbols(fileKeys, symbols, [], "testdb");
+
+		// Assert
+		// 1 for the symbol upsert chunk, 2 for the sweep (251 file keys split at MaxRowsPerQuery=250)
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
+			.MustHaveHappened(3, Times.Exactly);
+	}
+
+	[Fact]
+	public async Task GivenOnlyFileKeysNoSymbolsOrRels_WhenFlushSymbolsCalled_ThenSweepsStaleSymbols()
+	{
+		// Arrange
+		var (sut, driver) = CreateSut();
+		var session = SetupSession(driver);
+
+		// Act
+		await sut.FlushSymbols(["f1"], [], [], "testdb");
+
+		// Assert
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._)).MustHaveHappened();
 	}
 
 	[Fact]

@@ -67,10 +67,11 @@ public class Neo4jServiceTests
 		var rels = new[] { new Relationship("k1", "k2", GraphSchema.Relationships.Contains) };
 
 		// Act
-		await sut.FlushSymbols(symbols, rels, "testdb");
+		await sut.FlushSymbols(["key"], symbols, rels, "testdb");
 
 		// Assert
-		A.CallTo(() => flushService.FlushSymbols(A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb")).MustHaveHappenedOnceExactly();
+		A.CallTo(() => flushService.FlushSymbols(A<IEnumerable<string>>._, A<IEnumerable<Symbol>>._, A<IEnumerable<Relationship>>._, "testdb"))
+			.MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
