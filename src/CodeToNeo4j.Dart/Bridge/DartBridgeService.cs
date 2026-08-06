@@ -15,6 +15,7 @@ public class DartBridgeService(IFileSystem fileSystem, ILogger<DartBridgeService
 	public Task<DartAnalysisResult?> AnalyzeProject(string projectRoot) =>
 		_cache.GetOrAdd(projectRoot, key => new Lazy<Task<DartAnalysisResult?>>(() => AnalyzeProjectCore(key))).Value;
 
+	[ExcludeFromCodeCoverage(Justification = "Requires live Dart SDK and OS process execution")]
 	private async Task<DartAnalysisResult?> AnalyzeProjectCore(string projectRoot)
 	{
 		var dartExecutable = FindDartExecutable();

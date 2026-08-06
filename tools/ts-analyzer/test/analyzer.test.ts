@@ -148,6 +148,27 @@ describe('analyzer - tsconfig handling', () => {
     }
     assert.ok(stderrOutput.includes('Could not read tsconfig.json'));
   });
+
+  it('ignores a tsconfig.json found outside the project root and falls back to the glob', async () => {
+    const parent = fs.mkdtempSync(path.join(tmpDir, 'ancestor-tsconfig-'));
+    // An ancestor tsconfig with an `include` that would match nothing under the child project root
+    // if it were (incorrectly) applied -- proving the fallback glob was used instead when this
+    // still finds the child's own file.
+    fs.writeFileSync(
+      path.join(parent, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { target: 'es2020' }, include: ['nomatch/**'] }),
+      'utf-8',
+    );
+    const dir = path.join(parent, 'child-project');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'main.ts'), 'export class FromChild {}', 'utf-8');
+
+    const result = await analyze(dir);
+
+    const fileResult = result.files['main.ts'];
+    assert.ok(fileResult);
+    assert.ok(fileResult.symbols.some((s) => s.name === 'FromChild'));
+  });
 });
 
 describe('analyzer - project name resolution edge cases', () => {

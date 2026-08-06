@@ -15,6 +15,7 @@ public class TypeScriptBridgeService(IFileSystem fileSystem, ILogger<TypeScriptB
 	public Task<TsAnalysisResult?> AnalyzeProject(string projectRoot) =>
 		_cache.GetOrAdd(projectRoot, key => new Lazy<Task<TsAnalysisResult?>>(() => AnalyzeProjectCore(key))).Value;
 
+	[ExcludeFromCodeCoverage(Justification = "Requires live Node.js runtime and OS process execution")]
 	private async Task<TsAnalysisResult?> AnalyzeProjectCore(string projectRoot)
 	{
 		var nodeExecutable = FindNodeExecutable();

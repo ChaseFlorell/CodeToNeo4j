@@ -421,6 +421,53 @@ public class SolutionProcessorTests
 	}
 
 	[Fact]
+	public async Task GivenConsumerFaults_WhenProcessSolutionCalled_ThenCancelsProducersAndPropagatesFailure()
+	{
+		// arrange — enough files that several are still in flight when the consumer faults on the first one
+		var graphService = A.Fake<IGraphService>();
+		var fileService = A.Fake<IFileService>();
+		var fileSystem = A.Fake<IFileSystem>();
+		var vcs = A.Fake<IVersionControlService>();
+		var discoveryService = A.Fake<ISolutionFileDiscoveryService>();
+
+		var files = Enumerable.Range(0, 20).Select(i => new ProcessedFile($"/repo/file{i}.cs")).ToArray();
+
+		A.CallTo(() => fileSystem.Path.GetExtension("/repo")).Returns("");
+		A.CallTo(() => fileSystem.Path.GetFileName(A<string>._)).Returns("repo");
+		A.CallTo(() => fileSystem.Path.DirectorySeparatorChar).Returns('/');
+		A.CallTo(() => fileSystem.Path.AltDirectorySeparatorChar).Returns('/');
+		A.CallTo(() => fileService.NormalizePath("/repo")).Returns("/repo");
+		A.CallTo(() => fileService.GetRelativePath("/repo", A<string>._)).ReturnsLazily(call => ((string)call.Arguments[1]!)["/repo/".Length..]);
+		A.CallTo(() => fileService.InferFileMetadata(A<string>._)).Returns(("key", "ns"));
+		// Slow down producers so most are still mid-flight when the consumer's first flush throws below.
+		A.CallTo(() => fileService.ComputeSha256(A<string>._)).ReturnsLazily(async () =>
+		{
+			await Task.Delay(20);
+			return "hash";
+		});
+		A.CallTo(() => vcs.LoadMetadata("/repo", A<HashSet<string>>._)).Returns(Task.CompletedTask);
+		A.CallTo(() => vcs.GetFileMetadata(A<string>._, "/repo"))
+			.Returns(Task.FromResult(new FileMetadata(DateTimeOffset.Now, DateTimeOffset.Now, [], [], [])));
+		A.CallTo(() => discoveryService.GetFilesToProcess("/repo", null, A<IEnumerable<string>>._))
+			.Returns(files);
+
+		// batchSize=1 forces a flush (and thus the throw below) on the very first result the consumer reads.
+		A.CallTo(() => graphService.FlushFiles(A<IEnumerable<FileMetaData>>._, "testdb"))
+			.Throws(new InvalidOperationException("Neo4j unreachable"));
+
+		var sut = CreateProcessor(
+			graphService,
+			fileService: fileService,
+			fileSystem: fileSystem,
+			versionControlService: vcs,
+			discoveryService: discoveryService);
+
+		// act / assert
+		await Should.ThrowAsync<InvalidOperationException>(
+			() => sut.ProcessSolution("/repo", "repo", null, "testdb", 1, false, Accessibility.Public, [".cs"]));
+	}
+
+	[Fact]
 	public async Task GivenSkipDependenciesTrue_WhenProcessSolutionCalled_ThenSkipsDependencyIngestion()
 	{
 		// arrange

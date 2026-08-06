@@ -28,6 +28,21 @@ public class Neo4jFlushServiceTests
 		var session = A.Fake<IAsyncSession>();
 		A.CallTo(() => driver.AsyncSession()).Returns(session);
 		A.CallTo(() => driver.AsyncSession(A<Action<SessionConfigBuilder>>._)).Returns(session);
+
+		// Actually invokes the ExecuteWriteAsync callback (instead of just recording the call), so the
+		// tx.RunWithRetry(...) + cursor.ConsumeAsync() lines inside each callback — the code this PR
+		// added to fix the unconsumed-cursor deadlock — get exercised for real, not just referenced.
+		var cursor = A.Fake<IResultCursor>();
+		A.CallTo(() => cursor.ConsumeAsync()).Returns(A.Fake<IResultSummary>());
+		var runner = A.Fake<IAsyncQueryRunner>();
+		A.CallTo(() => runner.RunAsync(A<string>._, A<object>._)).Returns(cursor);
+		A.CallTo(() => session.ExecuteWriteAsync(A<Func<IAsyncQueryRunner, Task>>._, A<Action<TransactionConfigBuilder>?>._))
+			.ReturnsLazily(async call =>
+			{
+				var work = call.GetArgument<Func<IAsyncQueryRunner, Task>>(0)!;
+				await work(runner);
+			});
+
 		return session;
 	}
 
