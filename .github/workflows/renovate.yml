@@ -3,7 +3,7 @@ name: Renovate Dependencies
 on:
   schedule:
     # Every day at 5am UTC
-    - cron: '0 5 * * *'
+    - cron: '0 5 * * 2'
   workflow_dispatch: { }
 
 permissions:
