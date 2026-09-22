@@ -30,7 +30,7 @@
 		<PackageVersion Include="Neo4j.Driver" Version="6.3.0" />
 	</ItemGroup>
 	<ItemGroup Label="Polly">
-		<PackageVersion Include="Polly" Version="8.7.0" />
+		<PackageVersion Include="Polly" Version="8.8.0" />
 	</ItemGroup>
 	<ItemGroup Label="Shouldly">
 		<PackageVersion Include="Shouldly" Version="4.3.0" />
