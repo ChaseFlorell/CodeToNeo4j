@@ -125,6 +125,34 @@ public class ProgramTests
 	}
 
 	[Fact]
+	public void GivenReportSizeWithoutPassword_WhenParsing_ThenShouldHaveValidationError()
+	{
+		// arrange — --report-size still requires a Neo4j connection, so --password is required
+		var sut = Program.CreateRootCommand();
+		var args = new[] { "--report-size" };
+
+		// act
+		var result = sut.Parse(args);
+
+		// assert
+		result.Errors.ShouldContain(e => e.Message == "--password is required");
+	}
+
+	[Fact]
+	public void GivenReportSizeWithPassword_WhenParsing_ThenShouldNotHaveErrors()
+	{
+		// arrange — no --input required; it reports across the whole graph
+		var sut = Program.CreateRootCommand();
+		var args = new[] { "--report-size", "--password", "pass" };
+
+		// act
+		var result = sut.Parse(args);
+
+		// assert
+		result.Errors.ShouldBeEmpty();
+	}
+
+	[Fact]
 	public void GivenAssembly_WhenGettingVersion_ThenVersionIsNotNullOrEmpty()
 	{
 		// act
