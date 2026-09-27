@@ -125,6 +125,20 @@ public class ProgramTests
 	}
 
 	[Fact]
+	public void GivenPurgeWithReportSize_WhenParsing_ThenShouldHaveValidationError()
+	{
+		// arrange — combining these silently drops the report behind the purge's short-circuit
+		var sut = Program.CreateRootCommand();
+		var args = new[] { "--input", "test.sln", "--purge-data", "--report-size", "--password", "pass" };
+
+		// act
+		var result = sut.Parse(args);
+
+		// assert
+		result.Errors.ShouldContain(e => e.Message == "--report-size is not allowed when using --purge-data");
+	}
+
+	[Fact]
 	public void GivenReportSizeWithoutPassword_WhenParsing_ThenShouldHaveValidationError()
 	{
 		// arrange — --report-size still requires a Neo4j connection, so --password is required

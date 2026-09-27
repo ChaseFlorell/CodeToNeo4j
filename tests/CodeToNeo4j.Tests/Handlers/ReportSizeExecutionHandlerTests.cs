@@ -5,6 +5,7 @@ using CodeToNeo4j.ProgramOptions;
 using CodeToNeo4j.ProgramOptions.Handlers;
 using FakeItEasy;
 using Microsoft.CodeAnalysis;
+using Shouldly;
 using Xunit;
 
 namespace CodeToNeo4j.Tests.Handlers;
@@ -51,6 +52,59 @@ public class ReportSizeExecutionHandlerTests
 		// Assert
 		A.CallTo(() => graphService.GetProjectSizeReport(A<string>._)).MustNotHaveHappened();
 		A.CallTo(() => next.Handle(options)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public void GivenEmptyReport_WhenPrintReportCalled_ThenPrintsNoCodebasesFoundMessage()
+	{
+		// Arrange
+		StringWriter stdout = new();
+		var originalOut = Console.Out;
+		Console.SetOut(stdout);
+
+		try
+		{
+			// Act
+			ReportSizeExecutionHandler.PrintReport([]);
+
+			// Assert
+			var output = stdout.ToString();
+			output.ShouldContain("No codebases found.");
+			output.ShouldNotContain("Repo Key");
+		}
+		finally
+		{
+			Console.SetOut(originalOut);
+		}
+	}
+
+	[Fact]
+	public void GivenProjects_WhenPrintReportCalled_ThenPrintsAlignedTableWithValues()
+	{
+		// Arrange
+		StringWriter stdout = new();
+		var originalOut = Console.Out;
+		Console.SetOut(stdout);
+
+		ProjectSizeReport[] report = [new("bigrepo", 842, 15230, 340, 120, 8, 16540)];
+
+		try
+		{
+			// Act
+			ReportSizeExecutionHandler.PrintReport(report);
+
+			// Assert
+			var lines = stdout.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+			lines.Length.ShouldBe(4); // title, header, separator, one data row
+			lines[1].Length.ShouldBe(lines[2].Length); // header and separator line up
+			lines[1].Length.ShouldBe(lines[3].Length); // header and data row line up
+			lines[3].ShouldContain("bigrepo");
+			lines[3].ShouldContain("16540");
+		}
+		finally
+		{
+			Console.SetOut(originalOut);
+		}
 	}
 
 	private static Options CreateOptions(bool reportSize)

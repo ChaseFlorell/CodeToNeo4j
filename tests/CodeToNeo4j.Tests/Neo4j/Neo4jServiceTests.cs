@@ -162,7 +162,6 @@ public class Neo4jServiceTests
 		var cypherService = A.Fake<ICypherService>();
 		var record = A.Fake<IRecord>();
 		A.CallTo(() => record["repoKey"]).Returns("bigrepo");
-		A.CallTo(() => record["name"]).Returns("BigRepo");
 		A.CallTo(() => record["fileCount"]).Returns(842L);
 		A.CallTo(() => record["symbolCount"]).Returns(15230L);
 		A.CallTo(() => record["dependencyCount"]).Returns(340L);
@@ -183,7 +182,6 @@ public class Neo4jServiceTests
 		// Assert
 		var project = Assert.Single(result);
 		Assert.Equal("bigrepo", project.RepoKey);
-		Assert.Equal("BigRepo", project.Name);
 		Assert.Equal(842L, project.FileCount);
 		Assert.Equal(15230L, project.SymbolCount);
 		Assert.Equal(340L, project.DependencyCount);

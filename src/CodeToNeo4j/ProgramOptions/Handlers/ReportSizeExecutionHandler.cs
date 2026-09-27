@@ -5,18 +5,6 @@ namespace CodeToNeo4j.ProgramOptions.Handlers;
 
 public class ReportSizeExecutionHandler(IGraphService graphService) : OptionsHandler
 {
-	protected override async Task<bool> HandleOptions(Options options)
-	{
-		if (options.ReportSize)
-		{
-			var report = await graphService.GetProjectSizeReport(options.DatabaseName);
-			PrintReport(report);
-			return false;
-		}
-
-		return true;
-	}
-
 	internal static void PrintReport(IReadOnlyList<ProjectSizeReport> report)
 	{
 		Console.WriteLine("Codebase size report (by node count):");
@@ -27,15 +15,50 @@ public class ReportSizeExecutionHandler(IGraphService graphService) : OptionsHan
 			return;
 		}
 
-		const int keyWidth = 20;
-		var separator = new string('─', keyWidth) + "  " + string.Join("  ", "─────", "───────", "────────────", "───────", "───────", "───────");
+		(string Header, int Width, bool LeftAlign)[] columns =
+		[
+			("Repo Key", 22, true),
+			("Files", 7, false),
+			("Symbols", 9, false),
+			("Dependencies", 14, false),
+			("Commits", 9, false),
+			("Authors", 9, false),
+			("Total", 9, false)
+		];
 
-		Console.WriteLine($"  {"Repo Key",-keyWidth}  {"Files",5}   {"Symbols",7}  {"Dependencies",12}  {"Commits",7}  {"Authors",7}  {"Total",7}");
-		Console.WriteLine($"  {separator}");
+		string Pad(string value, (string Header, int Width, bool LeftAlign) column) =>
+			column.LeftAlign ? value.PadRight(column.Width) : value.PadLeft(column.Width);
+
+		var headerLine = "  " + string.Join(string.Empty, columns.Select(c => Pad(c.Header, c)));
+		var separatorLine = "  " + string.Join(string.Empty, columns.Select(c => new string('─', c.Width)));
+
+		Console.WriteLine(headerLine);
+		Console.WriteLine(separatorLine);
 		foreach (var project in report)
 		{
-			Console.WriteLine(
-				$"  {project.RepoKey,-keyWidth}  {project.FileCount,5}   {project.SymbolCount,7}  {project.DependencyCount,12}  {project.CommitCount,7}  {project.AuthorCount,7}  {project.TotalCount,7}");
+			string[] values =
+			[
+				project.RepoKey,
+				project.FileCount.ToString(),
+				project.SymbolCount.ToString(),
+				project.DependencyCount.ToString(),
+				project.CommitCount.ToString(),
+				project.AuthorCount.ToString(),
+				project.TotalCount.ToString()
+			];
+			Console.WriteLine("  " + string.Join(string.Empty, values.Select((v, i) => Pad(v, columns[i]))));
 		}
+	}
+
+	protected override async Task<bool> HandleOptions(Options options)
+	{
+		if (options.ReportSize)
+		{
+			var report = await graphService.GetProjectSizeReport(options.DatabaseName);
+			PrintReport(report);
+			return false;
+		}
+
+		return true;
 	}
 }

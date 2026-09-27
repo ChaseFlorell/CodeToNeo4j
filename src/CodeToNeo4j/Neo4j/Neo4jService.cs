@@ -154,7 +154,6 @@ public class Neo4jService(
 		return records
 			.Select(record => new ProjectSizeReport(
 				record["repoKey"].As<string>(),
-				record["name"].As<string?>(),
 				record["fileCount"].As<long>(),
 				record["symbolCount"].As<long>(),
 				record["dependencyCount"].As<long>(),

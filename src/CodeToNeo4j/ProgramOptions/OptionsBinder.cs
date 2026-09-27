@@ -68,6 +68,7 @@ public class OptionsBinder(
 			verboseOption,
 			quietOption,
 			purgeDataOption,
+			reportSizeOption,
 			skipDependenciesOption,
 			minAccessibilityOption,
 			passOption,
