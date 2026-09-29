@@ -140,6 +140,29 @@ public class Neo4jService(
 		logger.LogInformation("Purge complete for {PurgeTarget}. Total items deleted: {TotalDeleted}", purgeTarget, totalDeleted);
 	}
 
+	public async Task<IReadOnlyList<ProjectSizeReport>> GetProjectSizeReport(string databaseName)
+	{
+		logger.LogDebug("Generating project size report (Database: {DatabaseName})...", databaseName);
+
+		await using var session = driver.AsyncSession(o => o.WithDatabase(databaseName));
+		var records = await session.ExecuteReadAsync(async tx =>
+		{
+			var cursor = await tx.RunWithRetry(cypherService.GetCypher(Queries.ReportSize)).ConfigureAwait(false);
+			return await cursor.ToListAsync().ConfigureAwait(false);
+		}).ConfigureAwait(false);
+
+		return records
+			.Select(record => new ProjectSizeReport(
+				record["repoKey"].As<string>(),
+				record["fileCount"].As<long>(),
+				record["symbolCount"].As<long>(),
+				record["dependencyCount"].As<long>(),
+				record["commitCount"].As<long>(),
+				record["authorCount"].As<long>(),
+				record["totalCount"].As<long>()))
+			.ToArray();
+	}
+
 	protected virtual void Dispose(bool disposing)
 	{
 		if (disposing)
