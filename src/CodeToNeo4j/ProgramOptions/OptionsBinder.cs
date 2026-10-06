@@ -23,6 +23,7 @@ public class OptionsBinder(
 	Option<bool> quietOption,
 	Option<bool> skipDependenciesOption,
 	Option<bool> purgeDataOption,
+	Option<bool> reportSizeOption,
 	Option<string[]> includeExtensionsOption,
 	Option<bool> showVersionOption,
 	Option<bool> showSupportedFilesOption,
@@ -52,6 +53,7 @@ public class OptionsBinder(
 		command.Options.Add(quietOption);
 		command.Options.Add(skipDependenciesOption);
 		command.Options.Add(purgeDataOption);
+		command.Options.Add(reportSizeOption);
 		command.Options.Add(includeExtensionsOption);
 		command.Options.Add(showVersionOption);
 		command.Options.Add(showSupportedFilesOption);
@@ -66,6 +68,7 @@ public class OptionsBinder(
 			verboseOption,
 			quietOption,
 			purgeDataOption,
+			reportSizeOption,
 			skipDependenciesOption,
 			minAccessibilityOption,
 			passOption,
@@ -79,10 +82,11 @@ public class OptionsBinder(
 		var isInfo = parseResult.GetValue(showVersionOption)
 					 || parseResult.GetValue(showSupportedFilesOption)
 					 || parseResult.GetValue(showInfoOption);
+		var skipInputResolution = isInfo || parseResult.GetValue(reportSizeOption);
 
 		var rawInput = parseResult.GetValue(inputOption);
 		InputPathResolver resolver = new(fileSystem);
-		var inputPath = isInfo
+		var inputPath = skipInputResolution
 			? rawInput ?? fileSystem.Directory.GetCurrentDirectory()
 			: resolver.Resolve(rawInput);
 
@@ -117,6 +121,7 @@ public class OptionsBinder(
 			parseResult.GetValue(minAccessibilityOption),
 			parseResult.GetValue(includeExtensionsOption)!,
 			parseResult.GetValue(purgeDataOption),
+			parseResult.GetValue(reportSizeOption),
 			parseResult.GetValue(showVersionOption),
 			parseResult.GetValue(showSupportedFilesOption),
 			parseResult.GetValue(showInfoOption)

@@ -19,6 +19,7 @@ public sealed record Options(
 	Accessibility MinAccessibility,
 	IEnumerable<string> IncludeExtensions,
 	bool PurgeData,
+	bool ReportSize,
 	bool ShowVersion,
 	bool ShowSupportedFiles,
 	bool ShowInfo)
@@ -40,6 +41,7 @@ public sealed record Options(
 		builder.AppendLine($"\tMinAccessibility = {MinAccessibility}, ");
 		builder.AppendLine($"\tIncludeExtensions = [ {string.Join(", ", IncludeExtensions)} ], ");
 		builder.AppendLine($"\tPurgeData = {PurgeData}");
+		builder.AppendLine($"\tReportSize = {ReportSize}");
 		builder.AppendLine($"\tShowVersion = {ShowVersion}");
 		builder.AppendLine($"\tShowSupportedFiles = {ShowSupportedFiles}");
 		builder.AppendLine($"\tShowInfo = {ShowInfo}");

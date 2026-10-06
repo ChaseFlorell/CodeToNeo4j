@@ -98,6 +98,9 @@ public class Program
 		var purgeDataOption = new Option<bool>("--purge-data")
 			.WithDefaultValueFunc(() => false)
 			.WithDescription("Purge all data from Neo4j associated with the specified repository key. Example: --purge-data");
+		var reportSizeOption = new Option<bool>("--report-size")
+			.WithDefaultValueFunc(() => false)
+			.WithDescription("Print a per-codebase size report (node counts by label), sorted largest first, and exit. Example: --report-size");
 		var showVersionOption = new Option<bool>("--version")
 			.WithDescription("Print the current tool version and exit.");
 		var showSupportedFilesOption = new Option<bool>("--supported-files")
@@ -123,6 +126,7 @@ public class Program
 			quietOption,
 			skipDependenciesOption,
 			purgeDataOption,
+			reportSizeOption,
 			includeExtensionsOption,
 			showVersionOption,
 			showSupportedFilesOption,

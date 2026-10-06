@@ -16,6 +16,7 @@ public interface IOptionsBinderValidator
 		Option<bool> verboseOption,
 		Option<bool> quietOption,
 		Option<bool> purgeDataOption,
+		Option<bool> reportSizeOption,
 		Option<bool> skipDependenciesOption,
 		Option<Accessibility> minAccessibilityOption,
 		Option<string> passOption,
@@ -35,6 +36,7 @@ public class OptionsBinderValidator : IOptionsBinderValidator
 		Option<bool> verboseOption,
 		Option<bool> quietOption,
 		Option<bool> purgeDataOption,
+		Option<bool> reportSizeOption,
 		Option<bool> skipDependenciesOption,
 		Option<Accessibility> minAccessibilityOption,
 		Option<string> passOption,
@@ -52,12 +54,18 @@ public class OptionsBinderValidator : IOptionsBinderValidator
 		}
 
 		var isPurge = result.GetValue(purgeDataOption);
+		var isReportSize = result.GetValue(reportSizeOption);
 		var pass = result.GetResult(passOption);
 
 		if (pass is null or { Implicit: true })
 		{
 			result.AddError("--password is required");
 			return;
+		}
+
+		if (isPurge && isReportSize)
+		{
+			result.AddError("--report-size is not allowed when using --purge-data");
 		}
 
 		if (isPurge)
