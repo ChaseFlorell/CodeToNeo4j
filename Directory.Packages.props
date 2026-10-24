@@ -27,7 +27,7 @@
 		<PackageVersion Include="System.CommandLine" Version="2.0.12" />
 	</ItemGroup>
 	<ItemGroup Label="Neo4j.Driver">
-		<PackageVersion Include="Neo4j.Driver" Version="6.3.0" />
+		<PackageVersion Include="Neo4j.Driver" Version="6.4.0" />
 	</ItemGroup>
 	<ItemGroup Label="Polly">
 		<PackageVersion Include="Polly" Version="8.8.0" />
