@@ -62,5 +62,6 @@ public class MsBuildRegistrationHandlerTests
 		false,
 		false,
 		false,
+		false,
 		false);
 }
