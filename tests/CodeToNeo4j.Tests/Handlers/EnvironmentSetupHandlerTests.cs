@@ -35,6 +35,7 @@ public class EnvironmentSetupHandlerTests
 			false,
 			false,
 			false,
+			false,
 			false);
 
 		// Act
@@ -66,6 +67,7 @@ public class EnvironmentSetupHandlerTests
 			false,
 			Accessibility.Private,
 			[],
+			false,
 			false,
 			false,
 			false,

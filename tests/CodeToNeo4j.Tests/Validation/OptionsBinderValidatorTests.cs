@@ -23,6 +23,7 @@ public class OptionsBinderValidatorTests
 		Option<bool> verboseOption = new("--verbose");
 		Option<bool> quietOption = new("--quiet");
 		Option<bool> purgeDataOption = new("--purge-data");
+		Option<bool> reportSizeOption = new("--report-size");
 		Option<bool> skipDependenciesOption = new("--skip-dependencies");
 		Option<Accessibility> minAccessibilityOption = new("--min-accessibility");
 		minAccessibilityOption.WithDefaultValueFunc(() => Accessibility.Private);
@@ -42,6 +43,7 @@ public class OptionsBinderValidatorTests
 				verboseOption,
 				quietOption,
 				purgeDataOption,
+				reportSizeOption,
 				skipDependenciesOption,
 				minAccessibilityOption,
 				passOption,
@@ -70,6 +72,7 @@ public class OptionsBinderValidatorTests
 				verboseOption,
 				quietOption,
 				purgeDataOption,
+				reportSizeOption,
 				skipDependenciesOption,
 				minAccessibilityOption,
 				passOption,
@@ -135,6 +138,20 @@ public class OptionsBinderValidatorTests
 
 		// assert
 		result.Errors.ShouldBeEmpty();
+	}
+
+	[Fact]
+	public void GivenPurgeWithReportSize_WhenValidating_ThenShouldHaveErrorMessage()
+	{
+		// arrange
+		var (getResult, validate) = CreateTestHarness();
+		var result = getResult(["--input", "test.sln", "--password", "pass", "--purge-data", "--report-size"]);
+
+		// act
+		validate(result);
+
+		// assert
+		result.Errors.ShouldHaveSingleItem("--report-size is not allowed when using --purge-data");
 	}
 
 	[Fact]
