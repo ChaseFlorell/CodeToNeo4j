@@ -154,6 +154,43 @@ public class Neo4jServiceTests
 	}
 
 	[Fact]
+	public async Task GivenProjects_WhenGetProjectSizeReportCalled_ThenMapsResults()
+	{
+		// Arrange
+		var driver = A.Fake<IDriver>();
+		var session = A.Fake<IAsyncSession>();
+		var cypherService = A.Fake<ICypherService>();
+		var record = A.Fake<IRecord>();
+		A.CallTo(() => record["repoKey"]).Returns("bigrepo");
+		A.CallTo(() => record["fileCount"]).Returns(842L);
+		A.CallTo(() => record["symbolCount"]).Returns(15230L);
+		A.CallTo(() => record["dependencyCount"]).Returns(340L);
+		A.CallTo(() => record["commitCount"]).Returns(120L);
+		A.CallTo(() => record["authorCount"]).Returns(8L);
+		A.CallTo(() => record["totalCount"]).Returns(16540L);
+
+		A.CallTo(() => driver.AsyncSession(A<Action<SessionConfigBuilder>>._)).Returns(session);
+		A.CallTo(() => cypherService.GetCypher(Queries.ReportSize)).Returns("MATCH (p:src__Project) RETURN p");
+		A.CallTo(() => session.ExecuteReadAsync(A<Func<IAsyncQueryRunner, Task<List<IRecord>>>>._))
+			.Returns(Task.FromResult(new List<IRecord> { record }));
+
+		var sut = CreateService(driver, cypherService);
+
+		// Act
+		var result = await sut.GetProjectSizeReport("testdb");
+
+		// Assert
+		var project = Assert.Single(result);
+		Assert.Equal("bigrepo", project.RepoKey);
+		Assert.Equal(842L, project.FileCount);
+		Assert.Equal(15230L, project.SymbolCount);
+		Assert.Equal(340L, project.DependencyCount);
+		Assert.Equal(120L, project.CommitCount);
+		Assert.Equal(8L, project.AuthorCount);
+		Assert.Equal(16540L, project.TotalCount);
+	}
+
+	[Fact]
 	public void GivenDispose_WhenCalled_ThenDisposesDriver()
 	{
 		// Arrange

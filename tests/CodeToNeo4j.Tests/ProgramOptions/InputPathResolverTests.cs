@@ -339,6 +339,7 @@ public class InputPathResolverTests
 			false,
 			false,
 			false,
+			false,
 			false);
 	}
 }

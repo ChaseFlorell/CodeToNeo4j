@@ -111,6 +111,7 @@ public static class ContainerModule
 
 		services.AddTransient<IOptionsHandler, PurgeConfirmationHandler>();
 		services.AddTransient<IOptionsHandler, PurgeExecutionHandler>();
+		services.AddTransient<IOptionsHandler, ReportSizeExecutionHandler>();
 		services.AddTransient<IOptionsHandler, MsBuildRegistrationHandler>();
 		services.AddTransient<IOptionsHandler, EnvironmentSetupHandler>();
 		services.AddTransient<IOptionsHandler, SolutionProcessingHandler>();
