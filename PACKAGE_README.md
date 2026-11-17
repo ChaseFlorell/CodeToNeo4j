@@ -67,9 +67,10 @@ codetoneo4j \
 | `--batch-size`           | Number of symbols to batch before flushing to Neo4j. Default: `500`.                           |
 | `--include`, `-i`        | File extensions to include (Default: all supported, including `.dart`).                        |
 | `--purge-data`           | Purge data associated with the repository.                                                     |
+| `--report-size`          | Print a per-codebase size report (node counts by label), sorted largest first, and exit.       |
 
 > Note: When `--input` is omitted, the tool auto-detects the project type from the current directory (`.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only). When using `--purge-data`, the tool asks for confirmation before deletion. If `--include` is specified, only matching file extensions are
-> purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> purged. `--skip-dependencies` and `--min-accessibility` are not allowed with this switch. `--report-size` is not allowed with this switch, does not require `--input`, and reports across every codebase in the database. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge examples
 

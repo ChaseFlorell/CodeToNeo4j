@@ -35,6 +35,7 @@ public class SolutionProcessingHandlerTests
 			false,
 			false,
 			false,
+			false,
 			false);
 
 		// act

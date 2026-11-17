@@ -156,5 +156,6 @@ public class OptionsHandlerTests
 		purgeData,
 		false,
 		false,
+		false,
 		false);
 }

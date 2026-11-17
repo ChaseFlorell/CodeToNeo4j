@@ -74,6 +74,29 @@ public class OptionsBinderTests
 		options.RepoKey.ShouldBe("my-app");
 	}
 
+	// ── --report-size skips input-path resolution ──────────────────────────────
+
+	[Fact]
+	public void GivenReportSize_WhenBindingWithNoResolvableInput_ThenDoesNotThrow()
+	{
+		// Arrange — CWD has multiple .sln files, which would normally force InputPathResolver to throw
+		MockFileSystem fs = new();
+		fs.AddDirectory("/home/user/myproject");
+		fs.AddFile("/home/user/myproject/One.sln", new(""));
+		fs.AddFile("/home/user/myproject/Two.sln", new(""));
+		fs.Directory.SetCurrentDirectory("/home/user/myproject");
+
+		var (binder, root, _) = CreateBinderAndCommand(fs);
+
+		var parseResult = root.Parse(["--report-size"]);
+
+		// Act
+		var options = binder.Bind(parseResult);
+
+		// Assert
+		options.ReportSize.ShouldBeTrue();
+	}
+
 	// ── helpers ───────────────────────────────────────────────────────────────
 
 	private static (OptionsBinder binder, RootCommand root, Option<string?> inputOption) CreateBinderAndCommand(
@@ -101,6 +124,7 @@ public class OptionsBinderTests
 		Option<bool> quietOption = new("--quiet");
 		Option<bool> skipDependenciesOption = new("--skip-dependencies");
 		Option<bool> purgeDataOption = new("--purge-data");
+		Option<bool> reportSizeOption = new("--report-size");
 		Option<string[]> includeExtensionsOption = new("--include");
 		includeExtensionsOption.WithDefaultValueFunc(() => []);
 		Option<bool> showVersionOption = new("--version");
@@ -125,6 +149,7 @@ public class OptionsBinderTests
 			quietOption,
 			skipDependenciesOption,
 			purgeDataOption,
+			reportSizeOption,
 			includeExtensionsOption,
 			showVersionOption,
 			showSupportedFilesOption,

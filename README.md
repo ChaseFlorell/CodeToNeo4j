@@ -102,10 +102,12 @@ codetoneo4j --input /path/to/project-dir --password your-neo4j-password
 | `--min-accessibility`    | The minimum accessibility level to index (e.g., `Public`, `Internal`, `Private`).                                                                                                               | `NotApplicable`                                                                                      |
 | `--include`, `-i`        | File extensions to include. Can be specified multiple times.                                                                                                                                    | `.cs`, `.razor`, `.xaml`, `.js`, `.ts`, `.tsx`, `.html`, `.xml`, `.json`, `.css`, `.csproj`, `.dart` |
 | `--purge-data`           | Purge data from Neo4j associated with the repository key (case-insensitive).                                                                                                                    | `false`                                                                                              |
+| `--report-size`          | Print a per-codebase size report (node counts by label), sorted largest first, and exit.                                                                                                        | `false`                                                                                              |
 
 > **Note**: When `--input` is omitted, the tool auto-detects the project type from the current directory in priority order: `.sln` > `.slnx` > `.csproj` > `pubspec.yaml` > files-only mode. If multiple files of the same type exist, the tool exits with an error asking you to specify `--input`
 > explicitly. When using `--purge-data`, the tool will ask for confirmation before deleting any data. The repository key derived from the input filename or directory name is **case-insensitive** (normalized to lowercase). If `--include` is also specified, only the data for those file extensions will
-> be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. Only one of `--log-level`, `--debug`, `--verbose`, or `--quiet` can be used.
+> be purged. `--skip-dependencies` and `--min-accessibility` are not permitted with this switch. `--report-size` is not permitted with this switch, does not require `--input`, and reports across every codebase in the target database — not just one repository key. Only one of `--log-level`,
+> `--debug`, `--verbose`, or `--quiet` can be used.
 
 ### Purge data
 
